@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Helvetica, sans-serif;
+}
+.font-regular {
+  font-family: "Helvetical Regular";
+}
+.font-inter {
+  font-family: "Inter", "Inter Placeholder", sans-serif;
+}
+.cursor-none {
+  cursor: none;
+}
+/* .font-inter {
+    font-family: "Inter", sans-serif;
+} */
+ html ::selection {
+  background: #000;
+  color: #fff;
+}
+
+html ::-moz-selection {
+  background: #000;
+  color: #fff;
+}
