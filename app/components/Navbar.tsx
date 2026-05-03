@@ -91,12 +91,12 @@ onMouseLeave={() =>
     new CustomEvent("cursor-change", { detail: "default" })
   )
 } className="text-[22px] font-bold leading-none tracking-tighter uppercase mt-1.5 cursor-none">
-            {/* <img 
+            <img 
             src="/asset 1.png"
             alt="logo"
             className="w-15 h-15 object-cover"
-            /> */}
-            BHQ
+            />
+            {/* BHQ */}
           </h1>
         </Link>
 
