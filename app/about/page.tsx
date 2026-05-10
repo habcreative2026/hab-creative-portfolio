@@ -35,11 +35,11 @@ export default function AboutPage() {
                             className="font-bold tracking-tight leading-none text-[160px]"
                         >
                             <div className="flex items-center">
-                                <span>Elliot</span>
-                                <span className="flex-1 mx-6 min-w-[80px]">
-                                    <span className="block w-full h-[6px] bg-black"></span>
+                                <span>QUI</span>
+                                <span className="flex-1 mx-5 min-w-auto ">
+                                    <span className="">BUI</span>
                                 </span>
-                                <span>Rowe</span>
+                                {/* <span>HAI</span> */}
                             </div>
                         </motion.h1>
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
                     <div className="relative z-10 flex justify-end">
 
                             <img
-                                src="https://framerusercontent.com/images/HJPj99RmXiLIxX1HUuCfHYDwAEs.jpg?width=904&height=1200"
+                                src="/avt_bhq.jpg"
                                 className="w-full h-[500px] object-cover"
                                 alt=""
                             />
@@ -75,7 +75,7 @@ export default function AboutPage() {
                             style={{ y: textY }}
                             className="absolute bottom-4 right-4 z-30 mix-blend-difference text-white text-[24px] whitespace-nowrap"
                         >
-                            2016 — Today
+                            2018 — Today
                         </motion.div>
 
                     </div>

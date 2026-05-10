@@ -26,7 +26,7 @@ export default function TheBeverlyPage() {
   return () => observer.disconnect();
 }, []);
   return (
-    <div className="min-h-screen mt-30 pt-30 px-4">
+    <div className="min-h-screen mt-30 pt-30 px-40">
       
       {/* Top content */}
 <div className="grid grid-cols-3 gap-10 items-start">

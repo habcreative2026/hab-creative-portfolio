@@ -75,7 +75,7 @@ export default function IntroVideo({ onFinish }: { onFinish: () => void }) {
             />
 
             {/* BRAND TEXT */}
-            <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+            {/* <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -103,7 +103,7 @@ export default function IntroVideo({ onFinish }: { onFinish: () => void }) {
                   </motion.h1>
                 </motion.div>
               </motion.div>
-            </div>
+            </div> */}
 
             {/* FADE OUT */}
             <motion.div

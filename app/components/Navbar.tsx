@@ -92,7 +92,7 @@ onMouseLeave={() =>
   )
 } className="text-[22px] font-bold leading-none tracking-tighter uppercase mt-1.5 cursor-none">
             <img 
-            src="/logo.png"
+            src="/logo_bhq.png"
             alt="logo"
             className="w-15 h-15 object-cover"
             />

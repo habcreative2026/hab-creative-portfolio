@@ -252,7 +252,7 @@ const contentY = useSpring(contentYRaw, {
     </Link>
 
         {/* Item 5 */}
-    {/* <Link href={"/projects/eightball#top"} className="relative overflow-hidden h-[600px]">
+    <Link href={"/projects/Miss-Thu-Restaurant#top"} className="relative overflow-hidden h-[600px]">
       <img
                                                   onMouseEnter={() =>
   window.dispatchEvent(
@@ -264,16 +264,16 @@ const contentY = useSpring(contentYRaw, {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-        src="/project_dong_tay_group/dong_tay_group.avif"
+        src="/project_miss_thu_restaurant/avt.jpg"
         className="w-full h-full object-cover cursor-none"
       />
             <span className="absolute bottom-3 left-3 text-white text-[24px] mix-blend-difference">
-        Dong Tay Group
+        Miss Thu Restaurant
       </span>
-    </Link> */}
+    </Link>
 
         {/* Item 6 */}
-    {/* <Link href={"/projects/eightball#top"} className="relative overflow-hidden h-[600px]">
+    <Link href={"/projects/eightball#top"} className="relative overflow-hidden h-[600px]">
       <img
                                                   onMouseEnter={() =>
   window.dispatchEvent(
@@ -291,7 +291,7 @@ const contentY = useSpring(contentYRaw, {
             <span className="absolute bottom-3 left-3 text-white text-[24px] mix-blend-difference">
         Flora Panorama
       </span>
-    </Link> */}
+    </Link>
   </div>
 </div>
 

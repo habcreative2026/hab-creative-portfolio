@@ -112,7 +112,7 @@ export default function CooperativePage() {
 
     <div className="text-sm leading-relaxed text-gray-700 space-y-6">
       <div>
-        <p className="font-medium text-gray-500 mb-1">Project overview</p>
+        <p className="font-medium text-gray-500 mb-1">Project overview</p> 
         <p className="font-bold">
           Lightspeed approached us at a pivotal moment in their growth. 
           They had developed a powerful payment infrastructure that promised 

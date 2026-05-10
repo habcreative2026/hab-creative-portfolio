@@ -26,7 +26,7 @@ export default function LePalmierHoTramPage() {
   return () => observer.disconnect();
 }, []);
   return (
-    <div className="min-h-screen mt-30 pt-30 px-4">
+    <div className="min-h-screen mt-30 pt-30 px-40">
       
       {/* Top content */}
 <div className="grid grid-cols-3 gap-10 items-start">
@@ -198,7 +198,7 @@ Flyer,…</p>
 
   {/* Overlay text */}
   <div className="absolute inset-0 flex items-start justify-center px-6 mt-30 pt-30">
-    <p className="text-gray-600 text-center text-[16px] leading-relaxed max-w-[1000px] font-inter">
+    <p className="text-gray-600 text-center text-[19px] leading-relaxed max-w-[800px] font-inter">
       <span className="font-bold">Hồ Tràm</span> - nơi sở hữu những bãi biển đẹp nhất thế giới không tỳ vết, đã được CNNGo (Mỹ) công nhận,
       với hơn 300 ngày nắng ấm trong năm. Chính nơi đây, 12 biệt thự của LE PALMIER nằm ẩn mình trong
       khu rừng cọ màu xanh tươi mát, tạo nên không gian tĩnh lặng, thanh bình và tinh khiết. Trên con
