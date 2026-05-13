@@ -58,26 +58,26 @@ export default function FooterPage() {
       whileInView="show"
       viewport={{ once: true, margin: "-100px" }}
       variants={container}
-      className="text-black pt-16 pb-4 px-4"
+      className="text-black pt-16 pb-4 px-4 md:px-4 lg:px-4"
     >
 
       {/* Top border */}
       <motion.div variants={item} className="border-t border-gray-300 mb-10" />
 
       {/* Top section */}
-      <motion.div variants={container} className="grid grid-cols-3 items-start">
+      <motion.div variants={container} className="grid grid-cols-1 md:grid-cols-3 items-start gap-8 md:gap-0">
 
         {/* LEFT - Newsletter */}
-        <motion.div variants={item}>
+        <motion.div variants={item} className="text-center md:text-left">
           <p className="text-xs text-gray-600 mb-6">
             Subscribe to my newsletter
           </p>
 
-          <div className="mb-4">
+          <div className="mb-4 flex justify-center md:justify-start">
             <input
             placeholder="Email *"
               type="email"
-              className="w-[300px] border-b border-gray-300 bg-transparent outline-none pb-2 focus:border-gray-500"
+              className="w-full max-w-[300px] border-b border-gray-300 bg-transparent outline-none pb-2 focus:border-gray-500"
             />
           </div>
 
@@ -90,7 +90,7 @@ export default function FooterPage() {
   window.dispatchEvent(
     new CustomEvent("cursor-change", { detail: "default" })
   )
-} className="mt-2 bg-black text-white w-[300px] py-4 rounded-full text-sm cursor-none     transition-all duration-300
+} className="mt-2 bg-black text-white w-full max-w-[300px] py-4 rounded-full text-sm cursor-none transition-all duration-300
     hover:bg-white
     hover:text-black
     hover:border-black border border-black ">
@@ -98,8 +98,8 @@ export default function FooterPage() {
           </button>
         </motion.div>
 
-{/* CENTER - SOCIAL */}
-<motion.div variants={item} className="flex flex-col items-center">
+        {/* CENTER - SOCIAL */}
+<motion.div variants={item} className="flex flex-col items-center mt-8 md:mt-0">
 
   <p className="text-xs text-gray-600 mb-2">
     Social
@@ -107,7 +107,7 @@ export default function FooterPage() {
 
   <motion.div
     variants={socialContainer}
-    className="text-[28px] font-bold text-left ml-25 group"
+    className="text-[28px] font-bold text-left group ml-0 md:ml-18 pl-0 md:pl-6"
   >
 
     <motion.p
@@ -127,6 +127,7 @@ export default function FooterPage() {
         transition-all duration-300
         group-hover:text-gray-300
         hover:!text-black
+        text-center md:text-left
       "
     >
       Email
@@ -149,6 +150,7 @@ export default function FooterPage() {
         transition-all duration-300
         group-hover:text-gray-300
         hover:!text-black
+        text-center md:text-left 
       "
     >
       LinkedIn
@@ -171,6 +173,7 @@ export default function FooterPage() {
         transition-all duration-300
         group-hover:text-gray-300
         hover:!text-black
+        text-center md:text-left
       "
     >
       Twitter (X)
@@ -193,6 +196,7 @@ export default function FooterPage() {
         transition-all duration-300
         group-hover:text-gray-300
         hover:!text-black
+        text-center md:text-left
       "
     >
       Dribbble
@@ -203,7 +207,7 @@ export default function FooterPage() {
 </motion.div>
 
         {/* RIGHT - Back to top */}
-        <motion.div variants={item} className="flex justify-end">
+        <motion.div variants={item} className="flex justify-center md:justify-end mt-8 md:mt-0">
           <button                   onMouseEnter={() =>
   window.dispatchEvent(
     new CustomEvent("cursor-change", { detail: "userdefault" })
@@ -226,25 +230,25 @@ export default function FooterPage() {
       {/* Bottom section */}
       <motion.div
         variants={container}
-        className="mt-20 pt-6 flex justify-between items-end text-xs font-medium"
+        className="mt-20 pt-6 flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-0 text-xs font-medium"
       >
 
         {/* Left */}
-        <motion.div variants={item}>
-          <p className="cursor-pointer hover:text-gray-300">©2026 Verris™.</p>
+        <motion.div variants={item} className="text-center md:text-left">
+          <p className="cursor-pointer hover:text-gray-300">©2026 Tibirox™.</p>
           <p className="cursor-pointer hover:text-gray-300">All rights reserved.</p>
         </motion.div>
 
         {/* Center */}
-        <motion.div variants={item} className="text-start">
+        <motion.div variants={item} className="text-cebter">
           <p className="cursor-pointer hover:text-gray-300">Privacy</p>
           <p className="cursor-pointer hover:text-gray-300">Terms</p>
         </motion.div>
 
         {/* Right */}
-        <motion.div variants={item} className="text-right">
-          <p className="cursor-pointer hover:text-gray-300">Built in Framer</p>
-          <p className="cursor-pointer hover:text-gray-300">Created by Isaac</p>
+        <motion.div variants={item} className="text-center md:text-right">
+          <p className="cursor-pointer hover:text-gray-300">Built in Tibirox</p>
+          <p className="cursor-pointer hover:text-gray-300">Created by Bht</p>
         </motion.div>
 
       </motion.div>

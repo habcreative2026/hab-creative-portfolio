@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export default function ContactPage() {
+  const services = [
+  "Web Design & Development",
+  "Branding Establishment",
+  "Imagery Production",
+  "Marketing",
+];
+
   const [selected, setSelected] = useState("");
+  const [open, setOpen] = useState(false);
   return (
     <div className="min-h-screen px-4 pt-40">
 
@@ -18,139 +27,116 @@ export default function ContactPage() {
       {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20 mt-10">
 
-        {/* LEFT - FORM */}
-        <div className="flex flex-col gap-6">
+{/* LEFT - FORM */}
+<div className="flex flex-col gap-6">
 
-          {/* Name */}
-          <div>
-            <label className="text-sm text-gray-500">Name *</label>
-            <input
-              type="text"
-              placeholder="Enter name"
-              className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-xl" 
-            />
-          </div>
+  {/* 2 cột - 2 hàng */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* Email */}
-          <div>
-            <label className="text-sm text-gray-500">Email *</label>
-            <input
-              type="email"
-              placeholder="Enter email"
-              className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-xl"
-            />
-          </div>
-
-          {/* Budget */}
-          <div>
-            <p className="text-sm text-gray-500 mb-3">Budget *</p>
-
-            <div className="flex flex-col gap-2 text-[20px]">
-      <label
-        className={`flex items-center gap-2 cursor-pointer ${
-          selected === "under" ? "text-gray-700" : "text-gray-400"
-        }`}
-      >
-        <input
-          type="radio"
-          name="budget"
-          value="under"
-          checked={selected === "under"}
-          onChange={(e) => setSelected(e.target.value)}
-          className="appearance-none
-              w-5 h-5
-              border-1 border-black
-              rounded-full
-              checked:bg-black
-              checked:border-black
-              transition"
-        />
-        Under $5,000
-      </label>
-
-      <label
-        className={`flex items-center gap-2 cursor-pointer ${
-          selected === "5-10" ? "text-gray-700" : "text-gray-400"
-        }`}
-      >
-        <input
-          type="radio"
-          name="budget"
-          value="5-10"
-          checked={selected === "5-10"}
-          onChange={(e) => setSelected(e.target.value)}
-          className="appearance-none
-              w-5 h-5
-              border-1 border-black
-              rounded-full
-              checked:bg-black
-              checked:border-black
-              transition"
-        />
-        $5,000 — $10,000
-      </label>
-
-      <label
-        className={`flex items-center gap-2 cursor-pointer ${
-          selected === "10-25" ? "text-gray-700" : "text-gray-400"
-        }`}
-      >
-        <input
-          type="radio"
-          name="budget"
-          value="10-25"
-          checked={selected === "10-25"}
-          onChange={(e) => setSelected(e.target.value)}
-          className="appearance-none
-              w-5 h-5
-              border-1 border-black
-              rounded-full
-              checked:bg-black
-              checked:border-black
-              transition"
-        />
-        $10,000 — $25,000
-      </label>
-
-      <label
-        className={`flex items-center gap-2 cursor-pointer ${
-          selected === "25-50" ? "text-gray-700" : "text-gray-400"
-        }`}
-      >
-        <input
-          type="radio"
-          name="budget"
-          value="25-50"
-          checked={selected === "25-50"}
-          onChange={(e) => setSelected(e.target.value)}
-          className="appearance-none
-              w-5 h-5
-              border-1 border-black
-              rounded-full
-              checked:bg-black
-              checked:border-black
-              transition"
-        />
-        $25,000 — $50,000
-      </label>
+    {/* Họ tên */}
+    <div>
+      <input
+        type="text"
+        placeholder="Họ tên*"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg"
+      />
     </div>
-          </div>
 
-          {/* Details */}
-          <div>
-            <label className="text-xs text-gray-500">Project details</label>
-            <textarea
-              placeholder="Enter details"
-              className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg h-50 "
-            />
-          </div>
+    {/* Email */}
+    <div>
+      <input
+        type="email"
+        placeholder="Email*"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg"
+      />
+    </div>
 
-          {/* Button */}
-          <button className="bg-black text-white rounded-full px-20 py-2.5 w-fit">
-            Get in touch
-          </button>
+    {/* Số điện thoại */}
+    <div>
+      <input
+        type="tel"
+        placeholder="Số điện thoại*"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg"
+      />
+    </div>
 
+    {/* Công ty */}
+    <div>
+      <input
+        type="text"
+        placeholder="Công ty*"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg"
+      />
+    </div>
+  </div>
+
+  {/* Dropdown dịch vụ */}
+        <div className="relative w-full">
+
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full border border-gray-300 focus:border-gray-900 rounded-md px-3 py-3 text-left text-lg bg-white text-black"
+      >
+        {selected || "Bạn cần tư vấn về dịch vụ nào?"}
+
+        <ChevronDown
+          size={20}
+          className={`absolute right-3 top-1/2 -translate-y-1/2 transition-transform duration-300
+          ${open ? "rotate-180" : "rotate-0"}
+          `}
+        />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute left-0 mt-2 w-full rounded bg-[#DFDFDF] overflow-hidden z-50 py-2">
+
+          {services.map((service, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => {
+                setSelected(service);
+                setOpen(false);
+              }}
+              className="w-full px-2 py-2 text-left transition-colors duration-300"
+            >
+              {/* Text + animated underline */}
+              <span className="relative inline-block text-black group">
+                {service}
+
+                <span
+                  className="
+                    absolute left-0 bottom-0 h-[2px] w-full bg-gray-500
+                    scale-x-0 origin-right
+                    transition-transform duration-300
+                    group-hover:scale-x-100 group-hover:origin-left
+                  "
+                ></span>
+              </span>
+            </button>
+          ))}
         </div>
+      )}
+    </div>
+
+  {/* Project details */}
+  <div>
+    <label className="text-xs text-gray-500">Project details</label>
+    <textarea
+      placeholder="Enter details"
+      className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg h-40"
+    />
+  </div>
+
+  {/* Button */}
+  <button className="bg-black text-white rounded-full px-20 py-3 w-fit">
+    Get in touch
+  </button>
+
+</div>
 
         {/* RIGHT - PROFILE */}
         <div className="flex flex-col items-end gap-1">
@@ -239,13 +225,18 @@ export default function ContactPage() {
     </span>
   </span>
 </a>
-
 </div>
-
         </div>
-
       </div>
-
+<h1 
+className=" text-7xl font-light leading-tight 
+tracking-[-0.03em] bg-gradient-to-r from-[#8b6b2f] 
+via-[#f3deb0] to-[#8b6b2f] bg-[length:200%_100%] bg-clip-text 
+text-transparent animate-shimmer " > 
+BÙI HẢI TRỌNG <br /> 
+BACKEND DEVELOPER <br /> 
+TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH 
+</h1>
     </div>
   );
 }
