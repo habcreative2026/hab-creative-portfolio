@@ -150,7 +150,7 @@ onMouseLeave={() =>
           >
             <div className="lg:flex items-center gap-6 text-black/80">
               <a
-  href="tel:+84973112480"
+  href="tel:+84925555958"
   onMouseEnter={() =>
   window.dispatchEvent(
     new CustomEvent("cursor-change", { detail: "userdefault" })
@@ -163,7 +163,7 @@ onMouseLeave={() =>
 }
   className="cursor-none"
 >
-  (84) 973112480
+  (84) 92 5555 958
 </a>
               <a href="mailto:buihaitrong.dev@gmail.com" 
                 onMouseEnter={() =>
@@ -177,7 +177,7 @@ onMouseLeave={() =>
   )
 }
               className="transition cursor-none">
-                buihaitrong.dev@gmail.com
+                hello@habcreative.com
               </a>
 <Link
   href={"/contact"}
@@ -239,7 +239,7 @@ onMouseLeave={() =>
                     Projects (17)
                   </Link>
                   <div className="flex flex-col gap-4 items-end">
-                    <Link href={"/journal"}
+                    <div
                       onMouseEnter={() =>
   window.dispatchEvent(
     new CustomEvent("cursor-change", { detail: "userdefault" })
@@ -250,7 +250,7 @@ onMouseLeave={() =>
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-                    className="cursor-none transition">Journal</Link>
+                    className="cursor-none transition">Journal</div>
                     <Link href={"/about"}
                       onMouseEnter={() =>
   window.dispatchEvent(
@@ -332,7 +332,7 @@ onMouseLeave={() =>
                 href={"/projects"} className="cursor-none transition whitespace-nowrap">
                   Projects (17)
                 </Link>
-                <Link href={"/journal"} 
+                <div
                   onMouseEnter={() =>
   window.dispatchEvent(
     new CustomEvent("cursor-change", { detail: "userdefault" })
@@ -343,7 +343,7 @@ onMouseLeave={() =>
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-                className="cursor-none transition">Journal</Link>
+                className="cursor-none transition">Journal</div>
                 <Link href={"/about"} 
                   onMouseEnter={() =>
   window.dispatchEvent(

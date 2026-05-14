@@ -85,7 +85,7 @@ export default function AboutPage() {
 
 
             {/* ================= CONTENT (NOW ATTACHED PROPERLY) ================= */}
-            <div className="px-4 -pt-30 -mt-30">
+            <div className="px-4 -pt-24 -mt-24">
 
                 {/* EXPERIENCE */}
                 <motion.section
@@ -94,12 +94,12 @@ export default function AboutPage() {
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.6 }}
                 >
-                    <div className="grid grid-cols-[50%_15%_15%_20%] mb-2">
-        <h2 className="col-start-2 text-5xl font-semibold mb-8">Experience</h2>
+                    <div className="grid grid-cols-[40%_20%_20%_20%] mb-2">
+        <h2 className="col-start-2 text-5xl font-semibold mb-14">Experience</h2>
     </div>
 
                     {/* Column headers */}
-                    <div className="grid grid-cols-[50%_15%_15%_20%] text-xs font-semibold text-gray-400 mb-2">
+                    <div className="grid grid-cols-[40%_15%_20%_15%] text-xs font-semibold text-gray-400 mb-2">
                         <div>Position</div>
                         <div>Type</div>
                         <div>Company</div>
@@ -108,36 +108,36 @@ export default function AboutPage() {
 
                     {/* Experience data */}
                     <div className="space-y-4 text-[24px] font-semibold">
-                        <div className="grid grid-cols-[50%_15%_15%_20%] border-t py-3">
-                            <div>Designer & Creative Developer</div>
-                            <div>Freelance</div>
-                            <div>Elliot Studio</div>
-                            <div>2022 — Present</div>
-                        </div>
-                        <div className="grid grid-cols-[50%_15%_15%_20%] border-t py-3">
-                            <div>Senior Design Engineer</div>
+                        <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                            <div>Founder & Creative Director</div>
                             <div>Full-time</div>
-                            <div>Google Inc.</div>
-                            <div>2021 — 2022</div>
+                            <div>HAB Creative</div>
+                            <div>2025 — Present</div>
                         </div>
-                        <div className="grid grid-cols-[50%_15%_15%_20%] border-t py-3">
+                        {/* <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
                             <div>Design Engineer</div>
                             <div>Full-time</div>
                             <div>Pearlfisher</div>
                             <div>2019 — 2021</div>
-                        </div>
-                        <div className="grid grid-cols-[50%_15%_15%_20%] border-t py-3">
-                            <div>Frontend Developer</div>
+                        </div> */}
+                        <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                            <div>Creative Designer</div>
                             <div>Full-time</div>
-                            <div>Mother London</div>
-                            <div>2017 — 2019</div>
+                            <div>Dong Tay Land</div>
+                            <div>2021 — 2024</div>
                         </div>
-                        <div className="grid grid-cols-[50%_15%_15%_20%] border-t py-3">
+                        <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                            <div>Creative Designer</div>
+                            <div>Full-time</div>
+                            <div>Alpha Creative</div>
+                            <div>2019 — 2021</div>
+                        </div>
+                        {/* <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
                             <div>Junior Web Designer</div>
                             <div>Full-time</div>
                             <div>Pentagram</div>
                             <div>2016 — 2017</div>
-                        </div>
+                        </div> */}
                     </div>
                 </motion.section>
 
@@ -149,37 +149,37 @@ export default function AboutPage() {
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.6 }}
                 >
-                    <h2 className="text-5xl mb-8 font-semibold">Awards & Recognition</h2>
+                    <h2 className="text-5xl mb-14 font-semibold">Awards & Recognition</h2>
 
                     {/* Column headers */}
-                    <div className="grid grid-cols-[50%_30%_20%] text-xs font-semibold text-gray-400 mb-2">
+                    <div className="grid grid-cols-[30%_50%_10%] text-xs font-semibold text-gray-400 mb-2">
                         <div>Award</div>
                         <div>Nomination</div>
                         <div>Year</div>
                     </div>
 
                     {/* Award data */}
-                    <div className="space-y-4 text-[24px] font-semibold">
-                        <div className="grid grid-cols-[50%_30%_20%] border-t py-3">
-                            <div>Awwwards</div>
-                            <div>Independent of the Year</div>
+                    <div className="space-y-4 text-[24px] font-semibold mb-20">
+                        <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
+                            <div>WorldSkills Vietnam 2018</div>
+                            <div>First prize winner of the Ministry of Industry and Trade's WorldSkills Vietnam competition in Graphic Design.</div>
                             <div>2025</div>
                         </div>
-                        <div className="grid grid-cols-[50%_30%_20%] border-t py-3">
-                            <div>Framer</div>
-                            <div>Site of the Year</div>
+                        <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
+                            <div>WorldSkills Vietnam 2018</div>
+                            <div>First prize winner at the WorldSkills Vietnam national skills competition in Graphic Design.</div>
                             <div>2024</div>
                         </div>
-                        <div className="grid grid-cols-[50%_30%_20%] border-t py-3">
+                        {/* <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
                             <div>CSSDA</div>
                             <div>Website of the Day</div>
                             <div>2021</div>
                         </div>
-                        <div className="grid grid-cols-[50%_30%_20%] border-t py-3">
+                        <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
                             <div>Awwwards</div>
                             <div>Developer Award</div>
                             <div>2019</div>
-                        </div>
+                        </div> */}
                     </div>
                 </motion.section>
 

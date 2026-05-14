@@ -57,3 +57,17 @@ html ::-moz-selection {
 .animate-shimmer { 
   animation: shimmer 4s linear infinite; 
 }
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-50%));
+  }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}

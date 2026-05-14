@@ -2,16 +2,18 @@
 import { motion, useScroll, useSpring, useTransform, Variants, useAnimationControls } from "framer-motion";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import AboutRevealSection from "./AboutRevealSection";
 
 export default function ContentPage( ) {
   
-  const images = [
-    "https://framerusercontent.com/images/YtnnlG8omfkA1HIQHTazsET9Go.webp?scale-down-to=1024&width=4000&height=2668",
-    "https://framerusercontent.com/images/hLsi61VRnXvmM7Mz9NpHzgROGc.webp?scale-down-to=1024&width=4500&height=3375",
-    "https://framerusercontent.com/images/ZuQL0zmRgbgiuiXsjJnv48VrVY.webp?scale-down-to=1024&width=5000&height=3750",
-  ];
+
+  // const images = [
+  //   "https://framerusercontent.com/images/YtnnlG8omfkA1HIQHTazsET9Go.webp?scale-down-to=1024&width=4000&height=2668",
+  //   "https://framerusercontent.com/images/hLsi61VRnXvmM7Mz9NpHzgROGc.webp?scale-down-to=1024&width=4500&height=3375",
+  //   "https://framerusercontent.com/images/ZuQL0zmRgbgiuiXsjJnv48VrVY.webp?scale-down-to=1024&width=5000&height=3750",
+  // ];
 const controls = useAnimationControls();
-  const [index, setIndex] = useState(0);
+  // const [index, setIndex] = useState(0);
 
 useEffect(() => {
   controls.start({
@@ -24,12 +26,12 @@ useEffect(() => {
   });
 }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setIndex((prev) => (prev + 1) % images.length);
+  //   }, 1000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
             
   const { scrollY } = useScroll();
@@ -50,23 +52,23 @@ const contentY = useSpring(contentYRaw, {
   mass: 0.8,
 });
 
-  const container : Variants = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
+  // const container : Variants = {
+  //   hidden: {},
+  //   show: {
+  //     transition: {
+  //       staggerChildren: 0.1,
+  //     },
+  //   },
+  // };
 
-  const item : Variants = {
-    hidden: { opacity: 0, y: 20 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: "easeOut" },
-    },
-  };
+  // const item : Variants = {
+  //   hidden: { opacity: 0, y: 20 },
+  //   show: {
+  //     opacity: 1,
+  //     y: 0,
+  //     transition: { duration: 0.4, ease: "easeOut" },
+  //   },
+  // };
 
   const number : Variants = {
     hidden: { opacity: 0, y: 40, scale: 0.9 },
@@ -158,11 +160,11 @@ const contentY = useSpring(contentYRaw, {
   <span
     className="text-xs text-gray-500 -mb-10 ml-4"
   >
-    Product Design, Web Design, Branding, Development
+    Product Design, Web Design, Branding
   </span>
 </div>
 
-    <span className="text-xs font-bold -mb-10">Selected work (4)</span>
+    <span className="text-xs font-bold -mb-10">Selected work (6)</span>
   </div>
 
   {/* Grid images */}
@@ -201,7 +203,7 @@ const contentY = useSpring(contentYRaw, {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-        src="/project_le_palmier_ho_tram/le_palmier_ho_tram.avif"
+        src="/project_le_palmier_ho_tram/avt.jpg"
         className="w-full h-full object-cover cursor-none"
       />
       <span className="absolute bottom-3 left-3 text-white text-[24px] mix-blend-difference">
@@ -295,10 +297,10 @@ const contentY = useSpring(contentYRaw, {
   </div>
 </div>
 
-   <Link href={"/projects"} className="mt-2">
+   <div className="mt-2">
 
       {/* Top right link */}
-      <div className="flex justify-end mb-40 mt-4">
+      <Link href={"/projects"} className="flex justify-end mb-14 mt-4">
 <span className="relative cursor-pointer text-[42px] font-bold group">
   View all projects (17)
 
@@ -309,108 +311,43 @@ const contentY = useSpring(contentYRaw, {
     group-hover:scale-x-100 group-hover:origin-left
   "></span>
 </span>
-      </div>
+      </Link>
 
-<motion.div
-      variants={container}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-100px" }}
-      className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start"
-    >
-      
-      {/* Left */}
-      <motion.div variants={item}>
-        <h2 className="text-[160px] font-bold leading-none">7</h2>
-        <p className="text-[50px] text-gray-600 -mt-4">
-          Years of Experience
-        </p>
-
-        {/* Image auto change */}
-<motion.div
-  variants={item}
-  className="mt-4 h-[400px] w-full overflow-hidden"
+<div
+  className="
+    overflow-hidden
+    w-full
+    [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]
+    [-webkit-mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]
+    mb-16 mt-8 pt-8
+  "
 >
-  <motion.img
-    src={images[index]}
-    initial={{ scale: 0.5, opacity: 0 }}
-    whileInView={{ scale: 1, opacity: 1 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.7, ease: "easeOut" }}
-    className="w-full h-full object-cover"
-  />
-</motion.div>
-      </motion.div>
+  <div className="flex w-max animate-marquee">
+    {/* set 1 */}
+    <div className="flex items-center gap-16 pr-16 shrink-0">
+      <img src="/category_logo/category_logo_v0.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v1.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v2.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v3.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v4.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v5.png" className="h-7 w-auto" />
+    </div>
 
-      {/* Right */}
-      <motion.div variants={item}>
-        <p className="text-sm text-gray-400 mb-2">What I do</p>
+    {/* set 2 */}
+    <div className="flex items-center gap-16 pr-16 shrink-0">
+      <img src="/category_logo/category_logo_v0.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v1.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v2.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v3.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v4.png" className="h-7 w-auto" />
+      <img src="/category_logo/category_logo_v5.png" className="h-7 w-auto" />
+    </div>
+  </div>
+</div>
+    </div>
 
-        <p
-          className="text-[32px] font-bold mb-10 -mt-4 leading-tight"
-          style={{ textIndent: "170px" }}
-        >
-          Whether it’s building a distinctive brand identity, designing
-          interfaces that feel effortless, or developing websites that perform
-          seamlessly, my work is about turning vision into tangible results.
-          Each service is shaped to not only solve problems but to create
-          opportunities for growth, clarity, and impact.
-        </p>
 
-        {/* Tags */}
-        <motion.div
-          variants={container}
-          className="flex flex-wrap gap-1 justify-end max-w-[470px] ml-auto"
-        >
-          {[
-            "Product Design",
-            "Web Design",
-            "Typography",
-            "Brand Identity",
-            "Design Systems",
-            "Interaction Design",
-            "Prototyping",
-            "Logo Design",
-            "User Interface Design (UI)",
-            "User Experience Design (UX)",
-            "Motion Design",
-            "Pitch Deck Design",
-            "Front-End Development",
-            "No-Code Development (Framer / Webflow)",
-          ].map((itemText, i) => (
-            <motion.span
-              key={i}
-              variants={item}
-        className="
-  px-6 py-4
-  rounded-full
-  text-sm
-  bg-gray-200
-  text-black
-  border border-transparent
-  transition-all duration-200 ease-out
-  hover:bg-white
-  hover:text-black
-  hover:border-black
-"
-              onMouseEnter={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "userdefault" })
-  )
-}
-  onMouseLeave={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "default" })
-  ) } 
-            >
-              {itemText}
-            </motion.span>
-          ))}
-        </motion.div>
-      </motion.div>
-    </motion.div>
-    </Link>
-
+<AboutRevealSection  />
 <motion.div
       initial="hidden"
       whileInView="show"
@@ -445,6 +382,7 @@ const contentY = useSpring(contentYRaw, {
         >
           <path d="M 96.117 0.005 L 96.112 96.189 L 75.656 96.175 L 75.661 34.961 L 14.529 96.083 L 0.063 81.617 L 61.219 20.461 L 0.005 20.466 L 0 0 Z" />
         </motion.svg>
+
 
         {/* Layout text */}
         <div className="relative flex items-center justify-center">
@@ -514,9 +452,9 @@ const contentY = useSpring(contentYRaw, {
         {/* RIGHT NUMBER */}
         <motion.div
           variants={number}
-          className="flex flex-col items-end justify-start mt-4"
+          className="flex flex-col items-end"
         >
-          <h2 className="text-[120px] md:text-[160px] font-bold leading-none">
+          <h2 className="text-[120px] text-start justify-end md:text-[160px] font-bold leading-none mt-10 pt-10">
             32+
           </h2>
           <span className="text-[64px] text-gray-400 -mt-6">
@@ -526,7 +464,7 @@ const contentY = useSpring(contentYRaw, {
       </motion.div>
 
       {/* CLIENT GRID */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-1 mt-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
 
         {/* Card 1 */}
         <motion.div
@@ -554,7 +492,7 @@ const contentY = useSpring(contentYRaw, {
           className="relative h-[220px] overflow-hidden"
         >
           <img
-            src="/project_le_palmier_ho_tram/le_palmier_ho_tram.avif"
+            src="/project_le_palmier_ho_tram/avt.jpg"
             className="w-full h-full object-cover"
           />
           {/* <span className="absolute inset-0 flex items-center justify-center text-white text-lg font-semibold mix-blend-difference">
@@ -617,3 +555,106 @@ const contentY = useSpring(contentYRaw, {
     </>
   );
 } 
+
+{/* <motion.div
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-100px" }}
+      className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start"
+    >
+      
+      {/* Left */}
+      // <motion.div variants={item}>
+      //   <h2 className="text-[160px] font-bold leading-none">7</h2>
+      //   <p className="text-[50px] text-gray-600 -mt-4">
+      //     Years of Experience
+      //   </p>
+
+        {/* Image auto change */}
+{/* <motion.div
+  variants={item}
+  className="mt-4 h-[400px] w-full overflow-hidden"
+>
+  <motion.img
+    src={images[index]}
+    initial={{ scale: 0.5, opacity: 0 }}
+    whileInView={{ scale: 1, opacity: 1 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.7, ease: "easeOut" }}
+    className="w-full h-full object-cover"
+  />
+</motion.div> */}
+      // </motion.div>
+
+      {/* Right */}
+      // <motion.div variants={item}>
+      //   <p className="text-sm text-gray-400 mb-2">What I Do</p>
+
+      //   <p
+      //     className="text-[32px] font-bold mb-10 -mt-4 leading-tight"
+      //     style={{ textIndent: "170px" }}
+        // >
+          {/* Whether it’s building a distinctive brand identity, designing
+          interfaces that feel effortless, or developing websites that perform
+          seamlessly, my work is about turning vision into tangible results.
+          Each service is shaped to not only solve problems but to create
+          opportunities for growth, clarity, and impact. */}
+        {/* </p> */}
+
+        {/* Tags */}
+//         <motion.div
+//           variants={container}
+//           className="flex flex-wrap gap-1 justify-end max-w-[580px] ml-auto mt-38 pt-38"
+//         >
+//           {[
+//             "Product Design",
+//             "Web Design",
+//             "Typography",
+//             "Brand Identity",
+//             "Design Systems",
+//             "Interaction Design",
+//             "Prototyping",
+//             "Logo Design",
+//             "User Interface Design (UI)",
+//             "User Experience Design (UX)",
+//             "Motion Design",
+//             "Pitch Deck Design",
+//           ].map((itemText, i) => (
+//             <motion.span
+//               key={i}
+//               variants={item}
+//         className="font-inter
+//   px-6 py-4
+//   rounded-full
+//   text-sm
+//   bg-gray-200
+//   text-black
+//   border border-transparent
+//   transition-all duration-200 ease-out
+//   hover:bg-black
+//   hover:text-white
+// "
+//               onMouseEnter={() =>
+//   window.dispatchEvent(
+//     new CustomEvent("cursor-change", { detail: "userdefault" })
+//   )
+// }
+//   onMouseLeave={() =>
+//   window.dispatchEvent(
+//     new CustomEvent("cursor-change", { detail: "default" })
+//   ) } 
+  
+//             >
+//               {itemText}
+//                 <span className="
+//     absolute left-0 bottom-0 h-[2px] w-full bg-black
+//     scale-x-0 origin-right
+//     transition-transform duration-300
+//     group-hover:scale-x-100 group-hover:origin-left
+//   "></span>
+//             </motion.span>
+//           ))}
+//         </motion.div>
+//       </motion.div>
+    // </motion.div>

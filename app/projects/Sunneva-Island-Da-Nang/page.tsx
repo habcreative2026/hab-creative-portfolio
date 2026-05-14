@@ -35,8 +35,7 @@ export default function SunnevaIslandPage() {
   <div className="col-span-2 max-w-2xl">
     <p className="max-w-auto leading-relaxed font-medium font-inter text-[20px] px-4">
      Với quy mô 26ha, <span className="font-bold">Sunneva Island</span> mang đến các sản phẩm biệt thự, 
-     nhà phố đáp ứng đa nhu cầu nghỉ dưỡng – đầu tư. Đây cũng là dự án hiếm 
-     hoi mang đậm dấu ấn kiến trúc 2 phong cách <span className="font-bold">Đông Dương và Champa</span> trong từng 
+     nhà phố đáp ứng đa nhu cầu nghỉ dưỡng – đầu tư. Đây cũng là dự án mang đậm dấu ấn kiến trúc <span className="font-bold">Đông Dương và Champa</span> trong từng 
      thiết kế nhà và cảnh quan giữa lòng phố thị Đà Nẵng.
     </p>
   </div>
@@ -184,11 +183,13 @@ Flyer,…</p>
       />
 
   </div> */}
-    <img
+<div className="-mt-20 -pt-20">
+      <img
       src="/project_sunneva_island_da_nang/001.avif"
       alt="Lightspeed visual"
       className="w-full h-full object-cover"
     />
+  </div>
         <img
       src="/project_sunneva_island_da_nang/002.avif"
       alt="Lightspeed visual"

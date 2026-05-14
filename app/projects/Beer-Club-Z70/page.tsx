@@ -34,7 +34,7 @@ export default function BeerClubZ70Page() {
   {/* LEFT TEXT */}
   <div className="col-span-2 max-w-2xl">
     <p className="max-w-auto leading-relaxed font-medium font-inter text-[20px] px-4">
-    Với quy mô 26ha, <span className="font-bold">Sunneva Island</span> mang đến các sản phẩm biệt thự, nhà phố đáp ứng đa nhu cầu nghỉ dưỡng – đầu tư. Đây cũng là dự án hiếm hoi mang đậm dấu ấn kiến trúc 2 phong cách <span className="font-bold">Đông Dương và Champa</span> trong từng thiết kế nhà và cảnh quan giữa lòng phố thị Đà Nẵng.
+    Bộ bao lì xì sử dụng các gam màu nổi bật như <span className="font-bold">đỏ, cam và xanh turquoise</span>, điểm xuyết họa tiết sóng nhẹ, hình ảnh rồng Giáp Thìn, pháo hoa, tiền lộc và các biểu tượng may mắn.
     </p>
   </div>
 
@@ -61,10 +61,7 @@ export default function BeerClubZ70Page() {
   {/* Role */}
   <div>
     <p className="text-[18px] font-inter font-bold">Category</p>
-    <p className="text-[16px] font-inter">Invitation,
-Social Media,
-Social Poster,
-Flyer,…</p>
+    <p className="text-[16px] font-inter">Lucky Money Envelope</p>
   </div>
 
   {/* Live */}
@@ -306,7 +303,7 @@ Flyer,…</p>
 }
     href={"/projects/le-palmier-ho-tram#top"} className="relative overflow-hidden h-[320px]">
       <img
-        src="/project_le_palmier_ho_tram/le_palmier_ho_tram.avif"
+        src="/project_le_palmier_ho_tram/avt.jpg"
         className="w-full h-full object-cover transition-transform duration-500 cursor-none"
       />
       <span className="absolute bottom-2 left-3 text-white text-[24px] mix-blend-difference">

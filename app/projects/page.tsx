@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, type Transition } from "framer-motion";
+import Link from "next/link";
 
 export default function ProjectPage() {
   const imgVariants = {
@@ -50,15 +51,15 @@ export default function ProjectPage() {
         </p>
 
         <p className="text-[24px] font-bold">
-          '16 — 25
+          '19 — 26
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 gap-y-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 gap-y-6">
 
-        {/* ITEM 1 */} 
+        {/* ITEM 1 */}
         <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
+          <Link href={"/projects/the-beverly#top"} className="relative overflow-hidden">
             <motion.img
                                                               onMouseEnter={() =>
   window.dispatchEvent(
@@ -75,31 +76,31 @@ export default function ProjectPage() {
               variants={imgVariants}
             />
 
-            <motion.span 
+            {/* <motion.span 
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
             >
               '01
-            </motion.span>
-          </div>
+            </motion.span> */}
+          </Link>
 
-          <div className="mt-3">
-            <p className="text-lg">The Beverly, HCMC</p>
+          <div className="mt-3 px-4">
+            <p className="text-lg">The Beverly, HCMC</p> 
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Designer
+              Vingroup 
             </motion.p>
           </div>
         </motion.div>
 
         {/* ITEM 2 */}
         <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
+          <Link href={"/projects/Le-Palmier-Ho-Tram#top"} className="relative overflow-hidden">
             <motion.img
                                                               onMouseEnter={() =>
   window.dispatchEvent(
@@ -111,21 +112,21 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="/project_le_palmier_ho_tram/le_palmier_ho_tram.avif"
+              src="/project_le_palmier_ho_tram/avt.jpg"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
 
-            <motion.span
+            {/* <motion.span
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
             >
               '02
-            </motion.span>
-          </div>
+            </motion.span> */}
+          </Link>
 
-          <div className="mt-3">
+          <div className="mt-3 px-4">
             <p className="text-lg">Le Palmier Ho Tram</p>
 
             <motion.p
@@ -133,14 +134,14 @@ export default function ProjectPage() {
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Designer
+              Dong Tay Holding
             </motion.p>
           </div>
         </motion.div>
 
         {/* ITEM 3 */}
                 <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
+          <Link href={"/projects/Beer-Club-Z70#top"} className="relative overflow-hidden">
             <motion.img
                                                               onMouseEnter={() =>
   window.dispatchEvent(
@@ -157,16 +158,16 @@ export default function ProjectPage() {
               variants={imgVariants}
             />
 
-            <motion.span
+            {/* <motion.span
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
             >
               '03
-            </motion.span>
-          </div>
+            </motion.span> */}
+          </Link>
 
-          <div className="mt-3">
+          <div className="mt-3 px-4">
             <p className="text-lg">Beer Club Z70</p>
 
             <motion.p
@@ -174,14 +175,14 @@ export default function ProjectPage() {
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Designer
+              Beer Club Z70
             </motion.p>
           </div>
         </motion.div>
 
         {/* ITEM 4 */}
                 <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
+          <Link href={"/projects/Sunneva-Island-Da-Nang#top"} className="relative overflow-hidden">
             <motion.img
                                                               onMouseEnter={() =>
   window.dispatchEvent(
@@ -198,16 +199,17 @@ export default function ProjectPage() {
               variants={imgVariants}
             />
 
+{/* 
             <motion.span
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
             >
               '04
-            </motion.span>
-          </div>
+            </motion.span> */}
+          </Link>
 
-          <div className="mt-3">
+          <div className="mt-3 px-4">
             <p className="text-lg">Sunneva Island Da Nang</p>
 
             <motion.p
@@ -215,14 +217,14 @@ export default function ProjectPage() {
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Designer
+              Sun Group
             </motion.p>
           </div>
         </motion.div>
 
         {/* ITEM 5 */}
                 <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
+          <Link href={"/projects/Miss-Thu-Restaurant#top"} className="relative overflow-hidden">
             <motion.img
                                                               onMouseEnter={() =>
   window.dispatchEvent(
@@ -239,16 +241,16 @@ export default function ProjectPage() {
               variants={imgVariants}
             />
 
-            <motion.span
+            {/* <motion.span
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
             >
               '05
-            </motion.span>
-          </div>
+            </motion.span> */}
+          </Link>
 
-          <div className="mt-3">
+          <div className="mt-3 px-4">
             <p className="text-lg">Miss Thu Restaurant</p>
 
             <motion.p
@@ -256,14 +258,14 @@ export default function ProjectPage() {
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Designer
+              Miss Thu
             </motion.p>
           </div>
         </motion.div>
 
         {/* ITEM 6 */}
                 <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
+          <Link href={"/projects/eightball#top"} className="relative overflow-hidden">
             <motion.img
                                                               onMouseEnter={() =>
   window.dispatchEvent(
@@ -280,16 +282,16 @@ export default function ProjectPage() {
               variants={imgVariants}
             />
 
-            <motion.span
+            {/* <motion.span
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
             >
               '06
-            </motion.span>
-          </div>
+            </motion.span> */}
+          </Link>
 
-          <div className="mt-3">
+          <div className="mt-3 px-4">
             <p className="text-lg">Flora Panorama</p>
 
             <motion.p
@@ -297,7 +299,7 @@ export default function ProjectPage() {
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Designer
+              Nam Long Group
             </motion.p>
           </div>
         </motion.div>

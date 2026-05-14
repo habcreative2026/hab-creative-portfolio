@@ -295,7 +295,7 @@ Flyer,…</p>
 }
     href={"/projects/Le-Palmier-Ho-Tram#top"} className="relative overflow-hidden h-[320px]">
       <img
-        src="/project_le_palmier_ho_tram/le_palmier_ho_tram.avif"
+        src="/project_le_palmier_ho_tram/avt.jpg"
         className="w-full h-full object-cover transition-transform duration-500 cursor-none"
       />
       <span className="absolute bottom-2 left-3 text-white text-[24px] mix-blend-difference">

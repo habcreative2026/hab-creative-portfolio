@@ -235,20 +235,22 @@ export default function FooterPage() {
 
         {/* Left */}
         <motion.div variants={item} className="text-center md:text-left">
-          <p className="cursor-pointer hover:text-gray-300">©2026 Tibirox™.</p>
-          <p className="cursor-pointer hover:text-gray-300">All rights reserved.</p>
+          <p className="cursor-pointer hover:text-gray-300">Developer by HTB</p>
+          {/* <p className="cursor-pointer hover:text-gray-300">©2026 HAB Creative.</p> */}
+          {/* <p className="cursor-pointer hover:text-gray-300">All rights reserved.</p> */}
         </motion.div>
 
         {/* Center */}
-        <motion.div variants={item} className="text-cebter">
+        {/* <motion.div variants={item} className="text-cebter">
           <p className="cursor-pointer hover:text-gray-300">Privacy</p>
           <p className="cursor-pointer hover:text-gray-300">Terms</p>
-        </motion.div>
+        </motion.div> */}
 
         {/* Right */}
         <motion.div variants={item} className="text-center md:text-right">
-          <p className="cursor-pointer hover:text-gray-300">Built in Tibirox</p>
-          <p className="cursor-pointer hover:text-gray-300">Created by Bht</p>
+          <p className="cursor-pointer hover:text-gray-300">©2026 HAB Creative.</p>
+          {/* <p className="cursor-pointer hover:text-gray-300">Developer by HTB</p> */}
+          {/* <p className="cursor-pointer hover:text-gray-300">Created by HTB</p> */}
         </motion.div>
 
       </motion.div>

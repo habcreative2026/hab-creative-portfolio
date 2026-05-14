@@ -4,6 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState({
+  name: "",
+  email: "",
+  phone: "",
+  company: "",
+});
+
+const [clicked, setClicked] = useState(false);
+
+const isFormValid =
+  formData.name.trim() &&
+  formData.email.trim() &&
+  formData.phone.trim() &&
+  formData.company.trim();
 
 const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -39,8 +53,8 @@ useEffect(() => {
     <div className="min-h-screen px-4 pt-40">
 
       {/* Header text */}
-      <div className="max-w-3xl">
-        <p className="max-w-auto leading-snug font-bold text-[24px]">
+      <div className="max-w-3xl mb-20 px-2">
+        <p className="max-w-auto leading-snug font-bold text-[32px]">
           I’m open to new ideas, whether it’s a full project, a collaboration, or just an early concept. 
           Let’s bring it to life together.
         </p>
@@ -53,14 +67,19 @@ useEffect(() => {
 <div className="flex flex-col gap-6">
 
   {/* 2 cột - 2 hàng */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
 
     {/* Họ tên */}
     <div>
       <input
         type="text"
-        placeholder="Họ tên*"
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-lg"
+        placeholder="Full name*"
+        value={formData.name}
+        onChange={(e) =>
+          setFormData({ ...formData, name: e.target.value })
+        }
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        required
       />
     </div>
 
@@ -69,7 +88,12 @@ useEffect(() => {
       <input
         type="email"
         placeholder="Email*"
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-lg"
+        value={formData.email}
+        onChange={(e) =>
+          setFormData({ ...formData, email: e.target.value })
+        }
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        required
       />
     </div>
 
@@ -77,8 +101,13 @@ useEffect(() => {
     <div>
       <input
         type="tel"
-        placeholder="Số điện thoại*"
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-lg"
+        placeholder="Phone number*"
+        value={formData.phone}
+        onChange={(e) =>
+          setFormData({ ...formData, phone: e.target.value })
+        }
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        required
       />
     </div>
 
@@ -86,93 +115,106 @@ useEffect(() => {
     <div>
       <input
         type="text"
-        placeholder="Công ty*"
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-lg"
+        placeholder="Company"
+        value={formData.company}
+        onChange={(e) =>
+          setFormData({ ...formData, company: e.target.value })
+        }
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        required
       />
     </div>
   </div>
 
   {/* Dropdown dịch vụ */}
-<div ref={dropdownRef} className="relative w-full">
+  <div ref={dropdownRef} className="relative w-full">
 
-  {/* Trigger */}
-  <button
-    type="button"
-    onClick={() => setOpen(!open)}
-    className="w-full border border-gray-300 focus:border-gray-900 rounded-md px-2 py-2 text-left text-lg bg-white text-black"
-  >
-    {selected || "Bạn cần tư vấn về dịch vụ nào?"}
+    {/* Trigger */}
+    <button
+      type="button"
+      onClick={() => setOpen(!open)}
+      className="w-full border border-gray-300 focus:border-gray-900 rounded-md px-2 py-2 text-left text-[18px] text-gray-600 bg-white"
+    >
+      {selected || "What service do you need advise on?"}
 
-    <ChevronDown
-      size={20}
-      className={`absolute right-3 top-1/2 -translate-y-1/2 transition-transform duration-300
-      ${open ? "rotate-180" : "rotate-0"}
-      `}
-    />
-  </button>
+      <ChevronDown
+        size={20}
+        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-transform duration-300
+        ${open ? "rotate-180" : "rotate-0"}
+        `}
+      />
+    </button>
 
-  {/* Dropdown */}
-  {open && (
-    <div className="absolute left-0 mt-1 w-full rounded bg-[#DFDFDF] overflow-hidden z-50 py-2">
+    {/* Dropdown */}
+    {open && (
+      <div className="absolute left-0 mt-1 w-full rounded bg-[#ebebeb] overflow-hidden z-50 py-2">
 
-      {services.map((service, index) => (
-        <button
-          key={index}
-          type="button"
-          onClick={() => {
-            setSelected(service);
-            setOpen(false);
-          }}
-          className="w-full px-2 py-2 text-left transition-colors duration-300 group"
-        >
-          <span className="relative inline-block text-black">
-            {service}
+        {services.map((service, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => {
+              setSelected(service);
+              setOpen(false);
+            }}
+            className="w-full px-2 py-2 text-left transition-colors duration-300 group"
+          >
+            <span className="relative inline-block text-black">
+              {service}
 
-            <span
-              className="
-                absolute left-0 bottom-0 h-[2px] w-full bg-gray-500
-                scale-x-0 origin-right
-                transition-transform duration-300
-                group-hover:scale-x-100 group-hover:origin-left
-              "
-            />
-          </span>
-        </button>
-      ))}
-    </div>
-  )}
-</div>
+              <span
+                className="
+                  absolute left-0 bottom-0 h-[2px] w-full bg-gray-500
+                  scale-x-0 origin-right
+                  transition-transform duration-300
+                  group-hover:scale-x-100 group-hover:origin-left
+                "
+              />
+            </span>
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
 
   {/* Project details */}
-  <div>
+  <div className="px-2">
     <label className="text-xs text-gray-500">Project details</label>
     <textarea
-      placeholder="Enter details"
-      className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg h-40"
+      placeholder="Message"
+      className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg h-30"
     />
   </div>
 
   {/* Button */}
-  <button onMouseEnter={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "userdefault" })
-  )
-}
+  <button
+    onClick={() => {
+      if (isFormValid) {
+        setClicked(true);
+      }
+    }}
+  onMouseEnter={() =>
+    window.dispatchEvent(
+      new CustomEvent("cursor-change", { detail: "userdefault" })
+    )
+  }
   onMouseLeave={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "default" })
-  ) } className="bg-black text-white rounded-full px-20 py-3 w-fit hover:bg-white
-    hover:text-black
-    hover:border-black border border-black">
-    Get in touch
+    window.dispatchEvent(
+      new CustomEvent("cursor-change", { detail: "default" })
+    )
+  }
+  className="bg-black text-white rounded-full px-20 py-3 w-fit hover:text-white
+  hover:text-black hover:border-black border border-black transition-all duration-300 cursor-none"
+>
+  {clicked ? "Thank you" : "Get in touch"}
   </button>
 
 </div>
 
         {/* RIGHT - PROFILE */}
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1 -mt-32 -pt-32">
 
-          <p className="text-xs text-gray-500">(Creative Designer)</p>
+          {/* <p className="text-xs text-gray-500">(Creative Designer)</p> */}
 
           <img
             src="/avt_bhq.jpg"
@@ -201,7 +243,7 @@ useEffect(() => {
         Email
       </span>
       <span className="hidden group-hover:block text-white">
-        buihaiqui@gmail.com
+        hello@habcreative.com
       </span>
     </span>
   </a> 
@@ -226,7 +268,7 @@ useEffect(() => {
         Phone number
       </span>
       <span className="hidden group-hover:block text-white">
-        +84925555958 
+        +84 92 5555 958 
       </span>
     </span>
   </a>
@@ -252,7 +294,7 @@ useEffect(() => {
       Based in
     </span>
     <span className="hidden group-hover:block text-white">
-      TpHcm, Vietnamese
+      Ho Chi Minh City, Vietnam
     </span>
   </span>
 </a>

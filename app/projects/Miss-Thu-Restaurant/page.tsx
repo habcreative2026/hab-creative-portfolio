@@ -34,10 +34,9 @@ export default function MissThuRestaurantPage() {
   {/* LEFT TEXT */}
   <div className="col-span-2 max-w-2xl">
     <p className="max-w-auto leading-relaxed font-medium font-inter text-[20px] px-4">
-     <span className="font-bold">Le Palmier Ho Tram</span> tọa lạc bên bờ biển Hồ Tràm là nơi để bạn tận hưởng 
-     một kì nghỉ dưỡng trong không gian ấm áp, 
-     thân thiện. Đáp ứng đủ nhu cầu tiện ích để trải nghiệm tốt 
-     nhất kỳ nghỉ của bạn.
+     Miss Thu là một nhà hàng được xây dựng theo hướng <span className="font-bold">“story-led restaurant”</span>. 
+     Lấy cảm hứng từ ký ức tuổi thơ ở Sài Gòn xưa tạo nên một 
+     không gian ẩm thực vừa quen thuộc, vừa hiện đại và giàu cảm xúc.
     </p>
   </div>
 
@@ -50,13 +49,13 @@ export default function MissThuRestaurantPage() {
     {/* Company */}
     <div>
       <p className="text-[18px] font-inter font-bold">Company</p>
-      <p className="text-[16px] font-inter">Dong Tay Holding</p>
+      <p className="text-[16px] font-inter">Miss Thu</p>
     </div>
 
     {/* Timeline (đã kéo vào bên trái tự nhiên bằng gap) */}
     <div>
       <p className="text-[18px] font-inter font-bold">Timeline</p>
-      <p className="text-[16px] font-inter">2022</p>
+      <p className="text-[16px] font-inter">2021</p>
     </div>
 
   </div>
@@ -64,10 +63,7 @@ export default function MissThuRestaurantPage() {
   {/* Role */}
   <div>
     <p className="text-[18px] font-inter font-bold">Category</p>
-    <p className="text-[16px] font-inter">Invitation,
-Social Media,
-Social Poster,
-Flyer,…</p>
+    <p className="text-[16px] font-inter">Branding</p>
   </div>
 
   {/* Live */}
@@ -145,7 +141,7 @@ Flyer,…</p>
   <source src="/project_miss_thu_restaurant/video_v2.mp4" type="video/mp4" />
 </video>
 
-  <div className="grid grid-cols-2">
+  {/* <div className="grid grid-cols-2">
 <img 
 src="/project_miss_thu_restaurant/1.jpg"
 className="w-full h-full object-cover"
@@ -159,13 +155,13 @@ alt="XXX"
         </p>
       </div>
 
-</div>
+</div> */}
 <img 
 src="/project_miss_thu_restaurant/2.jpg"
 className="w-full h-full object-cover"
 alt="XXX"
 />
-  <div className="grid grid-cols-2 mt-6">
+  {/* <div className="grid grid-cols-2 mt-6">
 <div>
     <p className="font-inter text-[28px] leading-sugn max-w-[320px]">
     Câu chuyện về sắc độ quý phái và sang trọng
@@ -179,7 +175,7 @@ alt="XXX"
         </p>
       </div>
 
-</div>
+</div> */}
   <div className="grid grid-cols-2 gap-2 mt-8">
 
       <img

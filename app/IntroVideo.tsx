@@ -106,12 +106,12 @@ export default function IntroVideo({ onFinish }: { onFinish: () => void }) {
             </div> */}
 
             {/* FADE OUT */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.8, duration: 0.6 }}
               className="absolute inset-0 bg-black z-40 pointer-events-none"
-            />
+            /> */}
           </>
         )}
       </AnimatePresence>
