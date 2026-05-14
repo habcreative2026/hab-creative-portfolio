@@ -56,7 +56,7 @@ export default function ProjectPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 gap-y-10">
 
-        {/* ITEM 1 */}
+        {/* ITEM 1 */} 
         <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
           <div className="relative overflow-hidden">
             <motion.img
@@ -70,12 +70,12 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="https://framerusercontent.com/images/KEjcFcCuYenJ9eQP0EZizbmck.webp?width=1200"
+              src="/project_the_beverly/vinhomes_grand_park.avif"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
 
-            <motion.span
+            <motion.span 
               className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
               variants={numberVariants}
               transition={numberTransition}
@@ -85,14 +85,14 @@ export default function ProjectPage() {
           </div>
 
           <div className="mt-3">
-            <p className="text-lg">Lightspeed, UK</p>
+            <p className="text-lg">The Beverly, HCMC</p>
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Product Design · Web Design
+              Designer
             </motion.p>
           </div>
         </motion.div>
@@ -111,7 +111,7 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="https://framerusercontent.com/images/N81w6fWVhPDX2mWpO8SylHjEKok.webp?width=1200"
+              src="/project_le_palmier_ho_tram/le_palmier_ho_tram.avif"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
@@ -126,14 +126,14 @@ export default function ProjectPage() {
           </div>
 
           <div className="mt-3">
-            <p className="text-lg">CloudWatch, Norway</p>
+            <p className="text-lg">Le Palmier Ho Tram</p>
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Web Design · Development
+              Designer
             </motion.p>
           </div>
         </motion.div>
@@ -152,7 +152,7 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="https://framerusercontent.com/images/N81w6fWVhPDX2mWpO8SylHjEKok.webp?width=1200"
+              src="/project_beer_club_z70/beer_club_z70.avif"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
@@ -167,14 +167,14 @@ export default function ProjectPage() {
           </div>
 
           <div className="mt-3">
-            <p className="text-lg">CloudWatch, Norway</p>
+            <p className="text-lg">Beer Club Z70</p>
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Web Design · Development
+              Designer
             </motion.p>
           </div>
         </motion.div>
@@ -193,7 +193,7 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="https://framerusercontent.com/images/N81w6fWVhPDX2mWpO8SylHjEKok.webp?width=1200"
+              src="/project_sunneva_island_da_nang/sunneva_island_da_nang.avif"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
@@ -208,14 +208,14 @@ export default function ProjectPage() {
           </div>
 
           <div className="mt-3">
-            <p className="text-lg">CloudWatch, Norway</p>
+            <p className="text-lg">Sunneva Island Da Nang</p>
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Web Design · Development
+              Designer
             </motion.p>
           </div>
         </motion.div>
@@ -234,7 +234,7 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="https://framerusercontent.com/images/N81w6fWVhPDX2mWpO8SylHjEKok.webp?width=1200"
+              src="/project_miss_thu_restaurant/avt.jpg"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
@@ -249,14 +249,14 @@ export default function ProjectPage() {
           </div>
 
           <div className="mt-3">
-            <p className="text-lg">CloudWatch, Norway</p>
+            <p className="text-lg">Miss Thu Restaurant</p>
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Web Design · Development
+              Designer
             </motion.p>
           </div>
         </motion.div>
@@ -275,7 +275,7 @@ export default function ProjectPage() {
     new CustomEvent("cursor-change", { detail: "default" })
   )
 }
-              src="https://framerusercontent.com/images/N81w6fWVhPDX2mWpO8SylHjEKok.webp?width=1200"
+              src="/project_flora_panorama/flora_panorama.avif"
               className="w-full h-[520px] object-cover cursor-none"
               variants={imgVariants}
             />
@@ -290,58 +290,18 @@ export default function ProjectPage() {
           </div>
 
           <div className="mt-3">
-            <p className="text-lg">CloudWatch, Norway</p>
+            <p className="text-lg">Flora Panorama</p>
 
             <motion.p
               variants={text2Variants}
               transition={smooth}
               className="text-sm text-gray-500"
             >
-              Web Design · Development
+              Designer
             </motion.p>
           </div>
         </motion.div>
-        
-        {/* ITEM 7 */}
-                <motion.div initial="rest" whileHover="hover" animate="rest" className="cursor-pointer">
-          <div className="relative overflow-hidden">
-            <motion.img
-                                                              onMouseEnter={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "image" })
-  )
-}
-  onMouseLeave={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "default" })
-  )
-}
-              src="https://framerusercontent.com/images/N81w6fWVhPDX2mWpO8SylHjEKok.webp?width=1200"
-              className="w-full h-[520px] object-cover cursor-none"
-              variants={imgVariants}
-            />
-
-            <motion.span
-              className="absolute top-2 left-2 text-gray-500 text-4xl mix-blend-difference"
-              variants={numberVariants}
-              transition={numberTransition}
-            >
-              '07
-            </motion.span>
-          </div>
-
-          <div className="mt-3">
-            <p className="text-lg">CloudWatch, Norway</p>
-
-            <motion.p
-              variants={text2Variants}
-              transition={smooth}
-              className="text-sm text-gray-500"
-            >
-              Web Design · Development
-            </motion.p>
-          </div>
-        </motion.div>
+      
       </div>
     </div>
   );

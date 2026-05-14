@@ -16,9 +16,10 @@ export default function NavbarPage() {
   const { scrollY } = useScroll();
 
   useEffect(() => {
-  audioRef.current = new Audio("/music.mp3");
-  audioRef.current.loop = true;
-  audioRef.current.volume = 0.3;
+audioRef.current = new Audio("/music.mp3");
+audioRef.current.loop = true;
+audioRef.current.volume = 0.3;
+audioRef.current.preload = "auto";
 
   const currentScroll = scrollY.get();
   setIsScrolled(currentScroll > 100);
@@ -61,6 +62,43 @@ const toggleSound = () => {
   }
 };
 
+useEffect(() => {
+  const handleFirstInteraction = async () => {
+    if (!audioRef.current) return;
+
+    try {
+      await audioRef.current.play();
+
+      setPlaying(true);
+
+      window.dispatchEvent(
+        new CustomEvent("sound-change", {
+          detail: true,
+        })
+      );
+    } catch (error) {
+      console.error("Audio autoplay blocked:", error);
+    } finally {
+      window.removeEventListener(
+        "pointerdown",
+        handleFirstInteraction
+      );
+    }
+  };
+
+  window.addEventListener(
+    "pointerdown",
+    handleFirstInteraction,
+    { once: true }
+  );
+
+  return () => {
+    window.removeEventListener(
+      "pointerdown",
+      handleFirstInteraction
+    );
+  };
+}, []);
   return (
     <header className="fixed top-0 left-0 w-full bg-white font-sans py-2 z-50">
       <style

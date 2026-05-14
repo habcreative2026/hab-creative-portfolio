@@ -298,7 +298,7 @@ const contentY = useSpring(contentYRaw, {
    <Link href={"/projects"} className="mt-2">
 
       {/* Top right link */}
-      <div className="flex justify-end mb-40">
+      <div className="flex justify-end mb-40 mt-4">
 <span className="relative cursor-pointer text-[42px] font-bold group">
   View all projects (17)
 
@@ -321,7 +321,7 @@ const contentY = useSpring(contentYRaw, {
       
       {/* Left */}
       <motion.div variants={item}>
-        <h2 className="text-[160px] font-bold leading-none">9</h2>
+        <h2 className="text-[160px] font-bold leading-none">7</h2>
         <p className="text-[50px] text-gray-600 -mt-4">
           Years of Experience
         </p>
@@ -381,7 +381,27 @@ const contentY = useSpring(contentYRaw, {
             <motion.span
               key={i}
               variants={item}
-              className="px-6 py-4 bg-gray-200 rounded-full text-sm"
+        className="
+  px-6 py-4
+  rounded-full
+  text-sm
+  bg-gray-200
+  text-black
+  border border-transparent
+  transition-all duration-200 ease-out
+  hover:bg-white
+  hover:text-black
+  hover:border-black
+"
+              onMouseEnter={() =>
+  window.dispatchEvent(
+    new CustomEvent("cursor-change", { detail: "userdefault" })
+  )
+}
+  onMouseLeave={() =>
+  window.dispatchEvent(
+    new CustomEvent("cursor-change", { detail: "default" })
+  ) } 
             >
               {itemText}
             </motion.span>

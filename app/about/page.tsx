@@ -53,10 +53,9 @@ export default function AboutPage() {
                                 className="text-[24px] leading-relaxed font-semibold -mt-4"
                                 style={{ textIndent: "100px" }}
                             >
-                                I’m Elliot Rowe, a digital product designer and creative developer
-                                passionate about shaping experiences at the crossroads of design
-                                and technology. Since 2016, I’ve crafted everything from bold brand
-                                identities to digital platforms.
+                                I’m Qui Bui, a digital product designer and creative developer passionate about shaping experiences at 
+                                the crossroads of design and technology. Since 2019, I’ve crafted everything from bold brand identities 
+                                to digital platforms.
                             </p>
                         </motion.div>
 
