@@ -194,12 +194,12 @@ const words = text.split(" ");
     md:text-[34px]
     lg:text-[38px]
     font-semibold
-    leading-[1]
+    leading-normal
     tracking-[-0.05em]
     flex flex-wrap
   "
 >
-  {words.map((word, i) => {
+  {words.map((word, i) => { 
 
     const start = i / words.length * 0.85;
 const end = start + 0.12;

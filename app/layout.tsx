@@ -2,11 +2,11 @@ import "./globals.css";
 import ClientLayout from "./ClientLayout";
 
 export const metadata = {
-  title: "Hab Creative - Designer",
+  title: "HAB Creative",
   description: "Mô tả",
-  //   icons: {
-  //   icon: "/icon.png?=999",
-  // },
+    icons: {
+    icon: "/icon.png?=999",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

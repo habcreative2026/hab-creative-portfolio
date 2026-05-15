@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
+const initialFormData = {
   name: "",
   email: "",
   phone: "",
   company: "",
-});
+  message: "",
+};
+
+const [formData, setFormData] = useState(initialFormData);
 
 const [clicked, setClicked] = useState(false);
 
@@ -49,11 +52,12 @@ useEffect(() => {
 
   const [selected, setSelected] = useState("");
   const [open, setOpen] = useState(false);
+
   return (
     <div className="min-h-screen px-4 pt-40">
 
       {/* Header text */}
-      <div className="max-w-3xl mb-20 px-2">
+      <div className="max-w-3xl mb-10 px-2">
         <p className="max-w-auto leading-snug font-bold text-[32px]">
           I’m open to new ideas, whether it’s a full project, a collaboration, or just an early concept. 
           Let’s bring it to life together.
@@ -78,7 +82,7 @@ useEffect(() => {
         onChange={(e) =>
           setFormData({ ...formData, name: e.target.value })
         }
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px]"
         required
       />
     </div>
@@ -92,7 +96,7 @@ useEffect(() => {
         onChange={(e) =>
           setFormData({ ...formData, email: e.target.value })
         }
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px]"
         required
       />
     </div>
@@ -106,7 +110,7 @@ useEffect(() => {
         onChange={(e) =>
           setFormData({ ...formData, phone: e.target.value })
         }
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px]"
         required
       />
     </div>
@@ -120,7 +124,7 @@ useEffect(() => {
         onChange={(e) =>
           setFormData({ ...formData, company: e.target.value })
         }
-        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-xl"
+        className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px]"
         required
       />
     </div>
@@ -179,20 +183,30 @@ useEffect(() => {
 
   {/* Project details */}
   <div className="px-2">
-    <label className="text-xs text-gray-500">Project details</label>
-    <textarea
-      placeholder="Message"
-      className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-lg h-30"
-    />
+    <label className="text-sm text-gray-500">Project details</label>
+<textarea
+  placeholder="Message"
+  value={formData.message}
+  onChange={(e) =>
+    setFormData({ ...formData, message: e.target.value })
+  }
+  className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-[16px] h-30"
+/>
   </div>
 
   {/* Button */}
-  <button
-    onClick={() => {
-      if (isFormValid) {
-        setClicked(true);
-      }
-    }}
+<button
+  onClick={() => {
+    if (isFormValid) {
+      setClicked(true);
+
+      // reset input
+      setFormData(initialFormData);
+
+      // reset dropdown
+      setSelected("");
+    }
+  }}
   onMouseEnter={() =>
     window.dispatchEvent(
       new CustomEvent("cursor-change", { detail: "userdefault" })
@@ -203,25 +217,30 @@ useEffect(() => {
       new CustomEvent("cursor-change", { detail: "default" })
     )
   }
-  className="bg-black text-white rounded-full px-20 py-3 w-fit hover:text-white
-  hover:text-black hover:border-black border border-black transition-all duration-300 cursor-none"
+  className="
+    bg-black text-white
+    hover:bg-white hover:text-black
+    rounded-full px-20 py-3 w-fit
+    border border-black
+    transition-all duration-300 cursor-none
+  "
 >
   {clicked ? "Thank you" : "Get in touch"}
-  </button>
+</button>
 
 </div>
 
         {/* RIGHT - PROFILE */}
-        <div className="flex flex-col items-end gap-1 -mt-32 -pt-32">
+        <div className="flex flex-col items-end gap-1 -mt-43 -pt-43">
 
           {/* <p className="text-xs text-gray-500">(Creative Designer)</p> */}
 
           <img
             src="/avt_bhq.jpg"
-            className="w-[340px] h-[440px] object-cover"
+            className="w-[440px] h-[440px] object-cover"
           />
 
-<div className="w-[340px] text-sm flex flex-col">
+<div className="w-[440px] text-sm flex flex-col">
 
   {/* Email */}
   <a

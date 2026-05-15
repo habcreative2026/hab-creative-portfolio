@@ -13,7 +13,7 @@ export default function AboutPage() {
         mass: 0.7 
     })
 
-    const titleYRaw = useTransform(scrollY, [0, 600], [0, 250])
+    const titleYRaw = useTransform(scrollY, [0, 1000], [0, 250])
     const titleY = useSpring(titleYRaw, {
         stiffness: 50,
         damping: 25,
@@ -28,7 +28,7 @@ export default function AboutPage() {
                 <div className="sticky top-0 h-screen grid grid-cols-2 items-start">
 
 
-                    <div className="relative z-20 flex flex-col justify-between h-[500px]">
+                    <div className="relative z-20 flex flex-col justify-between h-[450px]">
 
                         <motion.h1
                             style={{ y: titleY }}
@@ -65,7 +65,7 @@ export default function AboutPage() {
 
                             <img
                                 src="/avt_bhq.jpg" 
-                                className="w-[340px] h-[440px] object-cover"
+                                className="w-[680px] h-[440px] object-cover"
                                 alt=""
                             />
                       
@@ -99,7 +99,7 @@ export default function AboutPage() {
     </div>
 
                     {/* Column headers */}
-                    <div className="grid grid-cols-[40%_15%_20%_15%] text-xs font-semibold text-gray-400 mb-2">
+                    <div className="grid grid-cols-[40%_20%_20%_20%] text-xs font-semibold text-gray-400 mb-2">
                         <div>Position</div>
                         <div>Type</div>
                         <div>Company</div>
@@ -108,31 +108,31 @@ export default function AboutPage() {
 
                     {/* Experience data */}
                     <div className="space-y-4 text-[24px] font-semibold">
-                        <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                        <div className="grid grid-cols-[40%_20%_20%_20%] border-t py-3">
                             <div>Founder & Creative Director</div>
                             <div>Full-time</div>
                             <div>HAB Creative</div>
                             <div>2025 — Present</div>
                         </div>
-                        {/* <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                        {/* <div className="grid grid-cols-[40%_20%_20%_20%] border-t py-3">
                             <div>Design Engineer</div>
                             <div>Full-time</div>
                             <div>Pearlfisher</div>
                             <div>2019 — 2021</div>
                         </div> */}
-                        <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                        <div className="grid grid-cols-[40%_20%_20%_20%] border-t py-3">
                             <div>Creative Designer</div>
                             <div>Full-time</div>
                             <div>Dong Tay Land</div>
                             <div>2021 — 2024</div>
                         </div>
-                        <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                        <div className="grid grid-cols-[40%_20%_20%_20%] border-t py-3">
                             <div>Creative Designer</div>
                             <div>Full-time</div>
                             <div>Alpha Creative</div>
                             <div>2019 — 2021</div>
                         </div>
-                        {/* <div className="grid grid-cols-[40%_15%_20%_15%] border-t py-3">
+                        {/* <div className="grid grid-cols-[40%_20%_20%_20%] border-t py-3">
                             <div>Junior Web Designer</div>
                             <div>Full-time</div>
                             <div>Pentagram</div>
@@ -162,13 +162,13 @@ export default function AboutPage() {
                     <div className="space-y-4 text-[24px] font-semibold mb-20">
                         <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
                             <div>WorldSkills Vietnam 2018</div>
-                            <div>First prize winner of the Ministry of Industry and Trade's WorldSkills Vietnam competition in Graphic Design.</div>
-                            <div>2025</div>
+                            <div>National First Prize – Vietnam WorldSkills Graphic Design.</div>
+                            <div>5/2018</div>
                         </div>
                         <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
                             <div>WorldSkills Vietnam 2018</div>
-                            <div>First prize winner at the WorldSkills Vietnam national skills competition in Graphic Design.</div>
-                            <div>2024</div>
+                            <div>1st Prize – WorldSkills Vietnam | MOIT.</div>
+                            <div>3/2018</div>
                         </div>
                         {/* <div className="grid grid-cols-[30%_50%_10%] border-t py-3">
                             <div>CSSDA</div>

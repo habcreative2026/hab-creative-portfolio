@@ -128,11 +128,11 @@ onMouseLeave={() =>
   window.dispatchEvent(
     new CustomEvent("cursor-change", { detail: "default" })
   )
-} className="text-[22px] font-bold leading-none tracking-tighter uppercase mt-1.5 cursor-none">
+} className="text-[22px] font-bold leading-none tracking-tighter uppercase cursor-none">
             <img 
             src="/logo_bhq.png"
             alt="logo"
-            className="w-15 h-15 object-cover"
+            className="w-full h-9 object-cover"
             />
             {/* BHQ */}
           </h1>
