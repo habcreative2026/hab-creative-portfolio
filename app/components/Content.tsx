@@ -319,7 +319,7 @@ const contentY = useSpring(contentYRaw, {
     w-full
     [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]
     [-webkit-mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]
-    mb-16 mt-8 pt-8
+    mb-24 mt-8 pt-8
   "
 >
   <div className="flex w-max animate-marquee">
@@ -347,12 +347,13 @@ const contentY = useSpring(contentYRaw, {
     </div>
 
 
-<AboutRevealSection  />
+
+  <AboutRevealSection  />
 <motion.div
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-100px" }}
-      className="bg-white relative mt-20 pt-20 w-full flex items-center justify-center"
+      className="bg-white relative mt-28 pt-28 mb-20 w-full flex items-center justify-center"
     >
       {/* Container trung tâm */}
       <div className="relative w-[96px] h-[96px]">

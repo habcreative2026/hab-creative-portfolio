@@ -21,11 +21,6 @@ const words = text.split(" ");
     offset: ["start start", "end end"],
   });
 
-  /*
-  ========================================
-  TEXT REVEAL
-  ========================================
-  */
 
   const line1 = useTransform(
     scrollYProgress,
@@ -82,9 +77,6 @@ const words = text.split(" ");
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-black">
 
-        {/* ===================================== */}
-        {/* BG */}
-        {/* ===================================== */}
 
         <div className="absolute inset-0 overflow-hidden">
 
@@ -194,12 +186,13 @@ const words = text.split(" ");
               </span>
             </div>
 
-            {/* TEXT */}
 <div
   className="
     
     max-w-auto
-    text-[60px]
+    text-[30px]
+    md:text-[34px]
+    lg:text-[38px]
     font-semibold
     leading-[1]
     tracking-[-0.05em]

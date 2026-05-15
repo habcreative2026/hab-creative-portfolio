@@ -64,8 +64,8 @@ export default function AboutPage() {
                     <div className="relative z-10 flex justify-end">
 
                             <img
-                                src="/avt_bhq.jpg"
-                                className="w-full h-[500px] object-cover"
+                                src="/avt_bhq.jpg" 
+                                className="w-[340px] h-[440px] object-cover"
                                 alt=""
                             />
                       
@@ -74,7 +74,7 @@ export default function AboutPage() {
                             style={{ y: textY }}
                             className="absolute bottom-4 right-4 z-30 mix-blend-difference text-white text-[24px] whitespace-nowrap"
                         >
-                            2018 — Today
+                            2019 — Today
                         </motion.div>
 
                     </div>
