@@ -7,7 +7,21 @@ import Marquee from "./Marquee";
 import { useLanguage } from "../i18n/LanguageContext";
 
 export default function ContentPage( ) {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 640);
+  };
+
+  checkMobile();
+
+  window.addEventListener("resize", checkMobile);
+
+  return () => {
+    window.removeEventListener("resize", checkMobile);
+  };
+}, []);
 const controls = useAnimationControls();
 
 useEffect(() => {
@@ -95,11 +109,8 @@ const contentY = useSpring(contentYRaw, {
     >
       <p
         className="text-[18px] sm:text-[16px] sm:text-[20px] md:text-[24px] md:text-[32px] font-bold leading-tight"
-        style={{
-  textIndent:
-    typeof window !== "undefined" && window.innerWidth < 640
-      ? "60px"
-      : "70px",
+style={{
+  textIndent: isMobile ? "60px" : "70px",
 }}
       >
         {t.text}
@@ -369,11 +380,8 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
 
           <h2
             className="text-[20px] sm:text-[26px] md:text-[32px] font-bold leading-tight max-w-[700px] -mt-2"
-            style={{
-  textIndent:
-    typeof window !== "undefined" && window.innerWidth < 640
-      ? "50px"
-      : "140px",
+style={{
+  textIndent: isMobile ? "50px" : "140px",
 }}
           >
             {t.v5}
