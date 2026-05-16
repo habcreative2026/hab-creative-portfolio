@@ -1,10 +1,11 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function FooterPage() {
+  const { t } = useLanguage();
 
-  // GLOBAL container (cho layout chung)
   const container: Variants = {
     hidden: {},
     show: {
@@ -14,7 +15,6 @@ export default function FooterPage() {
     },
   };
 
-  // GLOBAL item
   const item: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: {
@@ -24,7 +24,6 @@ export default function FooterPage() {
     },
   };
 
-  // SOCIAL container (chậm hơn + riêng biệt)
   const socialContainer: Variants = {
     hidden: {},
     show: {
@@ -35,7 +34,6 @@ export default function FooterPage() {
     },
   };
 
-  // SOCIAL item (mượt + rõ nhịp)
   const socialItem: Variants = {
     hidden: {
       opacity: 0,
@@ -60,201 +58,310 @@ export default function FooterPage() {
       variants={container}
       className="text-black pt-16 pb-4 px-4 md:px-4 lg:px-4"
     >
+      <motion.div
+        variants={item}
+        className="border-t border-gray-300 mb-10"
+      />
 
-      {/* Top border */}
-      <motion.div variants={item} className="border-t border-gray-300 mb-10" />
-
-      {/* Top section */}
-      <motion.div variants={container} className="grid grid-cols-1 md:grid-cols-3 items-start gap-8 md:gap-0">
-
-        {/* LEFT - Newsletter */}
-        <motion.div variants={item} className="text-center md:text-left">
+      <motion.div
+        variants={container}
+        className="
+          grid
+          grid-cols-1
+          md:grid-cols-3
+          items-start
+          gap-10
+          md:gap-6
+          lg:gap-0
+        "
+      >
+        {/* LEFT */}
+        <motion.div
+          variants={item}
+          className="text-center md:text-left w-full"
+        >
           <p className="text-xs text-gray-600 mb-6">
-            Subscribe to my newsletter
+            {t.v7}
           </p>
 
           <div className="mb-4 flex justify-center md:justify-start">
             <input
-            placeholder="Email *"
+              placeholder="Email *"
               type="email"
-              className="w-full max-w-[300px] border-b border-gray-300 bg-transparent outline-none pb-2 focus:border-gray-500"
+              className="
+                w-full
+                max-w-[300px]
+                border-b
+                border-gray-300
+                bg-transparent
+                outline-none
+                pb-2
+                focus:border-gray-500
+              "
             />
           </div>
 
-          <button                   onMouseEnter={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "userdefault" })
-  )
-}
-  onMouseLeave={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "default" })
-  )
-} className="mt-2 bg-black text-white w-full max-w-[300px] py-4 rounded-full text-sm cursor-none transition-all duration-300
-    hover:bg-white
-    hover:text-black
-    hover:border-black border border-black ">
-            Subscribe
-          </button>
-        </motion.div>
-
-        {/* CENTER - SOCIAL */}
-<motion.div variants={item} className="flex flex-col items-center mt-8 md:mt-0">
-
-  <p className="text-xs text-gray-600 mb-2">
-    Social
-  </p>
-
-  <motion.div
-    variants={socialContainer}
-    className="text-[28px] font-bold text-left group ml-0 md:ml-18 pl-0 md:pl-6"
-  >
-
-    <motion.p
-      variants={socialItem}
-      onMouseEnter={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "social" })
-        )
-      }
-      onMouseLeave={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "default" })
-        )
-      }
-      className="
-        cursor-none
-        transition-all duration-300
-        group-hover:text-gray-300
-        hover:!text-black
-        text-center md:text-left
-      "
-    >
-      Email
-    </motion.p>
-
-    <motion.p
-      variants={socialItem}
-      onMouseEnter={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "social" })
-        )
-      }
-      onMouseLeave={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "default" })
-        )
-      }
-      className="
-        cursor-none
-        transition-all duration-300
-        group-hover:text-gray-300
-        hover:!text-black
-        text-center md:text-left 
-      "
-    >
-      LinkedIn
-    </motion.p>
-
-    <motion.p
-      variants={socialItem}
-      onMouseEnter={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "social" })
-        )
-      }
-      onMouseLeave={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "default" })
-        )
-      }
-      className="
-        cursor-none
-        transition-all duration-300
-        group-hover:text-gray-300
-        hover:!text-black
-        text-center md:text-left
-      "
-    >
-      Twitter (X)
-    </motion.p>
-
-    <motion.p
-      variants={socialItem}
-      onMouseEnter={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "social" })
-        )
-      }
-      onMouseLeave={() =>
-        window.dispatchEvent(
-          new CustomEvent("cursor-change", { detail: "default" })
-        )
-      }
-      className="
-        cursor-none
-        transition-all duration-300
-        group-hover:text-gray-300
-        hover:!text-black
-        text-center md:text-left
-      "
-    >
-      Dribbble
-    </motion.p>
-
-  </motion.div>
-
-</motion.div>
-
-        {/* RIGHT - Back to top */}
-        <motion.div variants={item} className="flex justify-center md:justify-end mt-8 md:mt-0">
-          <button                   onMouseEnter={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "userdefault" })
-  )
-}
-  onMouseLeave={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "default" })
-  )
-}
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="text-xs cursor-none hover:text-gray-300"
+          <button
+            onMouseEnter={() =>
+              window.dispatchEvent(
+                new CustomEvent("cursor-change", {
+                  detail: "userdefault",
+                })
+              )
+            }
+            onMouseLeave={() =>
+              window.dispatchEvent(
+                new CustomEvent("cursor-change", {
+                  detail: "default",
+                })
+              )
+            }
+            className="
+              mt-2
+              bg-black
+              text-white
+              w-full
+              max-w-[300px]
+              py-4
+              rounded-full
+              text-sm
+              cursor-none
+              transition-all
+              duration-300
+              hover:bg-white
+              hover:text-black
+              hover:border-black
+              border
+              border-black
+            "
           >
-            Back to top
+            {t.sb}
           </button>
         </motion.div>
 
+        {/* CENTER */}
+        <motion.div
+          variants={item}
+className="flex flex-col items-center md:items-start mt-8 md:mt-0 ml-0 pl-0 md:ml-10 md:pl-10 lg:ml-28 lg:pl-28"
+        >
+          <p className="text-xs text-gray-600 mb-2">
+            {t.v8}
+          </p>
+
+          <motion.div
+  variants={socialContainer}
+  className="
+    text-[22px]
+    sm:text-[24px]
+    md:text-[28px]
+    font-bold
+    text-center md:text-left
+    group
+    w-full
+    leading-tight
+  "
+>
+  <motion.p
+    variants={socialItem}
+    onMouseEnter={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "social",
+        })
+      )
+    }
+    onMouseLeave={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "default",
+        })
+      )
+    }
+    className="
+      cursor-none
+      transition-all
+      duration-300
+      group-hover:text-gray-300
+      hover:!text-black
+      text-center md:text-left
+      break-words
+    "
+  >
+    Email
+  </motion.p>
+
+  <motion.p
+    variants={socialItem}
+    onMouseEnter={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "social",
+        })
+      )
+    }
+    onMouseLeave={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "default",
+        })
+      )
+    }
+    className="
+      cursor-none
+      transition-all
+      duration-300
+      group-hover:text-gray-300
+      hover:!text-black
+      text-center md:text-left
+      break-words
+    "
+  >
+    LinkedIn
+  </motion.p>
+
+  <motion.p
+    variants={socialItem}
+    onMouseEnter={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "social",
+        })
+      )
+    }
+    onMouseLeave={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "default",
+        })
+      )
+    }
+    className="
+      cursor-none
+      transition-all
+      duration-300
+      group-hover:text-gray-300
+      hover:!text-black
+      text-center md:text-left
+      break-words
+    "
+  >
+    Twitter (X)
+  </motion.p>
+
+  <motion.p
+    variants={socialItem}
+    onMouseEnter={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "social",
+        })
+      )
+    }
+    onMouseLeave={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", {
+          detail: "default",
+        })
+      )
+    }
+    className="
+      cursor-none
+      transition-all
+      duration-300
+      group-hover:text-gray-300
+      hover:!text-black
+      text-center md:text-left
+      break-words
+    "
+  >
+    Dribbble
+  </motion.p>
+</motion.div>
+        </motion.div>
+
+        {/* RIGHT */}
+        <motion.div
+          variants={item}
+          className="
+            flex
+            justify-center
+            md:justify-end
+            mt-8
+            md:mt-0
+            w-full
+          "
+        >
+          <button
+            onMouseEnter={() =>
+              window.dispatchEvent(
+                new CustomEvent("cursor-change", {
+                  detail: "userdefault",
+                })
+              )
+            }
+            onMouseLeave={() =>
+              window.dispatchEvent(
+                new CustomEvent("cursor-change", {
+                  detail: "default",
+                })
+              )
+            }
+            onClick={() =>
+              window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+              })
+            }
+            className="
+              text-xs
+              cursor-none
+              hover:text-gray-300
+              transition-colors
+              duration-300
+            "
+          >
+            {t.v9}
+          </button>
+        </motion.div>
       </motion.div>
 
-      {/* Bottom section */}
       <motion.div
         variants={container}
-        className="mt-20 pt-6 flex flex-col md:flex-row justify-between items-center md:items-end gap-6 md:gap-0 text-xs font-medium"
+        className="
+          mt-20
+          pt-6
+          flex
+          flex-col
+          md:flex-row
+          justify-between
+          items-center
+          md:items-end
+          gap-6
+          md:gap-0
+          text-xs
+          font-medium
+        "
       >
-
-        {/* Left */}
-        <motion.div variants={item} className="text-center md:text-left">
-          <p className="cursor-pointer hover:text-gray-300">Developer by HTB</p>
-          {/* <p className="cursor-pointer hover:text-gray-300">©2026 HAB Creative.</p> */}
-          {/* <p className="cursor-pointer hover:text-gray-300">All rights reserved.</p> */}
+        {/* LEFT */}
+        <motion.div
+          variants={item}
+          className="text-center md:text-left"
+        >
+          <p className="cursor-pointer hover:text-gray-300">
+            {t.v10}
+          </p>
         </motion.div>
 
-        {/* Center */}
-        {/* <motion.div variants={item} className="text-cebter">
-          <p className="cursor-pointer hover:text-gray-300">Privacy</p>
-          <p className="cursor-pointer hover:text-gray-300">Terms</p>
-        </motion.div> */}
-
-        {/* Right */}
-        <motion.div variants={item} className="text-center md:text-right">
-          <p className="cursor-pointer hover:text-gray-300">©2026 HAB Creative.</p>
-          {/* <p className="cursor-pointer hover:text-gray-300">Developer by HTB</p> */}
-          {/* <p className="cursor-pointer hover:text-gray-300">Created by HTB</p> */}
+        {/* RIGHT */}
+        <motion.div
+          variants={item}
+          className="text-center md:text-right"
+        >
+          <p className="cursor-pointer hover:text-gray-300">
+            ©2026 HAB Creative.
+          </p>
         </motion.div>
-
       </motion.div>
-
     </motion.footer>
   );
 }

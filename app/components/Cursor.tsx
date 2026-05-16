@@ -42,19 +42,14 @@ const Cursor = () => {
     };
   }, []);
 
-// Cursor.tsx
-
 useEffect(() => {
   const handleSound = (e: any) => {
-    // Kiểm tra chính xác dữ liệu từ detail
     if (typeof e.detail === "boolean") {
       setSoundOn(e.detail);
     }
   };
 
   window.addEventListener("sound-change", handleSound);
-  
-  // (Tùy chọn) Gửi một event yêu cầu check trạng thái hiện tại nếu cần
   return () => {
     window.removeEventListener("sound-change", handleSound);
   };
@@ -134,9 +129,6 @@ sound: {
      border: "1px solid rgba(255,255,255,0.2)",
     },
   };
-
-  // const isBlend = variant === "social" || variant === "image";
-
   return (
     <motion.div
       style={{
@@ -182,7 +174,6 @@ backgroundColor:
     </motion.span>
   </div>
 )}
-      {/* SOCIAL icon */}
       {variant === "social" && (
   <svg
     width="16"
@@ -197,7 +188,6 @@ backgroundColor:
   </svg>
 )}
 
-      {/* IMAGE preview */}
       {variant === "image" && (
   <svg
     width="50"

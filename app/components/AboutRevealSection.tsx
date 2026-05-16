@@ -5,14 +5,43 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import { useLanguage } from "../i18n/LanguageContext";
 
 import { useRef } from "react";
 
-export default function AboutRevealSection() {
+function Word({
+  word,
+  i,
+  total,
+  scrollYProgress,
+}: any) {
 
-  const text = `
-Whether it’s building a distinctive brand identity, designing interfaces that feel effortless, or developing websites that perform seamlessly, my work is about turning vision into tangible results. Each service is shaped to not only solve problems but to create opportunities for growth, clarity, and impact.
-`;
+  const start = (i / total) * 0.85;
+  const end = start + 0.12;
+
+  const color = useTransform(
+    scrollYProgress,
+    [start, end],
+    [
+      "rgba(255,255,255,0.08)",
+      "rgba(255,255,255,1)",
+    ]
+  );
+
+  return (
+    <motion.span
+      style={{ color }}
+      className="mr-[0.25em]"
+    >
+      {word}
+    </motion.span>
+  );
+}
+
+export default function AboutRevealSection() {
+  const { t } = useLanguage()
+
+  const text = t.v3;
 
   const words = text.split(" ");
 
@@ -22,12 +51,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
     target: ref,
     offset: ["start start", "end end"],
   });
-
-  /*
-  ========================================
-  BLOBS
-  ========================================
-  */
 
   const blob1Y = useTransform(
     scrollYProgress,
@@ -52,12 +75,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
     [0, 0.4],
     [0.25, 0.9]
   );
-
-  /*
-  ========================================
-  CURVE LINES
-  ========================================
-  */
 
   const curve1Y = useTransform(
     scrollYProgress,
@@ -89,11 +106,7 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
       className="relative h-[240vh] sm:h-[260vh] lg:h-[280vh] bg-black"
     >
       <div className="sticky top-0 h-screen overflow-hidden bg-black">
-
-        {/* BACKGROUND */}
         <div className="absolute inset-0 overflow-hidden">
-
-          {/* RED */}
           <motion.div
             style={{
               y: blob1Y,
@@ -110,13 +123,12 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
               lg:h-[800px]
               lg:w-[800px]
               rounded-full
-              bg-red-500/25
+              bg-[#cb0000]
               blur-[90px]
               lg:blur-[160px]
             "
           />
 
-          {/* PURPLE */}
           <motion.div
             style={{
               y: blob2Y,
@@ -133,13 +145,12 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
               lg:h-[800px]
               lg:w-[800px]
               rounded-full
-              bg-fuchsia-500/25
+              bg-[#7b00c2]
               blur-[90px]
               lg:blur-[160px]
             "
           />
 
-          {/* BLUE */}
           <motion.div
             style={{
               y: blob3Y,
@@ -158,13 +169,12 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
               -translate-x-1/2
               -translate-y-1/2
               rounded-full
-              bg-cyan-400/20
+              bg-[#00085d]
               blur-[80px]
               lg:blur-[140px]
             "
           />
 
-          {/* CURVE 1 */}
           <motion.div
             style={{
               y: curve1Y,
@@ -183,7 +193,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
             "
           />
 
-          {/* CURVE 2 */}
           <motion.div
             style={{
               y: curve2Y,
@@ -202,7 +211,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
             "
           />
 
-          {/* CURVE 3 */}
           <motion.div
             style={{
               y: curve3Y,
@@ -221,7 +229,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
             "
           />
 
-          {/* LIGHT LINE */}
           <motion.div
             style={{
               y: useTransform(
@@ -244,7 +251,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
             "
           />
 
-          {/* GRID */}
           <div
             className="
               absolute inset-0
@@ -255,13 +261,8 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
               lg:[background-size:80px_80px]
             "
           />
-
-          {/* DARK OVERLAY */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,black)]" />
-
         </div>
-
-        {/* CONTENT */}
         <div
           className="
             relative z-10
@@ -274,8 +275,6 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
           "
         >
           <div className="w-full max-w-[1200px]">
-
-            {/* TAG */}
             <div
               className="
                 mb-4
@@ -297,11 +296,10 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
                   text-white
                 "
               >
-                What I Do
+                {t.whatido}
               </span>
             </div>
 
-            {/* TEXT */}
             <div
               className="
                 max-w-full
@@ -315,32 +313,15 @@ Whether it’s building a distinctive brand identity, designing interfaces that 
                 flex flex-wrap
               "
             >
-              {words.map((word, i) => {
-
-                const start =
-                  (i / words.length) * 0.85;
-
-                const end = start + 0.12;
-
-                const color = useTransform(
-                  scrollYProgress,
-                  [start, end],
-                  [
-                    "rgba(255,255,255,0.08)",
-                    "rgba(255,255,255,1)"
-                  ]
-                );
-
-                return (
-                  <motion.span
-                    key={i}
-                    style={{ color }}
-                    className="mr-[0.25em]"
-                  >
-                    {word}
-                  </motion.span>
-                );
-              })}
+              {words.map((word, i) => (
+  <Word
+    key={i}
+    word={word}
+    i={i}
+    total={words.length}
+    scrollYProgress={scrollYProgress}
+  />
+))}
             </div>
 
           </div>

@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AboutRevealSection from "./AboutRevealSection";
 import Marquee from "./Marquee";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function ContentPage( ) {
+  const { t } = useLanguage()
 const controls = useAnimationControls();
 
 useEffect(() => {
@@ -100,19 +102,13 @@ const contentY = useSpring(contentYRaw, {
       : "70px",
 }}
       >
-        I design and develop digital experiences that bring ideas to life,
-        blending creativity and technology to craft brands, products, and
-        interfaces that are intuitive, inspiring, and built to last, with a
-        focus on creating meaningful connections between people and design.
+        {t.text}
       </p>
 
 
 <div className="mt-4">
 <div className="flex items-end justify-between gap-4 mb-4 sm:mb-0">
-
-  {/* LEFT */}
   <div className="flex items-end gap-2 sm:gap-4 min-w-0">
-    
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -130,21 +126,18 @@ const contentY = useSpring(contentYRaw, {
         <path d="M 96.117 0.005 L 96.112 96.189 L 75.656 96.175 L 75.661 34.961 L 14.529 96.083 L 0.063 81.617 L 61.219 20.461 L 0.005 20.466 L 0 0 Z" />
       </svg>
     </motion.div>
-
-    {/* TEXT */}
     <span
       className="
         hidden sm:block
-        text-xs text-gray-500
+        text-sm text-gray-500
         -mb-2
       "
     >
-      Product Design, Web Design, Branding
+      {t.v1}
     </span>
 
   </div>
 
-  {/* RIGHT */}
   <span
     className="
       text-[11px] sm:text-xs
@@ -153,14 +146,11 @@ const contentY = useSpring(contentYRaw, {
       mb-2 min-[320px]:-mb-2
     "
   >
-    Selected work (6)
+    {t.v2}
   </span>
 
 </div>
-
-  {/* Grid images */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-    {/* Item 1 */}
     <Link href={"/projects/the-beverly#top"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
       <img
                                                   onMouseEnter={() =>
@@ -181,7 +171,6 @@ const contentY = useSpring(contentYRaw, {
       </span>
     </Link>
 
-    {/* Item 2 */}
     <Link href={"/projects/Le-Palmier-Ho-Tram#top"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
       <img 
                                             onMouseEnter={() =>
@@ -202,7 +191,6 @@ const contentY = useSpring(contentYRaw, {
       </span>
     </Link>
 
-    {/* Item 3 */}
     <Link href={"/projects/Beer-Club-Z70#top"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
       <img
                                                   onMouseEnter={() =>
@@ -222,8 +210,6 @@ const contentY = useSpring(contentYRaw, {
         Beer Club Z70
       </span>
     </Link>
-
-    {/* Item 4 */}
     <Link href={"/projects/Sunneva-Island-Da-Nang#top"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
       <img
                                                   onMouseEnter={() =>
@@ -243,8 +229,6 @@ const contentY = useSpring(contentYRaw, {
         Sunneva Island Da Nang
       </span>
     </Link>
-
-        {/* Item 5 */}
     <Link href={"/projects/Miss-Thu-Restaurant#top"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
       <img
                                                   onMouseEnter={() =>
@@ -264,9 +248,7 @@ const contentY = useSpring(contentYRaw, {
         Miss Thu Restaurant
       </span>
     </Link>
-
-        {/* Item 6 */}
-    <Link href={"/projects/eightball#top"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
+    <Link href={"/"} className="relative overflow-hidden h-[320px] sm:h-[420px] md:h-[600px]">
       <img
                                                   onMouseEnter={() =>
   window.dispatchEvent(
@@ -289,11 +271,9 @@ const contentY = useSpring(contentYRaw, {
 </div>
 
    <div className="mt-2">
-
-      {/* Top right link */}
       <Link href={"/projects"} className="flex justify-end mb-14 mt-4">
 <span className="relative cursor-pointer text-[22px] sm:text-[30px] md:text-[42px] font-bold group">
-  View all projects (17)
+  {t.project} (17)
 
   <span className="
     absolute left-0 bottom-0 h-[2px] w-full bg-black
@@ -338,12 +318,7 @@ const contentY = useSpring(contentYRaw, {
         >
           <path d="M 96.117 0.005 L 96.112 96.189 L 75.656 96.175 L 75.661 34.961 L 14.529 96.083 L 0.063 81.617 L 61.219 20.461 L 0.005 20.466 L 0 0 Z" />
         </motion.svg>
-
-
-        {/* Layout text */}
         <div className="relative flex items-center justify-center">
-
-          {/* Trái */}
           <motion.h1
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -360,8 +335,6 @@ font-bold leading-none tracking-tighter
           >
             HAB
           </motion.h1>
-
-          {/* Phải */}
           <motion.h1
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -392,7 +365,7 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
         className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start"
       >
         <div>
-          <p className="text-sm text-gray-400">Clients</p>
+          <p className="text-sm text-gray-400">{t.v4}</p>
 
           <h2
             className="text-[20px] sm:text-[26px] md:text-[32px] font-bold leading-tight max-w-[700px] -mt-2"
@@ -403,11 +376,7 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
       : "140px",
 }}
           >
-            Over the years, I’ve had the privilege of collaborating with a wide
-            range of clients, from startups and small businesses to established
-            brands. Each partnership is an opportunity to bring a unique vision
-            to life, solve complex challenges, and deliver digital experiences
-            that make a lasting impact.
+            {t.v5}
           </h2>
         </div>
 
@@ -419,7 +388,7 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
             32+
           </h2>
           <span className="text-[28px] sm:text-[42px] md:text-[64px] text-gray-400 -mt-2 sm:-mt-6">
-            Clients
+            {t.v4}
           </span>
         </motion.div>
       </motion.div>
@@ -438,7 +407,6 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
           />
         </motion.div>
 
-        {/* Card 2 */}
         <motion.div
           variants={card(0.15)}
           initial="hidden"
@@ -452,7 +420,6 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
           />
         </motion.div>
 
-        {/* Card 3 */}
         <motion.div
           variants={card(0.3)}
           initial="hidden"
@@ -465,8 +432,6 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
             className="w-full h-full object-cover"
           />
         </motion.div>
-
-        {/* Card 4 */}
         <motion.div
           variants={card(0.45)}
           initial="hidden"
@@ -481,10 +446,9 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
         </motion.div>
       </div>
 
-      {/* CTA */}
       <Link href={"/contact#top"} className="flex justify-end mt-10 mb-10">
         <span className="relative cursor-pointer text-[22px] sm:text-[30px] md:text-[42px] font-bold group">
-          Start a project
+          {t.v6}
 
           <span
             className="

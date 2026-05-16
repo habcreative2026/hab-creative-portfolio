@@ -1,19 +1,26 @@
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
 export const metadata = {
   title: "HAB Creative",
   description: "Mô tả",
-    icons: {
+  icons: {
     icon: "/icon.png?=999",
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <LanguageProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </LanguageProvider>
       </body>
     </html>
   );

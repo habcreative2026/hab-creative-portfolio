@@ -1,8 +1,10 @@
 "use client"
 
-import { motion, useScroll, useTransform, useSpring } from "framer-motion"
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function AboutPage() {
+    const { t } = useLanguage()
 
     const { scrollY } = useScroll()
 
@@ -46,7 +48,7 @@ export default function AboutPage() {
                             style={{ y: textY }}
                             className="max-w-full bg-white px-0 md:px-4 mt-6 md:mt-0"
                         >
-                            <p className="text-xs text-gray-400">About</p>
+                            <p className="text-xs text-gray-400">{t.about}</p>
 
                             <p
                                 className="text-[16px] sm:text-[20px] md:text-[24px] leading-relaxed font-semibold mt-2 md:-mt-4"
@@ -54,9 +56,7 @@ export default function AboutPage() {
                                     textIndent: window.innerWidth >= 768 ? "100px" : "0px"
                                 }}
                             >
-                                I’m Qui Bui, a digital product designer and creative developer passionate about shaping experiences at
-                                the crossroads of design and technology. Since 2019, I’ve crafted everything from bold brand identities
-                                to digital platforms.
+                                {t.about1}
                             </p>
                         </motion.div>
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
                     <div className="relative z-10 flex justify-end px-4 md:px-0">
 
                         <img
-                            src="/avt_bhq.jpg"
+                            src="/bhq.jpg"
                             className="w-full md:w-[680px] h-[280px] sm:h-[420px] md:h-[440px] object-cover"
                             alt=""
                         />
@@ -74,7 +74,7 @@ export default function AboutPage() {
                             style={{ y: textY }}
                             className="absolute bottom-4 right-8 md:right-4 z-30 mix-blend-difference text-white text-[16px] md:text-[24px] whitespace-nowrap"
                         >
-                            2019 — Today
+                            2019 — {t.about2}
                         </motion.div>
 
                     </div>
@@ -85,8 +85,6 @@ export default function AboutPage() {
 
 
             <div className="px-4 -pt-24 -mt-24">
-
-                {/* EXPERIENCE */}
                 <motion.section
                     initial={{ opacity: 0, y: 50 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -96,38 +94,36 @@ export default function AboutPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-[40%_20%_20%_20%] mb-6 md:mb-2">
                         <h2 className="md:col-start-2 text-3xl md:text-5xl font-semibold mb-6 md:mb-14">
-                            Experience
+                            {t.about3}
                         </h2>
                     </div>
 
-                    {/* Column headers */}
                     <div className="hidden md:grid grid-cols-[40%_20%_20%_20%] text-xs font-semibold text-gray-400 mb-2">
-                        <div>Position</div>
-                        <div>Type</div>
+                        <div>{t.position}</div>
+                        <div>{t.type}</div>
                         <div>Company</div>
-                        <div>Year</div>
+                        <div>{t.year}</div>
                     </div>
 
-                    {/* Experience data */}
                     <div className="space-y-4 text-[18px] md:text-[24px] font-semibold">
 
                         <div className="grid grid-cols-1 md:grid-cols-[40%_20%_20%_20%] border-t py-4 gap-2 md:gap-0">
-                            <div>Founder & Creative Director</div>
-                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">Full-time</div>
+                            <div>{t.ex1}</div>
+                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">{t.ex3}</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">HAB Creative</div>
-                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">2025 — Present</div>
+                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">2025 — {t.year1}</div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-[40%_20%_20%_20%] border-t py-4 gap-2 md:gap-0">
-                            <div>Creative Designer</div>
-                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">Full-time</div>
+                            <div>{t.ex2}</div>
+                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">{t.ex3}</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">Dong Tay Land</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">2021 — 2024</div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-[40%_20%_20%_20%] border-t py-4 gap-2 md:gap-0">
-                            <div>Creative Designer</div>
-                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">Full-time</div>
+                            <div>{t.ex2}</div>
+                            <div className="text-sm md:text-[24px] text-gray-500 md:text-black">{t.ex3}</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">Alpha Creative</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">2019 — 2021</div>
                         </div>
@@ -135,7 +131,6 @@ export default function AboutPage() {
                     </div>
                 </motion.section>
 
-                {/* AWARDS */}
                 <motion.section
                     className="mt-14 pt-14"
                     initial={{ opacity: 0, y: 50 }}
@@ -145,23 +140,21 @@ export default function AboutPage() {
                 >
 
                     <h2 className="text-3xl md:text-5xl mb-10 md:mb-14 font-semibold">
-                        Awards & Recognition
+                        {t.ar}
                     </h2>
 
-                    {/* Column headers */}
                     <div className="hidden md:grid grid-cols-[30%_50%_10%] text-xs font-semibold text-gray-400 mb-2">
-                        <div>Award</div>
-                        <div>Nomination</div>
-                        <div>Year</div>
+                        <div>{t.a1}</div>
+                        <div>{t.a2}</div>
+                        <div>{t.year}</div>
                     </div>
 
-                    {/* Award data */}
                     <div className="space-y-4 text-[18px] md:text-[24px] font-semibold mb-20">
 
                         <div className="grid grid-cols-1 md:grid-cols-[30%_50%_10%] border-t py-4 gap-2 md:gap-0">
-                            <div>WorldSkills Vietnam 2018</div>
+                            <div>{t.a1x}</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">
-                                National First Prize – Vietnam WorldSkills Graphic Design.
+                                {t.a2x}
                             </div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">
                                 5/2018
@@ -169,9 +162,9 @@ export default function AboutPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-[30%_50%_10%] border-t py-4 gap-2 md:gap-0">
-                            <div>WorldSkills Vietnam 2018</div>
+                            <div>{t.a1x}</div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">
-                                1st Prize – WorldSkills Vietnam | MOIT.
+                                {t.a3x}
                             </div>
                             <div className="text-sm md:text-[24px] text-gray-500 md:text-black">
                                 3/2018

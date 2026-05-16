@@ -1,21 +1,23 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/app/i18n/LanguageContext";
 
 export default function CooperativePage() {
+  const { t } = useLanguage()
     const arrowRef = useRef(null);
     const [rotateArrow, setRotateArrow] = useState(false);
     useEffect(() => {
     const observer = new IntersectionObserver(
     ([entry]) => {
       if (entry.isIntersecting) {
-        setRotateArrow(true);   // thấy → xoay
+        setRotateArrow(true);   
       } else {
-        setRotateArrow(false);  // không thấy → reset
+        setRotateArrow(false);  
       }
     },
     {
-      threshold: 0.6, // thấy 60% element
+      threshold: 0.6, 
     }
   );
 
@@ -27,51 +29,34 @@ export default function CooperativePage() {
 }, []);
   return (
     <div className="min-h-screen mt-30 pt-30 px-4">
-      
-      {/* Top content */}
 <div className="grid grid-cols-3 gap-10 items-start">
-
-  {/* LEFT TEXT */}
   <div className="col-span-2 max-w-2xl">
     <p className="max-w-auto leading-snug font-bold text-[24px]">
       Lightspeed is a British fintech company providing fast,
       secure online payment solutions for small and medium-sized businesses.
     </p>
   </div>
-
-  {/* RIGHT INFO */}
 <div className="flex flex-col gap-6">
-
-  {/* Company + Timeline */}
   <div className="flex gap-36">
-
-    {/* Company */}
     <div>
       <p className="text-xs text-gray-700">Company</p>
       <p className="text-[24px] font-medium">Lightspeed</p>
     </div>
-
-    {/* Timeline (đã kéo vào bên trái tự nhiên bằng gap) */}
     <div>
       <p className="text-xs text-gray-700">Timeline</p>
       <p className="text-[24px] font-medium">2024 — 2025</p>
     </div>
 
   </div>
-
-  {/* Role */}
   <div>
     <p className="text-xs text-gray-700">Role</p>
     <p className="text-[24px] font-medium">Product Designer</p>
   </div>
-
-  {/* Live */}
 <div className="group inline-block">
   <p className="text-xs text-gray-700">Live</p>
 
   <p className="relative inline-block text-[24px] font-medium cursor-pointer">
     Live project
-
     <span
       className="
         absolute left-0 bottom-0 h-[1px] w-full bg-black
@@ -86,8 +71,6 @@ export default function CooperativePage() {
 </div>
 
 </div>
-
-      {/* Bottom */}
 <Link href={"/projects#top"} className="group text-sm text-black flex items-center gap-1 cursor-pointer">
   <span className="text-lg">
     ‹
@@ -97,10 +80,7 @@ export default function CooperativePage() {
   </span>
 </Link>
 
-{/* Visual + Description Section */}
 <div className="mt-2 flex flex-col gap-5">
-
-  {/* 1. Full width image */}
     <img
       src="https://framerusercontent.com/images/eSwpVesqtEA3fYvovomC4SNF9qQ.png?scale-down-to=2048&width=5000&height=3750"
       alt="Lightspeed visual"
@@ -147,8 +127,6 @@ export default function CooperativePage() {
     </div>
 
   </div>
-
-  {/* 3. Two images side by side */}
   <div className="grid grid-cols-2 gap-2">
 
       <img
@@ -170,8 +148,6 @@ export default function CooperativePage() {
       className="w-full h-full object-cover"
     />
 <div className="grid grid-cols-2">
-
-  {/* Left content (0 → 50%) */}
   <div className="text-sm leading-relaxed text-gray-700 space-y-6">
     <div>
       <p className="font-medium text-gray-500 mb-1">Results</p>
@@ -194,18 +170,11 @@ export default function CooperativePage() {
 
 </div>
 </div>
-{/* Latest projects */}
 <div className="mt-12 border-t pt-12">
-
-{/* Header */}
 <div className="flex items-center justify-between mb-4">
-
-  {/* Title */}
   <h2 className="text-[64px] font-medium tracking-tight leading-none">
     Latest projects
   </h2>
-
-  {/* Arrow */}
   <div ref={arrowRef} className="cursor-pointer">
     <svg
       width="60"
@@ -221,8 +190,6 @@ export default function CooperativePage() {
   </div>
 
 </div>
-
-  {/* Grid */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
     {/* Item 1 */}

@@ -2,23 +2,25 @@
 
 import { motion, type Transition } from "framer-motion";
 import Link from "next/link";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function ProjectPage() {
+  const { t } = useLanguage();
   const imgVariants = {
     rest: { scale: 1 },
     hover: { scale: 1 }
   };
 
-  const numberVariants = {
-    rest: {
-      opacity: 0,
-      scale: 0.5
-    },
-    hover: {
-      opacity: 1,
-      scale: 1
-    }
-  };
+  // const numberVariants = {
+  //   rest: {
+  //     opacity: 0,
+  //     scale: 0.5
+  //   },
+  //   hover: {
+  //     opacity: 1,
+  //     scale: 1
+  //   }
+  // };
 
   const text2Variants = {
     rest: {
@@ -36,18 +38,18 @@ export default function ProjectPage() {
     ease: [0.16, 1, 0.3, 1]
   };
 
-  const numberTransition: Transition = {
-    type: "spring",
-    stiffness: 120,
-    damping: 14
-  };
+  // const numberTransition: Transition = {
+  //   type: "spring",
+  //   stiffness: 120,
+  //   damping: 14
+  // };
 
   return (
     <div className="min-h-screen pt-28 md:pt-40 px-4">
 
       <div className="flex flex-col md:flex-row justify-between gap-4 md:gap-0 mb-8">
         <p className="max-w-[600px] leading-snug font-bold text-[18px] md:text-[24px]">
-          Product design, experiences, websites, and brands — design stories from around the globe
+          {t.project666}
         </p>
 
         <p className="text-[18px] md:text-[24px] font-bold">

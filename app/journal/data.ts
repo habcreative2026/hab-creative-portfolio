@@ -36,7 +36,6 @@ export const journalPosts: Record<string, JournalPost> = {
       hero:
         "https://framerusercontent.com/images/YxeYtGJD5UmXSqrfSBacGGEHQ0.png",
 
-      // 👇 2 ảnh KHÁC hero hoàn toàn
       two: [
         "https://images.unsplash.com/photo-1555066931",
         "https://images.unsplash.com/photo-1522542550221-31fd19575a2d"

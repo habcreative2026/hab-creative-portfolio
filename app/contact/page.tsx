@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function ContactPage() {
+  const { t } = useLanguage()
   const initialFormData = {
     name: "",
     email: "",
@@ -45,10 +47,10 @@ export default function ContactPage() {
   }, []);
 
   const services = [
-    "Web Design & Development",
-    "Branding Establishment",
-    "Imagery Production",
-    "Marketing",
+    t.service1,
+    t.service2,
+    t.service3,
+    t.service4
   ];
 
   const [selected, setSelected] = useState("");
@@ -56,29 +58,18 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen px-4 pt-28 md:pt-40">
-
-      {/* Header text */}
       <div className="max-w-3xl mb-10 px-2">
         <p className="max-w-auto leading-snug font-bold text-[22px] sm:text-[26px] md:text-[32px] px-2">
-          I’m open to new ideas, whether it’s a full project, a collaboration, or just an early concept.
-          Let’s bring it to life together.
+          {t.contact1}
         </p>
       </div>
-
-      {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-14 md:gap-20 mt-10">
-
-        {/* LEFT - FORM */}
         <div className="flex flex-col gap-6">
-
-          {/* 2 cột - 2 hàng */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
-
-            {/* Họ tên */}
             <div>
               <input
                 type="text"
-                placeholder="Full name*"
+                placeholder={t.fullname}
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -87,8 +78,6 @@ export default function ContactPage() {
                 required
               />
             </div>
-
-            {/* Email */}
             <div>
               <input
                 type="email"
@@ -101,12 +90,10 @@ export default function ContactPage() {
                 required
               />
             </div>
-
-            {/* Số điện thoại */}
             <div>
               <input
                 type="tel"
-                placeholder="Phone number*"
+                placeholder={t.phone}
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
@@ -115,12 +102,10 @@ export default function ContactPage() {
                 required
               />
             </div>
-
-            {/* Công ty */}
             <div>
               <input
                 type="text"
-                placeholder="Company"
+                placeholder={t.company}
                 value={formData.company}
                 onChange={(e) =>
                   setFormData({ ...formData, company: e.target.value })
@@ -130,17 +115,13 @@ export default function ContactPage() {
               />
             </div>
           </div>
-
-          {/* Dropdown dịch vụ */}
           <div ref={dropdownRef} className="relative w-full px-2">
-
-            {/* Trigger */}
             <button
               type="button"
               onClick={() => setOpen(!open)}
               className="w-full border border-gray-300 focus:border-gray-900 rounded-md px-2 py-2 text-left text-[14px] md:text-[18px] text-gray-600 bg-white"
             >
-              {selected || "What service do you need advise on?"}
+              {selected || t.queston}
 
               <ChevronDown
                 size={20}
@@ -149,8 +130,6 @@ export default function ContactPage() {
                 `}
               />
             </button>
-
-            {/* Dropdown */}
             {open && (
               <div className="absolute left-0 mt-1 w-full rounded bg-[#ebebeb] overflow-hidden z-50 py-2">
 
@@ -182,12 +161,11 @@ export default function ContactPage() {
             )}
           </div>
 
-          {/* Project details */}
           <div className="px-4">
-            <label className="text-sm text-gray-500">Project details</label>
+            <label className="text-sm text-gray-500">{t.contact2}</label>
 
             <textarea
-              placeholder="Message"
+              placeholder={t.message}
               value={formData.message}
               onChange={(e) =>
                 setFormData({ ...formData, message: e.target.value })
@@ -196,16 +174,11 @@ export default function ContactPage() {
             />
           </div>
 
-          {/* Button */}
           <button
             onClick={() => {
               if (isFormValid) {
                 setClicked(true);
-
-                // reset input
                 setFormData(initialFormData);
-
-                // reset dropdown
                 setSelected("");
               }
             }}
@@ -228,22 +201,18 @@ export default function ContactPage() {
               mx-2
             "
           >
-            {clicked ? "Thank you" : "Get in touch"}
+            {clicked ? t.thankyou : t.getintouch}
           </button>
 
         </div>
-
-        {/* RIGHT - PROFILE */}
         <div className="flex flex-col items-start md:items-end gap-1 mt-0 md:-mt-43 md:-pt-43">
 
-          <img
-            src="/avt_bhq.jpg"
-            className="w-full sm:w-[440px] h-[320px] sm:h-[440px] object-cover"
+          <img 
+            src="/avt_bhq.png"
+            className="w-full sm:w-[440px] h-[400px] sm:h-[540px] object-cover"
           />
 
           <div className="w-full sm:w-[440px] text-sm flex flex-col">
-
-            {/* Email */}
             <a
               href="mailto:buihaitrong.dev@gmail.com"
               className="relative group border-b border-gray-400 pb-1 pt-1 cursor-pointer overflow-hidden block"
@@ -267,8 +236,6 @@ export default function ContactPage() {
                 </span>
               </span>
             </a>
-
-            {/* Phone */}
             <a
               href="tel:+84973112480"
               className="relative group border-b border-gray-400 pb-1 pt-1 cursor-pointer overflow-hidden block"
@@ -285,7 +252,7 @@ export default function ContactPage() {
 
               <span className="relative z-10 block">
                 <span className="block group-hover:hidden text-black">
-                  Phone number
+                  {t.phone}
                 </span>
                 <span className="hidden group-hover:block text-white">
                   +84 92 5555 958
@@ -311,7 +278,7 @@ export default function ContactPage() {
 
               <span className="relative z-10 block">
                 <span className="block group-hover:hidden text-black">
-                  Based in
+                  {t.based}
                 </span>
                 <span className="hidden group-hover:block text-white">
                   Ho Chi Minh City, Vietnam

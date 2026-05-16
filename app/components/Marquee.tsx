@@ -1,6 +1,9 @@
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
+import { useEffect } from "react";
 
 const Marquee = () => {
+  const controls = useAnimation();
+
   const logos = [
     "/category_logo/category_logo_v0.png",
     "/category_logo/category_logo_v1.png",
@@ -12,24 +15,44 @@ const Marquee = () => {
 
   const tripleLogos = [...logos, ...logos, ...logos];
 
+  useEffect(() => {
+    controls.start({
+      x: [0, "-33.333%"],
+      transition: {
+        duration: 15,
+        ease: "linear",
+        repeat: Infinity,
+        repeatType: "loop",
+      },
+    });
+  }, [controls]);
+
   return (
     <div className="w-full overflow-hidden py-10 mb-14">
       <div className="flex [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <motion.div
           className="flex flex-nowrap min-w-max"
-          animate={{
-            x: [0, "-33.333%"],
-          }}
-          transition={{
-            duration: 15,
-            ease: "linear",
-            repeat: Infinity,
-            repeatType: "loop",
+          animate={controls}
+          onHoverStart={() => controls.stop()}
+          onHoverEnd={() => {
+            controls.start({
+              x: [0, "-33.333%"],
+              transition: {
+                duration: 15,
+                ease: "linear",
+                repeat: Infinity,
+                repeatType: "loop",
+              },
+            });
           }}
         >
           {tripleLogos.map((logo, index) => (
-            <div
+            <motion.div
               key={index}
+              whileHover={{
+                opacity: 0.35,
+                transition: { duration: 0.2 },
+              }}
               className="
                 flex-shrink-0
                 px-4
@@ -39,6 +62,7 @@ const Marquee = () => {
                 sm:w-[150px]
                 md:w-[180px]
                 lg:w-[200px]
+                cursor-pointer
               "
             >
               <img
@@ -51,9 +75,10 @@ const Marquee = () => {
                   w-auto
                   object-contain
                   mx-auto
+                  transition-opacity
                 "
               />
-            </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
