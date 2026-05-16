@@ -2,8 +2,18 @@
 
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { useLanguage } from "../i18n/LanguageContext";
+import { useEffect, useState } from "react";
 
 export default function AboutPage() {
+    const [isDesktop, setIsDesktop] = useState(false);
+    useEffect(() => {
+  const check = () => setIsDesktop(window.innerWidth >= 768);
+
+  check(); // chạy lần đầu
+  window.addEventListener("resize", check);
+
+  return () => window.removeEventListener("resize", check);
+}, []);
     const { t } = useLanguage()
 
     const { scrollY } = useScroll()
@@ -53,8 +63,8 @@ export default function AboutPage() {
                             <p
                                 className="text-[16px] sm:text-[20px] md:text-[24px] leading-relaxed font-semibold mt-2 md:-mt-4"
                                 style={{
-                                    textIndent: window.innerWidth >= 768 ? "100px" : "0px"
-                                }}
+  textIndent: isDesktop ? "100px" : "0px"
+}}
                             >
                                 {t.about1}
                             </p>

@@ -1,5 +1,5 @@
 "use client";
-import { motion, useScroll, useSpring, useTransform, Variants, useAnimationControls } from "framer-motion";
+import { motion, useScroll, useSpring, useTransform, Variants } from "framer-motion";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AboutRevealSection from "./AboutRevealSection";
@@ -21,18 +21,6 @@ export default function ContentPage( ) {
   return () => {
     window.removeEventListener("resize", checkMobile);
   };
-}, []);
-const controls = useAnimationControls();
-
-useEffect(() => {
-  controls.start({
-    x: ["0%", "-50%"],
-    transition: {
-      duration: 50,
-      ease: "linear",
-      repeat: Infinity,
-    },
-  });
 }, []);
  
   const { scrollY } = useScroll();
