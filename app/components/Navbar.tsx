@@ -11,6 +11,7 @@ export default function NavbarPage() {
   const [allowTransition, setAllowTransition] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const time = useTime("Asia/Ho_Chi_Minh"); 
 
   const { scrollY } = useScroll();
@@ -116,7 +117,7 @@ useEffect(() => {
         }}
       />
 
-      <div className="mx-auto flex flex-row items-start justify-between text-[12px] font-medium leading-none tracking-tight px-4 gap-50">
+      <div className="mx-auto flex flex-row items-start justify-between text-[12px] font-medium leading-none tracking-tight px-4 gap-4 lg:gap-50">
         
         <Link href={"/"} className="flex items-center justify-between z-30 bg-white">
           <h1 onMouseEnter={() =>
@@ -129,11 +130,11 @@ onMouseLeave={() =>
     new CustomEvent("cursor-change", { detail: "default" })
   )
 } className="text-[22px] font-bold leading-none tracking-tighter uppercase cursor-none">
-            <img 
-            src="/logo_bhq.png"
-            alt="logo"
-            className="w-full h-9 object-cover"
-            />
+        <img 
+  src="/logo_bhq.png"
+  alt="logo"
+  className="w-full h-8 mt-0.5 object-cover"
+/>
             {/* BHQ */}
           </h1>
         </Link>
@@ -148,7 +149,7 @@ onMouseLeave={() =>
               isScrolled ? "-translate-x-[180px]" : "translate-x-0"
             }`}
           >
-            <div className="lg:flex items-center gap-6 text-black/80">
+<div className="hidden lg:flex items-center gap-6 text-black/80">
               <a
   href="tel:+84925555958"
   onMouseEnter={() =>
@@ -214,13 +215,13 @@ onMouseLeave={() =>
           </div>
 
           {/* MENU SECTION */}
-          <div
-            className={`flex items-start gap-x-8 pt-3 ${
-              allowTransition ? "transition-all duration-[1000ms] ease-[cubic-bezier(0.22,1,0.36,1)]" : ""
-            } ${
-              isScrolled ? "-translate-x-[60px]" : "translate-x-0"
-            }`}
-          >
+<div
+  className={`hidden lg:flex items-start gap-x-8 pt-3 ${
+    allowTransition ? "transition-all duration-[1000ms] ease-[cubic-bezier(0.22,1,0.36,1)]" : ""
+  } ${
+    isScrolled ? "-translate-x-[60px]" : "translate-x-0"
+  }`}
+>
             {!isScrolled ? (
               <>
                 <div className="flex flex-col gap-5">
@@ -374,41 +375,131 @@ onMouseLeave={() =>
         </div>
 
         {/* TIME + SOUND */}
-        <div className="flex items-center gap-4 z-30 bg-white pt-3">
-          <div className="flex items-center gap-2 whitespace-nowrap text-black/80">
-            <span>HCMC</span>
-            <span className="text-[10px] animate-pulse">●</span>
-            <span>{time}</span>
-          </div>
+{/* TIME + SOUND */}
+<div className="flex items-center gap-2 sm:gap-4 z-30 bg-white pt-2 sm:pt-3">
 
-          <button onMouseEnter={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "sound" })
-  )
-}
-onMouseLeave={() =>
-  window.dispatchEvent(
-    new CustomEvent("cursor-change", { detail: "default" })
-  )
-} onClick={toggleSound} className="flex items-center justify-center h-[14px] w-[30px] cursor-pointer cursor-none">
-            <div className={`flex items-center transition-all duration-500 ${playing ? "gap-[2px]" : "gap-0"}`}>
-              {[...Array(7)].map((_, i) => (
-                <span
-                  key={i}
-                  className={`bg-black transition-all duration-500 ${
-                    playing ? "w-[1.1px] animate-sound-center rounded-full" : "w-[4px] h-[1px]"
-                  }`}
-                  style={{
-                    height: playing ? `${4 + (i % 2) * 3}px` : "0.5px",
-                    animationDelay: playing ? `${i * 0.1}s` : "0s",
-                  }}
-                />
-              ))}
-            </div>
-          </button>
-        </div>
+  {/* MOBILE MENU BUTTON */}
+  <button
+    onClick={() => setMobileMenu(!mobileMenu)}
+    className="
+  lg:hidden
+  px-4
+  py-2
+  rounded-full
+  border
+  border-black
+  bg-white
+  text-black
+  text-[11px]
+  font-semibold
+  uppercase
+  tracking-[0.12em]
+  transition-all
+  duration-300
+  hover:bg-black
+  hover:text-white
+  -mt-1
+"
+  >
+    {mobileMenu ? "Close" : "Menu"}
+  </button>
+
+  {/* DESKTOP TIME */}
+  <div className="hidden sm:flex items-center gap-2 whitespace-nowrap text-black/80">
+    <span>HCMC</span>
+    <span className="text-[10px] animate-pulse">●</span>
+    <span>{time}</span>
+  </div>
+
+  {/* DESKTOP SOUND */}
+  <button
+    onMouseEnter={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", { detail: "sound" })
+      )
+    }
+    onMouseLeave={() =>
+      window.dispatchEvent(
+        new CustomEvent("cursor-change", { detail: "default" })
+      )
+    }
+    onClick={toggleSound}
+    className="hidden lg:flex items-center justify-center h-[14px] w-[30px] cursor-pointer cursor-none"
+  >
+    <div
+      className={`flex items-center transition-all duration-500 ${
+        playing ? "gap-[2px]" : "gap-0"
+      }`}
+    >
+      {[...Array(7)].map((_, i) => (
+        <span
+          key={i}
+          className={`bg-black transition-all duration-500 ${
+            playing
+              ? "w-[1.1px] animate-sound-center rounded-full"
+              : "w-[4px] h-[1px]"
+          }`}
+          style={{
+            height: playing ? `${4 + (i % 2) * 3}px` : "0.5px",
+            animationDelay: playing ? `${i * 0.1}s` : "0s",
+          }}
+        />
+      ))}
+    </div>
+  </button>
+</div>
 
       </div>
+      {/* MOBILE MENU DROPDOWN */}
+<div
+  className={`lg:hidden overflow-hidden transition-all duration-500 ${
+    mobileMenu
+      ? "max-h-[500px] opacity-100 py-6"
+      : "max-h-0 opacity-0"
+  }`}
+>  <div className="px-4 flex flex-col gap-5 text-[14px] font-medium">
+
+    <Link href={"/projects"}>
+      Projects (17)
+    </Link>
+
+    <div>
+      Journal
+    </div>
+
+    <Link href={"/about"}>
+      About
+    </Link>
+
+    <Link href={"/contact"}>
+      Contact
+    </Link>
+
+    <div className="border-t pt-5 flex flex-col gap-4 text-black/70">
+
+      <a href="tel:+84925555958">
+        (84) 92 5555 958
+      </a>
+
+      <a href="mailto:buihaitrong.dev@gmail.com">
+        hello@habcreative.com
+      </a>
+
+      <a target="_blank" href="https://vn.linkedin.com/">
+        LinkedIn
+      </a>
+
+      <a target="_blank" href="https://x.com/">
+        Twitter (X)
+      </a>
+
+      <a target="_blank" href="https://dribbble.com/">
+        Dribbble
+      </a>
+
+    </div>
+
+  </div></div>
     </header>
   );
 }
