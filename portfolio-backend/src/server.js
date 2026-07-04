@@ -1,7 +1,7 @@
 // backend/src/server.js
 require("dotenv").config();
 const connectDB = require("./config/db");
-const app = require("../app");
+const app = require("./app");
 
 // ⭐ QUAN TRỌNG: Đọc PORT từ environment
 const PORT = 5000;
