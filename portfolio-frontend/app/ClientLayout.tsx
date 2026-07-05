@@ -9,11 +9,6 @@ import IntroVideo from "./IntroVideo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// ⭐ DANH SÁCH CÁC ROUTE KHÔNG HIỂN THỊ INTRO
-const NO_INTRO_ROUTES = [
-  "/auth-denied", 
-];
-
 export default function ClientLayout({
   children,
 }: {
@@ -22,23 +17,13 @@ export default function ClientLayout({
   const [isReady, setIsReady] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string>("/video_intro.mp4");
-  const [introFinished, setIntroFinished] = useState(false);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // ⭐ KIỂM TRA CÓ NẰM TRONG DANH SÁCH KHÔNG HIỂN THỊ INTRO
-  const isNoIntroRoute = NO_INTRO_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route)
-  );
-
   const isAdminRoute = pathname.startsWith("/admin");
-  const introParam = searchParams.get("intro");
 
-  // ⭐ NẾU LÀ ROUTE KHÔNG HIỂN THỊ INTRO → TRẢ VỀ CHILDREN NGAY
-  if (isNoIntroRoute) {
-    return <>{children}</>;
-  }
+  // Kiểm tra param intro từ iframe
+  const introParam = searchParams.get("intro");
 
   // 1. Fetch video URL
   useEffect(() => {
@@ -70,26 +55,21 @@ export default function ClientLayout({
       setShowIntro(false);
       setIsReady(true);
     } else {
-      // Kiểm tra sessionStorage để biết đã xem intro chưa
-      const hasSeenIntro = sessionStorage.getItem("hasSeenIntro");
-      if (hasSeenIntro === "true") {
-        setShowIntro(false);
-        setIsReady(true);
-      } else {
-        setShowIntro(true);
-        setIsReady(false);
-      }
+      // Mặc định bật intro cho public
+      setShowIntro(true);
+      setIsReady(false);
     }
   }, [isAdminRoute, introParam]);
 
   // 3. Khi intro kết thúc
-  const handleIntroFinish = () => {
-    sessionStorage.setItem("hasSeenIntro", "true");
-    setShowIntro(false);
-    setTimeout(() => {
-      setIsReady(true);
-    }, 400);
-  };
+  useEffect(() => {
+    if (!showIntro) {
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [showIntro]);
 
   // Admin routes → không hiển thị intro
   if (isAdminRoute) {
@@ -101,11 +81,7 @@ export default function ClientLayout({
       <Cursor />
 
       {showIntro && (
-        <IntroVideo
-          src={videoUrl}
-          onFinish={handleIntroFinish}
-          autoPlay={true}
-        />
+        <IntroVideo src={videoUrl} onFinish={() => setShowIntro(false)} />
       )}
 
       <div
