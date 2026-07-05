@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  X,
   RefreshCw,
   ExternalLink,
   Languages,
@@ -90,17 +91,9 @@ export default function DashboardPage() {
     return true;
   });
 
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.electronAPI) {
-      setIsDesktop(true);
-      console.log("✅ Running in Electron desktop app");
-    }
-  }, []);
-
   const isOwner = user?.email === "buihaitrong.dev@gmail.com";
 
+  // ⭐ THÊM: Hàm refresh token
   const refreshAuthToken = async () => {
     try {
       const res = await fetch(`${API_URL}/api/auth/refresh-token`, {
@@ -109,7 +102,9 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        return data.success;
+        if (data.success) {
+          return true;
+        }
       }
       return false;
     } catch (error) {
@@ -175,10 +170,12 @@ export default function DashboardPage() {
           credentials: "include",
         });
 
+        // ⭐ SỬA: Nếu 401, thử refresh token
         if (res.status === 401) {
           console.log("Token expired, attempting refresh...");
           const refreshed = await refreshAuthToken();
           if (refreshed) {
+            // Thử lại sau khi refresh
             const retryRes = await fetch(`${API_URL}/api/admin/me`, {
               credentials: "include",
             });
@@ -191,6 +188,7 @@ export default function DashboardPage() {
               return;
             }
           }
+          // Refresh thất bại → redirect login
           if (isMounted) {
             router.push("/admin/login?status=session_expired");
           }
@@ -214,6 +212,7 @@ export default function DashboardPage() {
 
     fetchUser();
 
+    // ⭐ THÊM: Auto refresh token mỗi 5 phút
     const refreshInterval = setInterval(
       async () => {
         if (isMounted) {
@@ -229,16 +228,9 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  // ⭐ LOGOUT
+  // ⭐ SỬA: Logout - clear cookies
   const handleLogout = async () => {
     try {
-      if (isDesktop && window.electronAPI) {
-        console.log("🔓 Logout via Electron API");
-        await window.electronAPI.logout();
-        setUser(null);
-        return;
-      }
-
       await fetch(`${API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
@@ -247,13 +239,12 @@ export default function DashboardPage() {
       console.error("Logout failed", error);
     } finally {
       setUser(null);
+      // ⭐ Xóa cache và redirect
       if (typeof window !== "undefined") {
         localStorage.clear();
         sessionStorage.clear();
       }
-      if (!isDesktop) {
-        router.push("/admin/login");
-      }
+      router.push("/admin/login");
     }
   };
 
