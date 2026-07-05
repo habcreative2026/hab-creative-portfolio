@@ -32,18 +32,23 @@ function LoginContent() {
 
   // 👉 KIỂM TRA CÓ PHẢI DESKTOP APP KHÔNG
   useEffect(() => {
-    const userAgent = window.navigator.userAgent;
-    const isElectron = userAgent.includes('Electron') || userAgent.includes('Portfolio');
-    setIsDesktop(isElectron);
+    if (typeof window !== 'undefined') {
+      const userAgent = window.navigator.userAgent;
+      const isElectron = userAgent.includes('Electron') || userAgent.includes('Portfolio');
+      setIsDesktop(isElectron);
+    }
   }, []);
 
   // 👉 NẾU LÀ DESKTOP APP VÀ ĐANG Ở TRẠNG THÁI WAITING -> MỞ TRÌNH DUYỆT
   useEffect(() => {
-    if (isDesktop && isWaiting) {
+    if (isDesktop && isWaiting && typeof window !== 'undefined') {
       console.log('[Login] Desktop app - opening browser for Google login');
-      // 👉 KIỂM TRA electronAPI CÓ TỒN TẠI KHÔNG
-      if (window.electronAPI && window.electronAPI.openBrowserLogin) {
-        window.electronAPI.openBrowserLogin();
+      
+      // 👉 DÙNG ANY ĐỂ TRÁNH LỖI TS
+      const electronAPI = (window as any).electronAPI;
+      
+      if (electronAPI && electronAPI.openBrowserLogin) {
+        electronAPI.openBrowserLogin();
       } else {
         window.open(`${API_URL}/api/auth/google`, '_blank');
       }
@@ -67,9 +72,10 @@ function LoginContent() {
     setLoading(true);
     setError("");
     
-    if (isDesktop) {
-      if (window.electronAPI && window.electronAPI.openBrowserLogin) {
-        window.electronAPI.openBrowserLogin();
+    if (isDesktop && typeof window !== 'undefined') {
+      const electronAPI = (window as any).electronAPI;
+      if (electronAPI && electronAPI.openBrowserLogin) {
+        electronAPI.openBrowserLogin();
       } else {
         window.open(`${API_URL}/api/auth/google`, '_blank');
       }
