@@ -20,7 +20,6 @@ const getCookieOptions = (maxAgeMs) => {
     sameSite: "none",    // ⭐ LUÔN NONE (quan trọng)
     maxAge: maxAgeMs,
     path: '/',
-    domain: isProd ? '.onrender.com' : undefined,
   };
 };
 
