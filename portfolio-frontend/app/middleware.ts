@@ -14,24 +14,24 @@ export async function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
   const isDesktop = isDesktopApp(userAgent);
 
-  // ⭐ LOG CHI TIẾT
-  console.log(`🔍 [Middleware] Path: ${pathname}`);
-  console.log(`📱 [Middleware] User-Agent: "${userAgent}"`);
-  console.log(`🖥️ [Middleware] isDesktop: ${isDesktop}`);
-
+  // ⭐ CHẶN ADMIN ROUTES TRÊN TRÌNH DUYỆT
   if (pathname.startsWith("/admin")) {
+    // Cho phép auth-denied
     if (pathname === "/auth-denied") {
       return NextResponse.next();
     }
 
+    // Nếu KHÔNG phải desktop app → redirect về trang download với thông báo
     if (!isDesktop) {
-      console.log(`🚫 [Middleware] Blocked: ${pathname}`);
+      console.log(`🚫 [Middleware] Blocked admin access from web: ${pathname}`);
       const url = new URL(DOWNLOAD_URL);
       url.searchParams.set('blocked', 'true');
+      url.searchParams.set('reason', 'admin_only_desktop');
       return NextResponse.redirect(url);
     }
 
-    console.log(`✅ [Middleware] Allowed: ${pathname}`);
+    // Desktop app: cho phép
+    console.log(`✅ [Middleware] Desktop app allowed: ${pathname}`);
     return NextResponse.next();
   }
 
