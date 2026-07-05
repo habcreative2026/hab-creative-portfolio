@@ -307,37 +307,37 @@ exports.verifyLicense = async (req, res) => {
   }
 };
 
-// 👉 GENERATE QR - Tạo QR cho desktop app (PUBLIC - không cần auth)
+// 👉 GENERATE QR
 exports.generateQR = async (req, res) => {
   try {
     const { deviceId } = req.body;
     
     console.log("[QR] Generating QR for device:", deviceId || 'unknown');
 
-    // 👉 TẠO SESSION MỚI (KHÔNG CẦN SESSION ID TỪ CLIENT)
     const sessionId = crypto.randomBytes(16).toString("hex");
     const token = crypto.randomBytes(32).toString("hex");
 
-    const qrData = {
+    // 👉 LƯU SESSION VỚI TOKEN
+    qrSessions.set(sessionId, {
       sessionId,
       token,
       deviceId: deviceId || 'desktop-' + Date.now(),
-      timestamp: Date.now(),
-      type: 'desktop_auth',
-      version: '1.0.0'
-    };
-
-    // Lưu session
-    qrSessions.set(sessionId, {
-      ...qrData,
       status: 'pending',
       createdAt: Date.now()
     });
 
-    // Tạo QR code
+    // 👉 TẠO QR DATA
+    const qrData = {
+      sessionId,
+      token,  // 👉 QUAN TRỌNG: PHẢI CÓ TOKEN
+      deviceId: deviceId || 'desktop-' + Date.now(),
+      timestamp: Date.now(),
+      type: 'desktop_auth'
+    };
+
+    // 👉 TẠO QR CODE TỪ JSON
     const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrData));
 
-    // Auto expire sau 2 phút
     setTimeout(() => {
       const session = qrSessions.get(sessionId);
       if (session && session.status === 'pending') {
@@ -352,6 +352,7 @@ exports.generateQR = async (req, res) => {
       success: true,
       qrCode: qrCodeUrl,
       sessionId,
+      token,  // 👉 TRẢ VỀ TOKEN CHO DESKTOP
       expiresIn: 120,
     });
   } catch (error) {
