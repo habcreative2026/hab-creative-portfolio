@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Chrome,
+  Globe, // 👉 THAY Chrome BẰNG Globe
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -41,11 +41,9 @@ function LoginContent() {
   useEffect(() => {
     if (isDesktop && isWaiting) {
       console.log('[Login] Desktop app - opening browser for Google login');
-      // 👉 GỬI REQUEST LÊN MAIN PROCESS ĐỂ MỞ TRÌNH DUYỆT
       if (window.electronAPI) {
         window.electronAPI.openBrowserLogin();
       } else {
-        // 👉 FALLBACK: MỞ TRÌNH DUYỆT BẰNG WINDOW.OPEN
         window.open(`${API_URL}/api/auth/google`, '_blank');
       }
     }
@@ -69,14 +67,12 @@ function LoginContent() {
     setError("");
     
     if (isDesktop) {
-      // 👉 MỞ TRÌNH DUYỆT NGOÀI
       if (window.electronAPI) {
         window.electronAPI.openBrowserLogin();
       } else {
         window.open(`${API_URL}/api/auth/google`, '_blank');
       }
     } else {
-      // 👉 WEB - REDIRECT TRỰC TIẾP
       window.location.href = `${API_URL}/api/auth/google`;
     }
   };
@@ -235,7 +231,7 @@ function LoginContent() {
                   </>
                 ) : (
                   <>
-                    <Chrome className="w-5 h-5 text-indigo-600" />
+                    <Globe className="w-5 h-5 text-indigo-600" />
                     {isDesktop ? "Đăng nhập với Google (Mở trình duyệt)" : "Đăng nhập với Google"}
                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
                   </>
