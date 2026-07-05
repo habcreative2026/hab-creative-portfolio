@@ -3,8 +3,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const DOWNLOAD_URL = "https://bhtdev.work"; // ⭐ Trang download
+const DOWNLOAD_URL = "https://bhtdev.work";
 
 // ⭐ Kiểm tra desktop app
 function isDesktopApp(userAgent: string): boolean {
@@ -18,29 +17,24 @@ export async function middleware(request: NextRequest) {
 
   // ⭐ CHỈ CHO PHÉP ADMIN ROUTES QUA DESKTOP APP
   if (pathname.startsWith("/admin")) {
+    // Bỏ qua auth-denied
+    if (pathname === "/auth-denied") {
+      return NextResponse.next();
+    }
+
     // Nếu KHÔNG phải desktop app → redirect về trang download
     if (!isDesktop) {
       console.log(`🚫 Blocked admin access from web: ${pathname}`);
+      console.log(`📱 User-Agent: ${userAgent}`);
+      
       const url = new URL(DOWNLOAD_URL);
       url.searchParams.set('blocked', 'true');
       url.searchParams.set('reason', 'admin_only_desktop');
       return NextResponse.redirect(url);
     }
 
-    // Desktop app: cho phép, kiểm tra token
-    if (pathname === "/admin/login" || pathname === "/auth-denied") {
-      return NextResponse.next();
-    }
-
-    const token = request.cookies.get("auth_token")?.value;
-
-    if (!token) {
-      console.log(`❌ [Middleware] No token, redirect to login`);
-      const url = new URL("/admin/login", request.url);
-      url.searchParams.set("status", "unauthorized");
-      return NextResponse.redirect(url);
-    }
-
+    // ⭐ Desktop app: cho phép
+    console.log(`✅ Desktop app allowed: ${pathname}`);
     return NextResponse.next();
   }
 
