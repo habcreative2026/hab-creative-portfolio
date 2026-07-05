@@ -35,7 +35,6 @@ const authMiddleware = (req, res, next) => {
   } catch (error) {
     console.error("[Auth Middleware]: Token không hợp lệ:", error.message);
 
-    // ⭐ THÊM: Phân biệt lỗi hết hạn và lỗi khác
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
@@ -52,7 +51,7 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// ⭐ SỬA: isSuperAdmin - Thêm logging
+// ⭐ isSuperAdmin - Chỉ super_admin
 authMiddleware.isSuperAdmin = (req, res, next) => {
   if (req.user.role !== "super_admin") {
     console.warn(
@@ -67,7 +66,18 @@ authMiddleware.isSuperAdmin = (req, res, next) => {
   next();
 };
 
-// ⭐ SỬA: isOwner - Thêm logging
+// ⭐ THÊM: isAdmin - Cho phép cả admin và super_admin
+authMiddleware.isAdmin = (req, res, next) => {
+  if (req.user.role !== "admin" && req.user.role !== "super_admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Bạn không có quyền thực hiện hành động này. Chỉ Admin mới được phép.",
+    });
+  }
+  next();
+};
+
+// ⭐ isOwner - Chỉ owner
 authMiddleware.isOwner = (req, res, next) => {
   if (req.user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
     console.warn(
@@ -81,7 +91,7 @@ authMiddleware.isOwner = (req, res, next) => {
   next();
 };
 
-// ⭐ THÊM: Kiểm tra 2FA đã hoàn thành chưa
+// ⭐ is2FAVerified - Kiểm tra 2FA
 authMiddleware.is2FAVerified = (req, res, next) => {
   if (req.user.isPending2FA) {
     return res.status(403).json({
