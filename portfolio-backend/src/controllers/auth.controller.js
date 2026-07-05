@@ -12,26 +12,39 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// 👉 SỬA: BỎ KEY SECURE TRÙNG LẶP
+// ⭐ SỬA: Cookie options với domain và secure phù hợp
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
+  const domain = isProd ? ".habcreative-portfolio.vercel.app" : undefined;
+  
   return {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProd, // ⭐ Chỉ secure khi production
+    sameSite: isProd ? "none" : "lax",
     maxAge: maxAgeMs,
     path: "/",
+    domain: domain, // ⭐ Set domain để share cookie
   };
 };
 
-// Clear auth cookies
+// ⭐ SỬA: Clear auth cookies với đúng options
 const clearAuthCookies = (res) => {
+  const isProd = process.env.NODE_ENV === "production";
+  const domain = isProd ? ".habcreative-portfolio.vercel.app" : undefined;
+  
   const options = {
     path: "/",
+    domain: domain,
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
   };
+  
   res.clearCookie("auth_token", options);
   res.clearCookie("temp_auth_token", options);
   res.clearCookie("refresh_token", options);
+  
+  console.log("✅ All auth cookies cleared with options:", options);
 };
 
 // ===== GOOGLE SUCCESS =====
@@ -106,6 +119,7 @@ exports.googleSuccess = async (req, res) => {
     getCookieOptions(7 * 24 * 60 * 60 * 1000),
   );
 
+  console.log(`✅ [Auth] Token set for: ${existingUser.email}`);
   return res.redirect(`${CLIENT_URL}/admin/dashboard`);
 };
 
@@ -183,6 +197,7 @@ exports.verify2FA = async (req, res) => {
 
 // ===== LOGOUT =====
 exports.logout = (req, res) => {
+  console.log("🔓 Logout called");
   clearAuthCookies(res);
   return res.json({
     success: true,
