@@ -1,3 +1,4 @@
+// frontend/tsconfig.json
 {
   "compilerOptions": {
     "target": "ES2017",
@@ -26,8 +27,6 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.d.ts",
-    "**/*.mts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
