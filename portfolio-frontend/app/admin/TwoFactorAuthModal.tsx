@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 import {
-  Shield,
-  Key,
+  ShieldCheck,
+  KeyRound,
   QrCode,
   RefreshCw,
   X,
   CheckCircle2,
-  AlertCircle,
-  Smartphone,
-  Fingerprint,
-  Lock,
-  Unlock,
+  ShieldAlert,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -44,6 +40,7 @@ export default function TwoFactorAuthModal({
       });
       const data = await res.json();
 
+      // ⭐ SỬA: Xử lý lỗi 401
       if (res.status === 401) {
         toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
         setIsOpen(false);
@@ -119,180 +116,163 @@ export default function TwoFactorAuthModal({
     <>
       <button
         onClick={handleOpenModal}
-        className={`w-full flex items-center justify-between gap-3 px-5 py-3 rounded-2xl text-sm font-medium transition-all duration-300 shadow-sm hover:shadow-md ${
+        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 ${
           has2FA
-            ? "bg-emerald-50/80 border border-emerald-200 text-emerald-700 hover:bg-emerald-100/80 hover:border-emerald-300"
-            : "bg-gradient-to-r from-amber-50/80 to-orange-50/80 border border-amber-200 text-amber-700 hover:from-amber-100/80 hover:to-orange-100/80 hover:border-amber-300 animate-pulse"
+            ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+            : "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 animate-pulse"
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className={`p-2 rounded-xl ${
-              has2FA ? "bg-emerald-100" : "bg-amber-100"
-            }`}
-          >
-            <Shield
-              size={18}
-              className={has2FA ? "text-emerald-600" : "text-amber-600"}
-            />
-          </div>
-          <div className="text-left">
-            <span className="block font-semibold">Bảo mật 2 lớp</span>
-            <span className="text-[10px] opacity-70">
-              {has2FA ? "Đã kích hoạt" : "Chưa kích hoạt"}
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <ShieldCheck
+            size={16}
+            className={has2FA ? "text-emerald-600" : "text-amber-600"}
+          />
+          <span>Bảo mật 2FA</span>
         </div>
-        <div
-          className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+        <span
+          className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${
             has2FA
               ? "bg-emerald-200 text-emerald-800"
               : "bg-amber-200 text-amber-800"
           }`}
         >
-          {has2FA ? "BẬT" : "TẮT"}
-        </div>
+          {has2FA ? "Đã bật" : "Chưa bật"}
+        </span>
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
             onClick={handleCloseModal}
           />
 
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-300">
-            {/* Header */}
-            <div className="relative px-7 py-5 bg-gradient-to-r from-indigo-600 to-purple-600">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-white/20 rounded-2xl backdrop-blur-sm">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-white font-bold text-lg">
-                      Xác thực 2 lớp
-                    </h2>
-                    <p className="text-white/70 text-xs">
-                      {has2FA ? "Đã được bảo vệ" : "Thiết lập bảo mật"}
-                    </p>
-                  </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md overflow-hidden relative z-10 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-2.5">
+                <div>
+                  <p className="text-[11px] text-gray-500">
+                    Cấu hình bảo mật (2FA)
+                  </p>
                 </div>
-                <button
-                  onClick={handleCloseModal}
-                  className="p-2 hover:bg-white/20 rounded-xl transition-colors text-white/70 hover:text-white"
-                >
-                  <X size={20} />
-                </button>
               </div>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            {/* Content */}
-            <div className="p-7">
+            <div className="p-6">
               {has2FA ? (
-                // ✅ Đã bật 2FA
-                <div className="flex flex-col items-center text-center py-6 space-y-4">
-                  <div className="p-4 bg-emerald-50 rounded-full">
-                    <CheckCircle2 className="w-16 h-16 text-emerald-500" />
+                <div className="flex flex-col items-center text-center py-4 space-y-3">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full">
+                    <CheckCircle2 size={44} />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h4 className="font-semibold text-gray-900 text-lg">
                     Tài khoản được bảo vệ
-                  </h3>
-                  <p className="text-sm text-gray-500 max-w-sm">
-                    Mã xác thực hai lớp đang hoạt động, giúp bảo vệ tài khoản
-                    của bạn an toàn hơn.
+                  </h4>
+                  <p className="text-sm text-gray-500 max-w-xs">
+                    Mã xác thực hai lớp (2FA) đang hoạt động ổn định trên tài
+                    khoản của bạn.
                   </p>
-                  <div className="w-full bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3 text-left">
-                    <Shield className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                    <p className="text-xs text-emerald-800 leading-relaxed">
-                      Mỗi lần đăng nhập sẽ yêu cầu mã OTP 6 chữ số từ ứng dụng
-                      Google Authenticator.
-                    </p>
+                  <div className="w-full bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl flex gap-2 text-left mt-2">
+                    <ShieldCheck
+                      size={16}
+                      className="text-emerald-600 shrink-0 mt-0.5"
+                    />
+                    <span className="text-xs text-emerald-800">
+                      Hệ thống sẽ tự động yêu cầu mã OTP gồm 6 chữ số từ thiết
+                      bị di động trong mỗi lần đăng nhập tiếp theo.
+                    </span>
                   </div>
                 </div>
               ) : (
-                // 🔧 Chưa bật 2FA
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {loading && !qrCodeImg ? (
-                    <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                      <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
-                      <p className="text-sm text-gray-500">
+                    <div className="flex flex-col items-center justify-center py-12 space-y-2">
+                      <RefreshCw
+                        size={24}
+                        className="animate-spin text-indigo-600"
+                      />
+                      <p className="text-xs text-gray-500">
                         Đang khởi tạo mã QR...
                       </p>
                     </div>
                   ) : (
                     <>
-                      {/* QR Code */}
-                      <div className="flex flex-col items-center">
-                        <div className="bg-indigo-50/50 rounded-2xl p-4 w-full text-center">
-                          <p className="text-xs text-indigo-800 mb-3 flex items-center justify-center gap-2">
-                            <QrCode className="w-4 h-4" />
-                            Quét mã QR bằng{" "}
-                            <strong>Google Authenticator</strong>
-                          </p>
+                      <div className="flex flex-col items-center text-center">
+                        <p className="text-xs text-gray-600 mb-4 bg-indigo-50/50 text-indigo-800 border border-indigo-100 px-3 py-2 rounded-xl">
+                          Quét mã QR dưới đây bằng phần mềm{" "}
+                          <strong>Google Authenticator</strong> trên thiết bị
+                          của bạn.
+                        </p>
 
-                          {qrCodeImg && (
-                            <div className="inline-block p-3 bg-white rounded-2xl border border-gray-200 shadow-sm">
-                              <img
-                                src={qrCodeImg}
-                                alt="2FA QR"
-                                className="w-44 h-44 object-contain"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        {qrCodeImg && (
+                          <div className="p-2.5 bg-white border border-gray-200 rounded-xl shadow-inner">
+                            <img
+                              src={qrCodeImg}
+                              alt="2FA QR"
+                              className="w-40 h-40 object-contain"
+                            />
+                          </div>
+                        )}
                       </div>
 
-                      {/* OTP Form */}
                       <form
                         onSubmit={handleVerifyAndActivate}
-                        className="space-y-4 border-t border-gray-100 pt-5"
+                        className="space-y-4 border-t border-gray-100 pt-4"
                       >
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5 flex items-center gap-2">
-                            <Key className="w-4 h-4 text-gray-400" />
-                            Mã OTP xác nhận
+                          <label
+                            htmlFor="modal-otp"
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Nhập mã OTP xác nhận:
                           </label>
                           <input
+                            id="modal-otp"
                             type="text"
                             maxLength={6}
-                            placeholder="0 0 0 0 0 0"
+                            placeholder="000000"
                             value={otp}
                             onChange={(e) =>
                               setOtp(e.target.value.replace(/\D/g, ""))
                             }
-                            className="w-full text-center font-mono tracking-[0.5em] text-2xl py-3.5 rounded-2xl border border-gray-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none shadow-sm transition-all"
+                            className="w-full text-center font-mono tracking-[0.4em] text-xl py-2.5 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm transition-all"
                             required
                             autoFocus
                           />
                         </div>
 
                         {error && (
-                          <div className="flex items-start gap-2.5 p-3 bg-red-50 rounded-2xl border border-red-100">
-                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                            <span className="text-sm text-red-700">
-                              {error}
-                            </span>
+                          <div className="p-2.5 bg-red-50 text-red-700 border border-red-100 rounded-xl text-xs flex gap-2">
+                            <ShieldAlert
+                              size={14}
+                              className="shrink-0 mt-0.5"
+                            />
+                            <span>{error}</span>
                           </div>
                         )}
 
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex gap-2.5">
                           <button
                             type="button"
                             onClick={handleCloseModal}
-                            className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 rounded-2xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="w-1/3 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-50 transition-colors"
                           >
                             Để sau
                           </button>
                           <button
                             type="submit"
                             disabled={loading || otp.length !== 6}
-                            className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-medium shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
                           >
                             {loading && (
-                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              <RefreshCw size={12} className="animate-spin" />
                             )}
-                            Kích hoạt
+                            <span>Kích hoạt bảo mật</span>
                           </button>
                         </div>
                       </form>
