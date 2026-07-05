@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  LogOut,
   Menu,
   X,
   RefreshCw,
@@ -228,26 +227,6 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  // ⭐ SỬA: Logout - clear cookies
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Logout failed", error);
-    } finally {
-      setUser(null);
-      // ⭐ Xóa cache và redirect
-      if (typeof window !== "undefined") {
-        localStorage.clear();
-        sessionStorage.clear();
-      }
-      router.push("/admin/login");
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -443,7 +422,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <nav className="flex-1 max-h-[76vh] overflow-y-auto py-3 px-3 space-y-1 scroll-none">
+        <nav className="flex-1 max-h-[90vh] overflow-y-auto py-3 px-3 space-y-1 scroll-none">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
@@ -558,14 +537,6 @@ export default function DashboardPage() {
             has2FA={!!user?.has2FA}
             onActivationSuccess={handle2FASuccess}
           />
-
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center gap-2 w-full border border-gray-200 bg-white text-gray-600 py-2 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-150 shadow-sm"
-          >
-            <LogOut size={14} />
-            <span>Đăng xuất</span>
-          </button>
         </div>
       </aside>
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden w-full p-2 bg-gray-100">
