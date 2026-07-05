@@ -6,6 +6,7 @@ const passport = require("passport");
 
 router.get(
   "/google",
+  validateGoogleCallback,
   passport.authenticate("google", {
     scope: ["profile", "email"],
     prompt: "select_account",
