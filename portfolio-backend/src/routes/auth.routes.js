@@ -4,6 +4,24 @@ const authController = require("../controllers/auth.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 const passport = require("passport");
 
+// 👉 THÊM MIDDLEWARE VALIDATE (nếu chưa có)
+const validateGoogleCallback = (req, res, next) => {
+  console.log("[Auth] ====== CALLBACK RECEIVED ======");
+  console.log("[Auth] Query params:", req.query);
+  
+  if (req.query.error) {
+    console.log(`[Auth] ❌ Google error: ${req.query.error}`);
+    return res.redirect(`${CLIENT_URL}/admin/login?error=${req.query.error}`);
+  }
+  
+  if (req.query.code && req.query.code.length < 10) {
+    console.log("[Auth] ❌ Malformed code detected");
+    return res.redirect(`${CLIENT_URL}/admin/login?error=malformed_code`);
+  }
+  
+  next();
+};
+
 router.get(
   "/google",
   validateGoogleCallback,
