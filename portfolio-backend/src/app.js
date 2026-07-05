@@ -1,3 +1,5 @@
+// backend/app.js
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -52,43 +54,24 @@ app.use(
   })
 );
 
-// ⭐ 3. RATE LIMIT - TỐI ƯU CHO DESKTOP APP
+// ⭐ 3. RATE LIMIT - ĐƠN GIẢN HÓA (FIX IPv6 ERROR)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 phút
-  max: process.env.NODE_ENV === "production" ? 500 : 9999, // Tăng từ 100 lên 500
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "production" ? 500 : 9999,
   message: {
     success: false,
     message: "Too many requests, please try again later.",
   },
-  validate: {
-    xForwardedForHeader: false,
-    trustProxy: false,
-  },
-  // ⭐ Bỏ qua rate limit cho desktop app
-  skip: (req) => {
-    const userAgent = req.headers['user-agent'] || '';
-    const isDesktop = userAgent.includes('HABCreativeDesktop');
-    if (isDesktop) {
-      console.log('🖥️ Desktop app request - skipping rate limit');
-    }
-    return isDesktop;
-  },
-  // ⭐ Key generator riêng cho desktop
-  keyGenerator: (req) => {
-    const userAgent = req.headers['user-agent'] || '';
-    const isDesktop = userAgent.includes('HABCreativeDesktop');
-    if (isDesktop) {
-      // Desktop app dùng IP + device fingerprint
-      return `desktop-${req.ip}-${req.headers['x-desktop-id'] || 'unknown'}`;
-    }
-    return req.ip;
-  }
+  // ⭐ THÊM: standard headers để tương thích
+  standardHeaders: true,
+  legacyHeaders: false,
+  // ⭐ BỎ: keyGenerator, skip, validate
 });
 
 // Áp dụng rate limit cho tất cả API routes
 app.use("/api/", limiter);
 
-// ⭐ Rate limit riêng cho auth routes (cao hơn)
+// ⭐ Rate limit riêng cho auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 100 : 9999,
@@ -96,10 +79,8 @@ const authLimiter = rateLimit({
     success: false,
     message: "Too many authentication requests, please try again later.",
   },
-  skip: (req) => {
-    const userAgent = req.headers['user-agent'] || '';
-    return userAgent.includes('HABCreativeDesktop');
-  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use("/api/auth/", authLimiter);
 
