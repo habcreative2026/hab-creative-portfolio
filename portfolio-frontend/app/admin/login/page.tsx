@@ -39,14 +39,27 @@ function LoginContent() {
     }
   }, []);
 
+  // 👉 LẮNG NGHE SỰ KIỆN TỪ MAIN PROCESS (DESKTOP APP)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isDesktop) {
+      const electronAPI = (window as any).electronAPI;
+      
+      // 👉 NẾU CÓ ELECTRON API, LẮNG NGHE SỰ KIỆN
+      if (electronAPI && electronAPI.onOpenBrowserLogin) {
+        const unsubscribe = electronAPI.onOpenBrowserLogin((data: any) => {
+          console.log('[Login] Received open browser event:', data);
+        });
+        return unsubscribe;
+      }
+    }
+  }, [isDesktop]);
+
   // 👉 NẾU LÀ DESKTOP APP VÀ ĐANG Ở TRẠNG THÁI WAITING -> MỞ TRÌNH DUYỆT
   useEffect(() => {
     if (isDesktop && isWaiting && typeof window !== 'undefined') {
       console.log('[Login] Desktop app - opening browser for Google login');
       
-      // 👉 DÙNG ANY ĐỂ TRÁNH LỖI TS
       const electronAPI = (window as any).electronAPI;
-      
       if (electronAPI && electronAPI.openBrowserLogin) {
         electronAPI.openBrowserLogin();
       } else {
@@ -60,13 +73,6 @@ function LoginContent() {
       router.push("/auth-denied");
     }
   }, [isUnauthorized, router]);
-
-  // 👉 NẾU CÓ TOKEN TỪ URL (2FA)
-  useEffect(() => {
-    if (isRequire2FA && token) {
-      console.log('[Login] 2FA required with token');
-    }
-  }, [isRequire2FA, token]);
 
   const handleGoogleLogin = () => {
     setLoading(true);
@@ -146,7 +152,6 @@ function LoginContent() {
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/50 p-8">
           {isRequire2FA ? (
-            // Step 2: 2FA Verification
             <div className="space-y-6">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-50 rounded-2xl mb-3">
@@ -213,7 +218,6 @@ function LoginContent() {
               </form>
             </div>
           ) : (
-            // Step 1: Login with Google
             <div className="space-y-6">
               <div className="text-center">
                 <p className="text-gray-700 font-medium">
@@ -221,7 +225,7 @@ function LoginContent() {
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   {isDesktop 
-                    ? "Click vào nút bên dưới để mở trình duyệt đăng nhập" 
+                    ? "Nhấn nút bên dưới để mở trình duyệt đăng nhập" 
                     : "Chỉ tài khoản được cấp quyền mới có thể truy cập"}
                 </p>
               </div>
@@ -256,7 +260,6 @@ function LoginContent() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-xs text-gray-400">
             Bảo mật 2 lớp • Phiên bản 1.0.0
