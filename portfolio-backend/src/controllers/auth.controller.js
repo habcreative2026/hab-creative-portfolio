@@ -12,16 +12,16 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// SỬA getCookieOptions
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: true, // ⭐ Luôn true cho production
-    sameSite: "none", // ⭐ QUAN TRỌNG
+    secure: true,
+    sameSite: "none",
     maxAge: maxAgeMs,
     path: '/',
-    domain: isProd ? '.onrender.com' : undefined,
+    // ⭐ TẠM THỜI BỎ DOMAIN
+    // domain: isProd ? '.onrender.com' : undefined,
   };
 };
 
