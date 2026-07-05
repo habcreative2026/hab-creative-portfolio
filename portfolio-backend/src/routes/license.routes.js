@@ -1,3 +1,5 @@
+// backend/routes/license.routes.js
+
 const router = require("express").Router();
 const licenseController = require("../controllers/license.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
@@ -54,5 +56,10 @@ router.get("/qr/status/:sessionId", licenseController.checkQRStatus);
 
 // ===== PROTECTED ROUTES =====
 router.post("/qr/verify", authMiddleware, licenseController.verifyQRScan);
+
+// ===== ⭐ THÊM DESKTOP APP ROUTES =====
+router.post("/device/register", licenseController.registerDevice);
+router.post("/device/verify", licenseController.verifyDeviceSession);
+router.get("/device/:deviceId", licenseController.getLicenseByDevice);
 
 module.exports = router;
