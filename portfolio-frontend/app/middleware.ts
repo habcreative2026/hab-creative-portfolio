@@ -5,7 +5,6 @@ import type { NextRequest } from "next/server";
 
 const DOWNLOAD_URL = "https://bhtdev.work";
 
-// ⭐ Kiểm tra desktop app
 function isDesktopApp(userAgent: string): boolean {
   return userAgent.includes('HABCreativeDesktop');
 }
@@ -15,26 +14,24 @@ export async function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
   const isDesktop = isDesktopApp(userAgent);
 
-  // ⭐ CHỈ CHO PHÉP ADMIN ROUTES QUA DESKTOP APP
+  // ⭐ LOG CHI TIẾT
+  console.log(`🔍 [Middleware] Path: ${pathname}`);
+  console.log(`📱 [Middleware] User-Agent: "${userAgent}"`);
+  console.log(`🖥️ [Middleware] isDesktop: ${isDesktop}`);
+
   if (pathname.startsWith("/admin")) {
-    // Bỏ qua auth-denied
     if (pathname === "/auth-denied") {
       return NextResponse.next();
     }
 
-    // Nếu KHÔNG phải desktop app → redirect về trang download
     if (!isDesktop) {
-      console.log(`🚫 Blocked admin access from web: ${pathname}`);
-      console.log(`📱 User-Agent: ${userAgent}`);
-      
+      console.log(`🚫 [Middleware] Blocked: ${pathname}`);
       const url = new URL(DOWNLOAD_URL);
       url.searchParams.set('blocked', 'true');
-      url.searchParams.set('reason', 'admin_only_desktop');
       return NextResponse.redirect(url);
     }
 
-    // ⭐ Desktop app: cho phép
-    console.log(`✅ Desktop app allowed: ${pathname}`);
+    console.log(`✅ [Middleware] Allowed: ${pathname}`);
     return NextResponse.next();
   }
 
