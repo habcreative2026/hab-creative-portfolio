@@ -68,7 +68,7 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
-// ⭐ 4. HELMET (TẮT CSP)
+// ⭐ 4. HELMET
 app.use(
   helmet({
     frameguard: {
@@ -76,7 +76,7 @@ app.use(
     },
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "unsafe-none" },
-    contentSecurityPolicy: false, // ⭐ TẮT CSP
+    contentSecurityPolicy: false,
   })
 );
 
@@ -105,8 +105,9 @@ app.get("/api/debug/cookies", (req, res) => {
   });
 });
 
-// Routes
+// ⭐ 7. ROUTES - ÁP DỤNG DESKTOP ONLY CHO ADMIN ROUTES
 app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/admin", desktopOnly); // 👉 CHỈ 1 LẦN
 app.use("/api/admin", require("./routes/admin.routes"));
 app.use("/api/translations", require("./routes/translation.routes"));
 app.use("/api/links", require("./routes/link.routes"));
@@ -119,9 +120,8 @@ app.use("/api/about", require("./routes/about.route"));
 app.use("/api/contact", require("./routes/contact.route"));
 app.use("/api/settings", require("./routes/settings.routes"));
 app.use("/api/license", licenseRoutes);
-app.use("/api/admin", desktopOnly);
 
-// ⭐ 7. ERROR HANDLER
+// ⭐ 8. ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err);
   res.status(500).json({
