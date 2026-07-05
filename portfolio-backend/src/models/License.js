@@ -36,6 +36,16 @@ const licenseSchema = new mongoose.Schema({
       return date;
     },
   },
+  // 👉 THÊM FIELD NÀY
+  licenseExpiresAt: {
+    type: Date,
+    required: true,
+    default: () => {
+      const date = new Date();
+      date.setDate(date.getDate() + 30);
+      return date;
+    },
+  },
   maxUses: {
     type: Number,
     default: 1,
