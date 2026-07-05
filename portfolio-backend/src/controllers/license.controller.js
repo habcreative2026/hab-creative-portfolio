@@ -307,16 +307,17 @@ exports.verifyLicense = async (req, res) => {
   }
 };
 
-// 👉 GENERATE QR
+// 👉 GENERATE QR - CHỈ TẠO SESSION, KHÔNG TẠO QR
 exports.generateQR = async (req, res) => {
   try {
     const { deviceId } = req.body;
     
-    console.log("[QR] Generating QR for device:", deviceId || 'unknown');
+    console.log("[QR] Creating session for device:", deviceId || 'unknown');
 
     const sessionId = crypto.randomBytes(16).toString("hex");
     const token = crypto.randomBytes(32).toString("hex");
 
+    // Lưu session
     qrSessions.set(sessionId, {
       sessionId,
       token,
@@ -325,15 +326,7 @@ exports.generateQR = async (req, res) => {
       createdAt: Date.now()
     });
 
-    // 👉 ĐƠN GIẢN HÓA QR DATA - CHỈ CÓ SESSION ID VÀ TOKEN
-    const qrData = {
-      s: sessionId,  // 👉 RÚT GỌN KEY
-      t: token       // 👉 RÚT GỌN KEY
-    };
-
-    // 👉 TẠO QR TỪ JSON ĐƠN GIẢN
-    const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrData));
-
+    // Auto expire sau 2 phút
     setTimeout(() => {
       const session = qrSessions.get(sessionId);
       if (session && session.status === 'pending') {
@@ -342,11 +335,11 @@ exports.generateQR = async (req, res) => {
       }
     }, 120000);
 
-    console.log("[QR] ✅ QR generated for session:", sessionId);
+    console.log("[QR] ✅ Session created:", sessionId);
 
+    // 👉 CHỈ TRẢ VỀ SESSION ID VÀ TOKEN
     res.json({
       success: true,
-      qrCode: qrCodeUrl,
       sessionId,
       token,
       expiresIn: 120,
@@ -355,7 +348,7 @@ exports.generateQR = async (req, res) => {
     console.error("Generate QR error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to generate QR",
+      message: "Failed to create session",
     });
   }
 };
