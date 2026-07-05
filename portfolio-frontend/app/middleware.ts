@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
     const response = await fetch(`${API_URL}/api/admin/me`, {
       headers: {
         Cookie: `auth_token=${token}`,
+        credentials: "include",
       },
     });
 
