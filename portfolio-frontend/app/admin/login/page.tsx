@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Mail, // 👉 THAY CHROME BẰNG MAIL HOẶC ICON KHÁC
+  Chrome,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -22,16 +22,34 @@ function LoginContent() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const isRequire2FA = searchParams.get("status") === "require2fa";
   const isUnauthorized = searchParams.get("status") === "unauthorized";
-  const isSessionExpired = searchParams.get("status") === "session_expired";
+  const isWaiting = searchParams.get("status") === "waiting";
+  const token = searchParams.get("token");
+  const email = searchParams.get("email");
 
+  // 👉 KIỂM TRA CÓ PHẢI DESKTOP APP KHÔNG
   useEffect(() => {
-    if (isSessionExpired) {
-      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
+    const userAgent = window.navigator.userAgent;
+    const isElectron = userAgent.includes('Electron') || userAgent.includes('Portfolio');
+    setIsDesktop(isElectron);
+  }, []);
+
+  // 👉 NẾU LÀ DESKTOP APP VÀ ĐANG Ở TRẠNG THÁI WAITING -> MỞ TRÌNH DUYỆT
+  useEffect(() => {
+    if (isDesktop && isWaiting) {
+      console.log('[Login] Desktop app - opening browser for Google login');
+      // 👉 GỬI REQUEST LÊN MAIN PROCESS ĐỂ MỞ TRÌNH DUYỆT
+      if (window.electronAPI) {
+        window.electronAPI.openBrowserLogin();
+      } else {
+        // 👉 FALLBACK: MỞ TRÌNH DUYỆT BẰNG WINDOW.OPEN
+        window.open(`${API_URL}/api/auth/google`, '_blank');
+      }
     }
-  }, [isSessionExpired]);
+  }, [isDesktop, isWaiting]);
 
   useEffect(() => {
     if (isUnauthorized) {
@@ -39,13 +57,28 @@ function LoginContent() {
     }
   }, [isUnauthorized, router]);
 
-  const [overrideStep, setOverrideStep] = useState<1 | null>(null);
-  const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
+  // 👉 NẾU CÓ TOKEN TỪ URL (2FA)
+  useEffect(() => {
+    if (isRequire2FA && token) {
+      console.log('[Login] 2FA required with token');
+    }
+  }, [isRequire2FA, token]);
 
   const handleGoogleLogin = () => {
     setLoading(true);
     setError("");
-    window.location.href = `${API_URL}/api/auth/google`;
+    
+    if (isDesktop) {
+      // 👉 MỞ TRÌNH DUYỆT NGOÀI
+      if (window.electronAPI) {
+        window.electronAPI.openBrowserLogin();
+      } else {
+        window.open(`${API_URL}/api/auth/google`, '_blank');
+      }
+    } else {
+      // 👉 WEB - REDIRECT TRỰC TIẾP
+      window.location.href = `${API_URL}/api/auth/google`;
+    }
   };
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
@@ -98,56 +131,18 @@ function LoginContent() {
       <div className="w-full max-w-md">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/25 mb-4">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">HAB Creative</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {currentStep === 1
-              ? "Đăng nhập để tiếp tục"
-              : "Xác thực bảo mật 2 lớp"}
+            {isRequire2FA ? "Xác thực bảo mật 2 lớp" : "Đăng nhập để tiếp tục"}
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/50 p-8">
-          {currentStep === 1 ? (
-            // Step 1: Login with Google
-            <div className="space-y-6">
-              <div className="text-center">
-                <p className="text-gray-700 font-medium">
-                  Đăng nhập bằng tài khoản Google
-                </p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Chỉ tài khoản được cấp quyền mới có thể truy cập
-                </p>
-              </div>
-
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-4 py-3.5 px-6 bg-white border-2 border-gray-200 rounded-2xl text-sm font-semibold text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:ring-4 focus:ring-indigo-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                    Đang chuyển hướng...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-5 h-5 text-indigo-600" />
-                    Đăng nhập với Google
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => router.push("/")}
-                className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-slate-50 hover:bg-slate-100 rounded-2xl text-sm font-medium text-gray-600 transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                Quay về Trang chủ
-              </button>
-            </div>
-          ) : (
+          {isRequire2FA ? (
             // Step 2: 2FA Verification
             <div className="space-y-6">
               <div className="text-center">
@@ -160,6 +155,11 @@ function LoginContent() {
                 <p className="text-sm text-gray-500 mt-1">
                   Nhập mã OTP từ Google Authenticator
                 </p>
+                {email && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    👤 {email}
+                  </p>
+                )}
               </div>
 
               <form onSubmit={handleVerifyOTP} className="space-y-5">
@@ -190,36 +190,65 @@ function LoginContent() {
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOverrideStep(1);
-                      setError("");
-                    }}
-                    className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-700 rounded-2xl text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Quay lại
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || otp.length !== 6}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-medium shadow-sm shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Đang xác thực...
-                      </>
-                    ) : (
-                      <>
-                        Xác nhận
-                        <CheckCircle2 className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={loading || otp.length !== 6}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-medium shadow-sm shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Đang xác thực...
+                    </>
+                  ) : (
+                    <>
+                      Xác nhận
+                      <CheckCircle2 className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
               </form>
+            </div>
+          ) : (
+            // Step 1: Login with Google
+            <div className="space-y-6">
+              <div className="text-center">
+                <p className="text-gray-700 font-medium">
+                  Đăng nhập bằng tài khoản Google
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {isDesktop 
+                    ? "Click vào nút bên dưới để mở trình duyệt đăng nhập" 
+                    : "Chỉ tài khoản được cấp quyền mới có thể truy cập"}
+                </p>
+              </div>
+
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-4 py-3.5 px-6 bg-white border-2 border-gray-200 rounded-2xl text-sm font-semibold text-gray-700 shadow-sm hover:shadow-md hover:border-gray-300 focus:ring-4 focus:ring-indigo-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                    Đang chuyển hướng...
+                  </>
+                ) : (
+                  <>
+                    <Chrome className="w-5 h-5 text-indigo-600" />
+                    {isDesktop ? "Đăng nhập với Google (Mở trình duyệt)" : "Đăng nhập với Google"}
+                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => router.push("/")}
+                className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-slate-50 hover:bg-slate-100 rounded-2xl text-sm font-medium text-gray-600 transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                Quay về Trang chủ
+              </button>
             </div>
           )}
         </div>
