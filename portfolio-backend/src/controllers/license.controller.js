@@ -438,11 +438,15 @@ exports.checkQRStatus = (req, res) => {
   }
 };
 
-// ⭐ SỬA: Verify QR Scan - Thêm validation và logging
+// ===== VERIFY QR SCAN - Mobile gọi, kiểm tra WHITELIST =====
 exports.verifyQRScan = (req, res) => {
   try {
     const { sessionId, token } = req.body;
     const userId = req.user?.id;
+    const userEmail = req.user?.email;
+
+    console.log("[QR Verify] User email from phone:", userEmail);
+    console.log("[QR Verify] User ID from phone:", userId);
 
     // Validate input
     if (!sessionId || !token) {
@@ -452,13 +456,32 @@ exports.verifyQRScan = (req, res) => {
       });
     }
 
-    if (!userId) {
+    if (!userId || !userEmail) {
       return res.status(401).json({
         success: false,
-        message: "User chưa đăng nhập",
+        message: "User chưa đăng nhập trên điện thoại",
       });
     }
 
+    // 👉 KIỂM TRA WHITELIST (QUAN TRỌNG)
+    const ALLOWED_ADMIN_EMAILS = [
+      "buihaitrong.dev@gmail.com",
+      "thehaters32@gmail.com",
+      "buihaitronglop962018@gmail.com",
+    ];
+
+    if (!ALLOWED_ADMIN_EMAILS.includes(userEmail.toLowerCase())) {
+      console.log(`[QR Verify] ❌ User không trong whitelist: ${userEmail}`);
+      return res.status(403).json({
+        success: false,
+        message:
+          "🚫 Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên.",
+      });
+    }
+
+    console.log(`[QR Verify] ✅ User trong whitelist: ${userEmail}`);
+
+    // Kiểm tra session
     const session = qrSessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -491,13 +514,15 @@ exports.verifyQRScan = (req, res) => {
       });
     }
 
+    // Update session
     session.status = "verified";
     session.userId = userId;
+    session.userEmail = userEmail;
     session.verifiedAt = Date.now();
     qrSessions.set(sessionId, session);
 
     console.log(
-      `[QR] ✅ User ${req.user.email} đã xác thực QR session ${sessionId}`,
+      `[QR] ✅ User ${userEmail} đã xác thực QR session ${sessionId} thành công`,
     );
 
     res.json({
@@ -516,6 +541,7 @@ exports.verifyQRScan = (req, res) => {
     });
   }
 };
+
 
 // ⭐ THÊM: Lấy thông tin session (debug)
 exports.getSessionInfo = (req, res) => {
