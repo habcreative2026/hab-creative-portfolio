@@ -36,7 +36,7 @@ const licenseSchema = new mongoose.Schema({
       return date;
     },
   },
-  // 👉 THÊM FIELD NÀY
+  // 👉 THỜI HẠN SỬ DỤNG LICENSE
   licenseExpiresAt: {
     type: Date,
     required: true,
@@ -59,6 +59,12 @@ const licenseSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
+  // 👉 THÔNG TIN THIẾT BỊ
+  deviceInfo: {
+    name: String,
+    os: String,
+    version: String,
+  },
 });
 
 // Tạo license key tự động
@@ -77,6 +83,12 @@ licenseSchema.methods.isValid = function () {
     this.expiresAt > new Date() &&
     this.usedCount < this.maxUses
   );
+};
+
+// Kiểm tra license còn hạn sử dụng
+licenseSchema.methods.isLicenseValid = function () {
+  if (!this.licenseExpiresAt) return true;
+  return new Date() < this.licenseExpiresAt;
 };
 
 module.exports = mongoose.model("License", licenseSchema);
