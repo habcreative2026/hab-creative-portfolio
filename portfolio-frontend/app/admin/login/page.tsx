@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 // ⭐ Dùng relative path, không cần API_URL
-const API_BASE = ""; // Empty vì dùng proxy
+const API_BASE = "";
 
 function LoginContent() {
   const router = useRouter();
@@ -25,6 +25,7 @@ function LoginContent() {
   const isUnauthorized = searchParams.get("status") === "unauthorized";
   const isSessionExpired = searchParams.get("status") === "session_expired";
 
+  // ⭐ Detect desktop app
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (window.navigator.userAgent.includes("HABCreativeDesktop")) {
@@ -76,12 +77,12 @@ function LoginContent() {
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
-  // ⭐ DESKTOP LOGIN
+  // ⭐ DESKTOP LOGIN - MỞ TRÌNH DUYỆT VÀ POLLING
   const handleDesktopLogin = () => {
     setIsWaitingForLogin(true);
     setError("");
 
-    // Mở trình duyệt để login
+    // ⭐ Mở trình duyệt với URL login
     window.open(`/api/auth/google`, "_blank");
 
     let attempts = 0;
@@ -94,16 +95,29 @@ function LoginContent() {
 
     const checkAuth = async () => {
       try {
-        const hasAuth = document.cookie.includes('auth_token');
+        // ⭐ Cách 1: Kiểm tra cookie trực tiếp trong desktop app
+        const hasAuthCookie = document.cookie.includes('auth_token');
         
-        if (hasAuth) {
+        if (hasAuthCookie) {
           console.log("✅ Auth detected via cookie!");
           toast.success("Đăng nhập thành công!");
           setIsWaitingForLogin(false);
-          router.push("/admin/dashboard");
-          return;
+          
+          // ⭐ Sau khi có cookie, gọi API để lấy user
+          const res = await fetch(`/api/admin/me`, {
+            credentials: "include",
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user) {
+              router.push("/admin/dashboard");
+              return;
+            }
+          }
         }
 
+        // ⭐ Cách 2: Gọi API check auth
         const res = await fetch(`/api/admin/me`, {
           credentials: "include",
         });
@@ -120,6 +134,7 @@ function LoginContent() {
         }
       } catch (error) {
         // Ignore
+        console.log("⏳ Waiting for auth...", error);
       }
 
       attempts++;
