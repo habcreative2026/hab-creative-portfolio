@@ -1,20 +1,16 @@
-// backend/controllers/license.controller.js
-
 const License = require("../models/License");
 const QRCode = require("qrcode");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
-// ⭐ SỬA: Dùng Redis nếu có, không thì dùng Map nhưng có cleanup tự động
-// Nếu có Redis, thay thế bằng Redis client
+// QR Sessions
 const qrSessions = new Map();
 
-// ⭐ THÊM: Cleanup tự động mỗi phút
+// Cleanup sessions
 setInterval(() => {
   const now = Date.now();
   let deletedCount = 0;
   for (const [key, session] of qrSessions) {
-    // Xóa session quá 2 phút
     if (now - session.createdAt > 120000) {
       qrSessions.delete(key);
       deletedCount++;
@@ -23,13 +19,20 @@ setInterval(() => {
   if (deletedCount > 0) {
     console.log(`[QR Cleanup] Đã xóa ${deletedCount} session hết hạn`);
   }
-}, 60000); // Chạy mỗi 60 giây
+}, 60000);
 
 // ============= ADMIN FUNCTIONS =============
 
+// 👉 TẠO LICENSE - THÊM THỜI HẠN
 exports.generateLicenses = async (req, res) => {
   try {
-    const { count = 1, expiresIn = 30, maxUses = 1, notes = "" } = req.body;
+    const { 
+      count = 1, 
+      expiresIn = 30, 
+      maxUses = 1, 
+      notes = "",
+      licenseDuration = "30d" // 3d, 5d, 7d, 30d, forever
+    } = req.body;
     const userId = req.user.id;
 
     if (count > 100) {
@@ -38,6 +41,22 @@ exports.generateLicenses = async (req, res) => {
         message: "Không thể tạo quá 100 license cùng lúc",
       });
     }
+
+    // 👉 TÍNH TOÁN THỜI HẠN
+    const getLicenseExpiresAt = (duration) => {
+      const date = new Date();
+      if (duration === 'forever') {
+        date.setFullYear(date.getFullYear() + 100);
+        return date;
+      }
+      const days = parseInt(duration);
+      if (isNaN(days)) {
+        date.setDate(date.getDate() + 30);
+        return date;
+      }
+      date.setDate(date.getDate() + days);
+      return date;
+    };
 
     const licenses = [];
     for (let i = 0; i < count; i++) {
@@ -52,15 +71,15 @@ exports.generateLicenses = async (req, res) => {
         notes,
         status: "active",
         createdBy: userId,
+        licenseExpiresAt: getLicenseExpiresAt(licenseDuration),
       });
 
       await license.save();
       licenses.push(license);
     }
 
-    // Log activity
     console.log(
-      `[License] Admin ${req.user.email} đã tạo ${licenses.length} license(s)`,
+      `[License] Admin đã tạo ${licenses.length} license(s) với hạn ${licenseDuration}`,
     );
 
     res.json({
@@ -69,6 +88,7 @@ exports.generateLicenses = async (req, res) => {
       licenses: licenses.map((l) => ({
         key: l.key,
         expiresAt: l.expiresAt,
+        licenseExpiresAt: l.licenseExpiresAt,
         status: l.status,
       })),
     });
@@ -81,6 +101,7 @@ exports.generateLicenses = async (req, res) => {
   }
 };
 
+// 👉 LẤY DANH SÁCH LICENSE
 exports.getLicenses = async (req, res) => {
   try {
     const { page = 1, limit = 50, status } = req.query;
@@ -114,6 +135,7 @@ exports.getLicenses = async (req, res) => {
   }
 };
 
+// 👉 THỐNG KÊ LICENSE
 exports.getLicenseStats = async (req, res) => {
   try {
     const [total, active, used, expired, revoked] = await Promise.all([
@@ -137,6 +159,7 @@ exports.getLicenseStats = async (req, res) => {
   }
 };
 
+// 👉 THU HỒI LICENSE
 exports.revokeLicense = async (req, res) => {
   try {
     const { id } = req.params;
@@ -149,19 +172,8 @@ exports.revokeLicense = async (req, res) => {
       });
     }
 
-    if (license.status === "revoked") {
-      return res.status(400).json({
-        success: false,
-        message: "License đã bị thu hồi trước đó",
-      });
-    }
-
     license.status = "revoked";
     await license.save();
-
-    console.log(
-      `[License] Admin ${req.user.email} đã thu hồi license ${license.key}`,
-    );
 
     res.json({
       success: true,
@@ -182,67 +194,40 @@ exports.revokeLicense = async (req, res) => {
 
 // ============= PUBLIC FUNCTIONS =============
 
-// ⭐ SỬA: Verify License - Thêm validation và logging
+// 👉 VERIFY LICENSE - CHO GIẢI NÉN ZIP
 exports.verifyLicense = async (req, res) => {
   try {
-    const { licenseKey, deviceId } = req.body;
+    const { licenseKey, deviceId, deviceInfo } = req.body;
 
-    // Validate input
     if (!licenseKey || !deviceId) {
       return res.status(400).json({
         success: false,
-        message: "Vui lòng cung cấp đầy đủ licenseKey và deviceId",
+        message: "Vui lòng cung cấp licenseKey và deviceId",
       });
     }
 
-    // Kiểm tra format
-    const isValidFormat =
-      /^[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/.test(licenseKey);
+    const isValidFormat = /^[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/.test(licenseKey);
     if (!isValidFormat) {
       return res.status(400).json({
         success: false,
-        message: "License key không đúng định dạng (XXXX-XXXX-XXXX-XXXX)",
+        message: "License key không đúng định dạng",
       });
     }
 
-    // ⭐ THÊM: Kiểm tra device đã dùng license nào chưa
-    const existingDeviceLicense = await License.findOne({
-      "usedBy.deviceId": deviceId,
-      status: { $in: ["active", "used"] },
-    });
-
-    if (existingDeviceLicense) {
-      console.log(
-        `[License] Device ${deviceId} đã được đăng ký với license ${existingDeviceLicense.key}`,
-      );
-      return res.status(400).json({
-        success: false,
-        message: "Device này đã được đăng ký với một license khác",
-        data: {
-          licenseKey: existingDeviceLicense.key,
-          status: existingDeviceLicense.status,
-        },
-      });
-    }
-
-    // Tìm license
     const license = await License.findOne({ key: licenseKey });
     if (!license) {
-      console.log(`[License] Không tìm thấy license: ${licenseKey}`);
       return res.status(404).json({
         success: false,
         message: "License key không tồn tại",
       });
     }
 
-    // Kiểm tra hiệu lực
+    // 👉 KIỂM TRA HIỆU LỰC
     if (!license.isValid()) {
       let message = "License không hợp lệ";
       if (license.status === "used") message = "License đã được sử dụng";
       else if (license.status === "expired") message = "License đã hết hạn";
       else if (license.status === "revoked") message = "License đã bị thu hồi";
-
-      console.log(`[License] License ${licenseKey} không hợp lệ: ${message}`);
       return res.status(401).json({
         success: false,
         message,
@@ -250,13 +235,23 @@ exports.verifyLicense = async (req, res) => {
       });
     }
 
-    // Đánh dấu đã sử dụng
+    // 👉 KIỂM TRA THỜI HẠN SỬ DỤNG
+    if (!license.isLicenseValid()) {
+      return res.status(401).json({
+        success: false,
+        message: "License đã hết hạn sử dụng",
+        status: "expired",
+      });
+    }
+
+    // 👉 ĐÁNH DẤU ĐÃ SỬ DỤNG
     license.usedCount += 1;
     license.usedBy = {
       deviceId,
       usedAt: new Date(),
       ip: req.ip || req.connection?.remoteAddress || "unknown",
     };
+    license.deviceInfo = deviceInfo || {};
 
     if (license.usedCount >= license.maxUses) {
       license.status = "used";
@@ -264,25 +259,22 @@ exports.verifyLicense = async (req, res) => {
 
     await license.save();
 
-    console.log(
-      `[License] ✅ License ${licenseKey} được xác thực thành công bởi device ${deviceId}`,
-    );
+    console.log(`[License] ✅ License ${licenseKey} được xác thực thành công`);
 
-    // Tạo session cho QR
+    // 👉 TẠO SESSION CHO QR
     const sessionId = crypto.randomBytes(16).toString("hex");
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Lưu session với thông tin đầy đủ
     qrSessions.set(sessionId, {
       sessionId,
       token,
       deviceId,
       licenseKey,
+      licenseExpiresAt: license.licenseExpiresAt,
       timestamp: Date.now(),
       status: "pending",
       createdAt: Date.now(),
       type: "desktop_auth",
-      version: "1.0.0",
     });
 
     res.json({
@@ -294,6 +286,7 @@ exports.verifyLicense = async (req, res) => {
       license: {
         key: license.key,
         expiresAt: license.expiresAt,
+        licenseExpiresAt: license.licenseExpiresAt,
         maxUses: license.maxUses,
         usedCount: license.usedCount,
       },
@@ -307,17 +300,16 @@ exports.verifyLicense = async (req, res) => {
   }
 };
 
-// 👉 GENERATE QR - CHỈ TẠO SESSION, KHÔNG TẠO QR
+// 👉 GENERATE QR
 exports.generateQR = async (req, res) => {
   try {
     const { deviceId } = req.body;
     
-    console.log("[QR] Creating session for device:", deviceId || 'unknown');
+    console.log("[QR] Generating QR for device:", deviceId || 'unknown');
 
     const sessionId = crypto.randomBytes(16).toString("hex");
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Lưu session
     qrSessions.set(sessionId, {
       sessionId,
       token,
@@ -326,7 +318,6 @@ exports.generateQR = async (req, res) => {
       createdAt: Date.now()
     });
 
-    // Auto expire sau 2 phút
     setTimeout(() => {
       const session = qrSessions.get(sessionId);
       if (session && session.status === 'pending') {
@@ -335,9 +326,8 @@ exports.generateQR = async (req, res) => {
       }
     }, 120000);
 
-    console.log("[QR] ✅ Session created:", sessionId);
+    console.log("[QR] ✅ QR generated for session:", sessionId);
 
-    // 👉 CHỈ TRẢ VỀ SESSION ID VÀ TOKEN
     res.json({
       success: true,
       sessionId,
@@ -348,23 +338,15 @@ exports.generateQR = async (req, res) => {
     console.error("Generate QR error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to create session",
+      message: "Failed to generate QR",
     });
   }
 };
 
-// ⭐ SỬA: Check QR Status - Thêm logging
+// 👉 CHECK QR STATUS
 exports.checkQRStatus = (req, res) => {
   try {
     const { sessionId } = req.params;
-
-    if (!sessionId) {
-      return res.status(400).json({
-        success: false,
-        message: "Thiếu sessionId",
-      });
-    }
-
     const session = qrSessions.get(sessionId);
 
     if (!session) {
@@ -374,31 +356,28 @@ exports.checkQRStatus = (req, res) => {
       });
     }
 
-    // Kiểm tra hết hạn
     if (Date.now() - session.createdAt > 120000) {
       session.status = "expired";
       qrSessions.set(sessionId, session);
       return res.json({
         success: true,
         status: "expired",
-        message: "QR code đã hết hạn (2 phút)",
+        message: "QR code đã hết hạn",
       });
     }
 
     if (session.status === "verified") {
-      // Tạo JWT để truy cập admin
       const webToken = jwt.sign(
         {
           sessionId,
           deviceId: session.deviceId,
           licenseKey: session.licenseKey,
+          licenseExpiresAt: session.licenseExpiresAt,
           type: "qr_auth",
         },
         process.env.JWT_SECRET,
         { expiresIn: "1h" },
       );
-
-      console.log(`[QR] ✅ Session ${sessionId} verified thành công`);
 
       return res.json({
         success: true,
@@ -421,17 +400,15 @@ exports.checkQRStatus = (req, res) => {
   }
 };
 
-// ===== VERIFY QR SCAN - Mobile gọi, kiểm tra WHITELIST =====
+// 👉 VERIFY QR SCAN
 exports.verifyQRScan = (req, res) => {
   try {
     const { sessionId, token } = req.body;
     const userId = req.user?.id;
     const userEmail = req.user?.email;
 
-    console.log("[QR Verify] User email from phone:", userEmail);
-    console.log("[QR Verify] User ID from phone:", userId);
+    console.log("[QR Verify] User email:", userEmail);
 
-    // Validate input
     if (!sessionId || !token) {
       return res.status(400).json({
         success: false,
@@ -442,11 +419,11 @@ exports.verifyQRScan = (req, res) => {
     if (!userId || !userEmail) {
       return res.status(401).json({
         success: false,
-        message: "User chưa đăng nhập trên điện thoại",
+        message: "User chưa đăng nhập",
       });
     }
 
-    // 👉 KIỂM TRA WHITELIST (QUAN TRỌNG)
+    // 👉 KIỂM TRA WHITELIST
     const ALLOWED_ADMIN_EMAILS = [
       "buihaitrong.dev@gmail.com",
       "thehaters32@gmail.com",
@@ -457,14 +434,10 @@ exports.verifyQRScan = (req, res) => {
       console.log(`[QR Verify] ❌ User không trong whitelist: ${userEmail}`);
       return res.status(403).json({
         success: false,
-        message:
-          "🚫 Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên.",
+        message: "🚫 Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên.",
       });
     }
 
-    console.log(`[QR Verify] ✅ User trong whitelist: ${userEmail}`);
-
-    // Kiểm tra session
     const session = qrSessions.get(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -487,7 +460,6 @@ exports.verifyQRScan = (req, res) => {
       });
     }
 
-    // Kiểm tra session chưa hết hạn
     if (Date.now() - session.createdAt > 120000) {
       session.status = "expired";
       qrSessions.set(sessionId, session);
@@ -497,16 +469,13 @@ exports.verifyQRScan = (req, res) => {
       });
     }
 
-    // Update session
     session.status = "verified";
     session.userId = userId;
     session.userEmail = userEmail;
     session.verifiedAt = Date.now();
     qrSessions.set(sessionId, session);
 
-    console.log(
-      `[QR] ✅ User ${userEmail} đã xác thực QR session ${sessionId} thành công`,
-    );
+    console.log(`[QR] ✅ User ${userEmail} đã xác thực QR thành công`);
 
     res.json({
       success: true,
@@ -523,48 +492,6 @@ exports.verifyQRScan = (req, res) => {
       message: "Lỗi xác thực QR",
     });
   }
-};
-
-
-// ⭐ THÊM: Lấy thông tin session (debug)
-exports.getSessionInfo = (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const session = qrSessions.get(sessionId);
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: "Session không tồn tại",
-      });
-    }
-
-    // Không trả về token để bảo mật
-    const { token, ...safeSession } = session;
-    res.json({
-      success: true,
-      data: safeSession,
-    });
-  } catch (error) {
-    console.error("Get session info error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi lấy thông tin session",
-    });
-  }
-};
-
-// Export cleanup function để có thể gọi từ ngoài
-exports.cleanupSessions = () => {
-  const now = Date.now();
-  let deletedCount = 0;
-  for (const [key, session] of qrSessions) {
-    if (now - session.createdAt > 120000) {
-      qrSessions.delete(key);
-      deletedCount++;
-    }
-  }
-  return deletedCount;
 };
 
 module.exports = exports;
