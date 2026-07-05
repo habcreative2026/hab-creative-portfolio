@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const rateLimit = require("express-rate-limit");
 const licenseRoutes = require("./routes/license.routes");
+const desktopOnly = require("./middlewares/desktop-only.middleware");
 
 require("./config/passport");
 
@@ -45,6 +46,7 @@ app.use(
       "X-Requested-With",
       "Accept",
       "Origin",
+      "X-Desktop-App",
     ],
     exposedHeaders: ["Set-Cookie"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -117,6 +119,7 @@ app.use("/api/about", require("./routes/about.route"));
 app.use("/api/contact", require("./routes/contact.route"));
 app.use("/api/settings", require("./routes/settings.routes"));
 app.use("/api/license", licenseRoutes);
+app.use("/api/admin", desktopOnly);
 
 // ⭐ 7. ERROR HANDLER
 app.use((err, req, res, next) => {
