@@ -12,13 +12,25 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
+// const getCookieOptions = (maxAgeMs) => {
+//   const isProd = process.env.NODE_ENV === "production";
+//   return {
+//     httpOnly: true,
+//     secure: isProd,
+//     sameSite: isProd ? "lax" : "lax",
+//     maxAge: maxAgeMs,
+//   };
+// };
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "lax" : "lax",
+    secure: isProd, // local: false, production: true
+    sameSite: "lax", // ⭐ "lax" cho local, "none" cho production
     maxAge: maxAgeMs,
+    path: "/",
+    // ⭐ THÊM DOMAIN CHO PRODUCTION
+    ...(isProd && { domain: ".onrender.com" }),
   };
 };
 
@@ -250,23 +262,21 @@ exports.activate2FA = async (req, res) => {
   }
 };
 
-// ⭐ THÊM: Refresh Token API
 exports.refreshToken = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refresh_token;
+    // ⭐ SỬA: Lấy auth_token từ cookie
+    const token = req.cookies.auth_token;
 
-    if (!refreshToken) {
+    if (!token) {
+      console.log(`❌ [Refresh] No auth_token in cookies`);
       return res.status(401).json({
         success: false,
-        message: "Không tìm thấy refresh token.",
+        message: "Không tìm thấy token.",
       });
     }
 
-    // Verify refresh token
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-    );
+    // ⭐ Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id);
     if (!user) {
@@ -276,14 +286,17 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    // Tạo token mới
+    // ⭐ Tạo token mới
     const newAuthToken = generateToken(user);
 
+    // ⭐ Set cookie mới
     res.cookie(
       "auth_token",
       newAuthToken,
       getCookieOptions(7 * 24 * 60 * 60 * 1000),
     );
+
+    console.log(`✅ [Refresh] New token issued for: ${user.email}`);
 
     return res.json({
       success: true,
