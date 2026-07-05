@@ -1,16 +1,19 @@
-// portfolio-frontend/next.config.ts
-import type { NextConfig } from "next";
+// frontend/next.config.js
 
-const nextConfig: NextConfig = {
-  // 👉 BỎ experimental.proxy HOÀN TOÀN
-  // Không cần cấu hình gì thêm, Next.js tự động nhận file proxy.ts ở root
-  // Các config khác (nếu có) giữ nguyên
-  // Ví dụ:
-  // images: {
-  //   domains: ['...'],
-  // },
-  // reactStrictMode: true,
-  // ...
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://habcreative-cms.onrender.com/api/:path*',
+      },
+    ];
+  },
+  // Cấu hình images nếu có
+  images: {
+    domains: ['res.cloudinary.com'],
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
