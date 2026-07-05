@@ -162,9 +162,18 @@ export default function DashboardPage() {
     let isMounted = true;
     const fetchUser = async () => {
       try {
-        // ⭐ Gọi qua proxy
+        // ⭐ Kiểm tra nếu là desktop app
+        let token = null;
+        if (typeof window !== "undefined" && window.electronAPI) {
+          token = await window.electronAPI.getToken();
+        }
+
+        // ⭐ Gọi API với header nếu có token
         const res = await fetch(`/api/admin/me`, {
           credentials: "include",
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
         });
 
         if (res.status === 401) {
@@ -173,6 +182,9 @@ export default function DashboardPage() {
           if (refreshed) {
             const retryRes = await fetch(`/api/admin/me`, {
               credentials: "include",
+              headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              },
             });
             if (retryRes.ok) {
               const data = await retryRes.json();
