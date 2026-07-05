@@ -3,6 +3,7 @@
 const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
+const { OAuth2Client } = require("google-auth-library");
 const generateToken = require("../utils/generateToken");
 const User = require("../models/User");
 
@@ -12,7 +13,7 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// ⭐ SỬA: Cookie options - domain frontend
+// ⭐ Cookie options - domain frontend
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   
@@ -22,12 +23,11 @@ const getCookieOptions = (maxAgeMs) => {
     sameSite: isProd ? "none" : "lax",
     maxAge: maxAgeMs,
     path: "/",
-    // ⭐ Set domain cho frontend
     domain: isProd ? ".habcreative-portfolio.vercel.app" : undefined,
   };
 };
 
-// ⭐ SỬA: Clear auth cookies
+// ⭐ Clear auth cookies
 const clearAuthCookies = (res) => {
   const isProd = process.env.NODE_ENV === "production";
   const domain = isProd ? ".habcreative-portfolio.vercel.app" : undefined;
@@ -47,7 +47,7 @@ const clearAuthCookies = (res) => {
   console.log("✅ All auth cookies cleared");
 };
 
-// ===== GOOGLE SUCCESS =====
+// ===== GOOGLE SUCCESS (Web) =====
 exports.googleSuccess = async (req, res) => {
   const user = req.user;
   const CLIENT_URL = process.env.CLIENT_URL;
@@ -121,6 +121,101 @@ exports.googleSuccess = async (req, res) => {
 
   console.log(`✅ [Auth] Token set for: ${existingUser.email}`);
   return res.redirect(`${CLIENT_URL}/admin/dashboard`);
+};
+
+// ===== EXCHANGE CODE (Desktop) =====
+exports.exchangeCode = async (req, res) => {
+  try {
+    const { code } = req.query;
+    
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing authorization code",
+      });
+    }
+
+    console.log("🔑 [Exchange] Code received, exchanging for token...");
+
+    // ⭐ Tạo OAuth2Client với redirect_uri khớp với Google Console
+    const oauth2Client = new OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      'http://localhost:3000/auth/callback' // ⭐ Phải khớp với URI đã đăng ký
+    );
+
+    // ⭐ Lấy token từ Google
+    const { tokens } = await oauth2Client.getToken(code);
+    console.log("✅ Tokens received from Google");
+
+    // ⭐ Verify ID token
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const name = payload.name;
+    const avatar = payload.picture;
+
+    console.log(`📧 [Exchange] User email: ${email}`);
+
+    // ⭐ Kiểm tra whitelist
+    if (!ALLOWED_ADMIN_EMAILS.includes(email)) {
+      console.log(`❌ [Exchange] Email not allowed: ${email}`);
+      return res.status(403).json({
+        success: false,
+        message: "Email not allowed",
+      });
+    }
+
+    // ⭐ Tìm hoặc tạo user
+    let user = await User.findOne({ email });
+    if (!user) {
+      const role = email === "buihaitrong.dev@gmail.com" ? "super_admin" : "admin";
+      user = await User.create({
+        email,
+        name: name || "Admin",
+        avatar: avatar || "",
+        role,
+        oauthId: payload.sub,
+      });
+      console.log(`✅ [Exchange] User created: ${email}`);
+    }
+
+    // ⭐ Tạo session token
+    const sessionToken = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    console.log(`✅ [Exchange] Token issued for: ${email}`);
+
+    // ⭐ Trả về token cho desktop app
+    res.json({
+      success: true,
+      token: sessionToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [Exchange] Error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 // ===== VERIFY 2FA =====
