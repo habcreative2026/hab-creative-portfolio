@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Globe, // 👉 THAY Chrome BẰNG Globe
+  Globe,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -41,7 +41,8 @@ function LoginContent() {
   useEffect(() => {
     if (isDesktop && isWaiting) {
       console.log('[Login] Desktop app - opening browser for Google login');
-      if (window.electronAPI) {
+      // 👉 KIỂM TRA electronAPI CÓ TỒN TẠI KHÔNG
+      if (window.electronAPI && window.electronAPI.openBrowserLogin) {
         window.electronAPI.openBrowserLogin();
       } else {
         window.open(`${API_URL}/api/auth/google`, '_blank');
@@ -67,7 +68,7 @@ function LoginContent() {
     setError("");
     
     if (isDesktop) {
-      if (window.electronAPI) {
+      if (window.electronAPI && window.electronAPI.openBrowserLogin) {
         window.electronAPI.openBrowserLogin();
       } else {
         window.open(`${API_URL}/api/auth/google`, '_blank');
