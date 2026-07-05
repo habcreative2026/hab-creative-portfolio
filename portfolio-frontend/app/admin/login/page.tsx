@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -16,6 +16,10 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isWaitingForLogin, setIsWaitingForLogin] = useState(false);
+  
+  // ⭐ Dùng ref để tránh gọi nhiều lần
+  const hasCheckedAuth = useRef(false);
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
   const isRequire2FA = searchParams.get("status") === "require2fa";
   const isUnauthorized = searchParams.get("status") === "unauthorized";
@@ -42,7 +46,11 @@ function LoginContent() {
     }
   }, [isUnauthorized, router]);
 
+  // ⭐ CHỈ CHECK AUTH 1 LẦN DUY NHẤT
   useEffect(() => {
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+
     const checkAuth = async () => {
       try {
         const res = await fetch(`${API_URL}/api/admin/me`, {
@@ -62,7 +70,8 @@ function LoginContent() {
       }
     };
 
-    checkAuth();
+    // ⭐ Chỉ check sau 2 giây, tránh request quá sớm
+    setTimeout(checkAuth, 2000);
   }, [router]);
 
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
@@ -75,7 +84,13 @@ function LoginContent() {
     window.open(`${API_URL}/api/auth/google`, "_blank");
 
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 20; // ⭐ Giảm từ 30 xuống 20
+    const delay = 3000; // ⭐ Tăng từ 2000 lên 3000ms
+
+    // ⭐ Clear interval cũ nếu có
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+    }
 
     const checkAuth = async () => {
       try {
@@ -97,7 +112,7 @@ function LoginContent() {
 
       attempts++;
       if (attempts < maxAttempts) {
-        setTimeout(checkAuth, 2000);
+        pollingInterval.current = setTimeout(checkAuth, delay);
       } else {
         setIsWaitingForLogin(false);
         toast.error("Không thể xác thực. Vui lòng thử lại.");
@@ -106,6 +121,15 @@ function LoginContent() {
 
     setTimeout(checkAuth, 3000);
   };
+
+  // ⭐ Cleanup polling khi unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+    };
+  }, []);
 
   const handleGoogleLogin = () => {
     setLoading(true);
