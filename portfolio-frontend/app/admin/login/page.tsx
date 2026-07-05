@@ -17,7 +17,6 @@ function LoginContent() {
   const [isDesktop, setIsDesktop] = useState(false);
   const [isWaitingForLogin, setIsWaitingForLogin] = useState(false);
   
-  // ⭐ Dùng ref để tránh gọi nhiều lần
   const hasCheckedAuth = useRef(false);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -46,7 +45,7 @@ function LoginContent() {
     }
   }, [isUnauthorized, router]);
 
-  // ⭐ CHỈ CHECK AUTH 1 LẦN DUY NHẤT
+  // ⭐ CHECK AUTH 1 LẦN
   useEffect(() => {
     if (hasCheckedAuth.current) return;
     hasCheckedAuth.current = true;
@@ -70,30 +69,42 @@ function LoginContent() {
       }
     };
 
-    // ⭐ Chỉ check sau 2 giây, tránh request quá sớm
     setTimeout(checkAuth, 2000);
   }, [router]);
 
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
+  // ⭐ DESKTOP LOGIN - MỞ TRÌNH DUYỆT VÀ POLLING
   const handleDesktopLogin = () => {
     setIsWaitingForLogin(true);
     setError("");
 
+    // Mở trình duyệt để login
     window.open(`${API_URL}/api/auth/google`, "_blank");
 
     let attempts = 0;
-    const maxAttempts = 20; // ⭐ Giảm từ 30 xuống 20
-    const delay = 3000; // ⭐ Tăng từ 2000 lên 3000ms
+    const maxAttempts = 30;
+    const delay = 3000;
 
-    // ⭐ Clear interval cũ nếu có
     if (pollingInterval.current) {
       clearInterval(pollingInterval.current);
     }
 
     const checkAuth = async () => {
       try {
+        // ⭐ Kiểm tra cookie trực tiếp
+        const hasAuth = document.cookie.includes('auth_token');
+        
+        if (hasAuth) {
+          console.log("✅ Auth detected via cookie!");
+          toast.success("Đăng nhập thành công!");
+          setIsWaitingForLogin(false);
+          router.push("/admin/dashboard");
+          return;
+        }
+
+        // ⭐ Hoặc kiểm tra qua API
         const res = await fetch(`${API_URL}/api/admin/me`, {
           credentials: "include",
         });
@@ -101,7 +112,9 @@ function LoginContent() {
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
+            console.log("✅ Auth detected via API!");
             toast.success("Đăng nhập thành công!");
+            setIsWaitingForLogin(false);
             router.push("/admin/dashboard");
             return;
           }
@@ -112,6 +125,7 @@ function LoginContent() {
 
       attempts++;
       if (attempts < maxAttempts) {
+        console.log(`⏳ Waiting for auth... (${attempts}/${maxAttempts})`);
         pollingInterval.current = setTimeout(checkAuth, delay);
       } else {
         setIsWaitingForLogin(false);
@@ -122,7 +136,7 @@ function LoginContent() {
     setTimeout(checkAuth, 3000);
   };
 
-  // ⭐ Cleanup polling khi unmount
+  // ⭐ Cleanup polling
   useEffect(() => {
     return () => {
       if (pollingInterval.current) {
