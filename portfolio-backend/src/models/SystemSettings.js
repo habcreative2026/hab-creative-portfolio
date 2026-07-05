@@ -12,7 +12,7 @@ const systemSettingsSchema = new mongoose.Schema(
     whitelist: {
       emails: {
         type: [String],
-        default: ["buihaitrong.dev@gmail.com", "thehaters32@gmail.com"],
+        default: ["buihaitrong.dev@gmail.com", "thehaters32@gmail.com", "buihaitronglop962018@gmail.com"],
       },
     },
     apiKeys: {
