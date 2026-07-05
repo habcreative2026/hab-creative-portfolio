@@ -307,53 +307,46 @@ exports.verifyLicense = async (req, res) => {
   }
 };
 
-// ⭐ SỬA: Generate QR - Thêm validation
+// 👉 GENERATE QR - Tạo QR cho desktop app (PUBLIC - không cần auth)
 exports.generateQR = async (req, res) => {
   try {
-    const { sessionId, token, deviceId } = req.body;
+    const { deviceId } = req.body;
+    
+    console.log("[QR] Generating QR for device:", deviceId || 'unknown');
 
-    // Validate input
-    if (!sessionId || !token || !deviceId) {
-      return res.status(400).json({
-        success: false,
-        message: "Thiếu thông tin sessionId, token hoặc deviceId",
-      });
-    }
-
-    const session = qrSessions.get(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: "Session không tồn tại",
-      });
-    }
-
-    // Kiểm tra token khớp
-    if (session.token !== token) {
-      return res.status(401).json({
-        success: false,
-        message: "Token không hợp lệ",
-      });
-    }
-
-    // Kiểm tra deviceId khớp
-    if (session.deviceId !== deviceId) {
-      return res.status(400).json({
-        success: false,
-        message: "Device ID không khớp với session",
-      });
-    }
+    // 👉 TẠO SESSION MỚI (KHÔNG CẦN SESSION ID TỪ CLIENT)
+    const sessionId = crypto.randomBytes(16).toString("hex");
+    const token = crypto.randomBytes(32).toString("hex");
 
     const qrData = {
       sessionId,
       token,
-      deviceId,
+      deviceId: deviceId || 'desktop-' + Date.now(),
       timestamp: Date.now(),
-      type: "desktop_auth",
-      version: "1.0.0",
+      type: 'desktop_auth',
+      version: '1.0.0'
     };
 
+    // Lưu session
+    qrSessions.set(sessionId, {
+      ...qrData,
+      status: 'pending',
+      createdAt: Date.now()
+    });
+
+    // Tạo QR code
     const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrData));
+
+    // Auto expire sau 2 phút
+    setTimeout(() => {
+      const session = qrSessions.get(sessionId);
+      if (session && session.status === 'pending') {
+        session.status = 'expired';
+        qrSessions.set(sessionId, session);
+      }
+    }, 120000);
+
+    console.log("[QR] ✅ QR generated for session:", sessionId);
 
     res.json({
       success: true,
@@ -365,7 +358,7 @@ exports.generateQR = async (req, res) => {
     console.error("Generate QR error:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi tạo QR code",
+      message: "Failed to generate QR",
     });
   }
 };
