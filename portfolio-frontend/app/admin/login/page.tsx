@@ -6,9 +6,6 @@ import { useState, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
-// ⭐ Dùng relative path, không cần API_URL
-const API_BASE = "";
-
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,7 +22,6 @@ function LoginContent() {
   const isUnauthorized = searchParams.get("status") === "unauthorized";
   const isSessionExpired = searchParams.get("status") === "session_expired";
 
-  // ⭐ Detect desktop app
   useEffect(() => {
     if (typeof window !== "undefined") {
       if (window.navigator.userAgent.includes("HABCreativeDesktop")) {
@@ -47,7 +43,6 @@ function LoginContent() {
     }
   }, [isUnauthorized, router]);
 
-  // ⭐ CHECK AUTH 1 LẦN
   useEffect(() => {
     if (hasCheckedAuth.current) return;
     hasCheckedAuth.current = true;
@@ -77,25 +72,29 @@ function LoginContent() {
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
-  // ⭐ DESKTOP LOGIN - MỞ TRÌNH DUYỆT
+  // ⭐ DESKTOP LOGIN
   const handleDesktopLogin = async () => {
     setIsWaitingForLogin(true);
     setError("");
 
     try {
-      if (window.electronAPI) {
-        await window.electronAPI.loginWithBrowser();
+      // ⭐ Kiểm tra electronAPI an toàn
+      const api = window.electronAPI;
+      if (api && typeof api.loginWithBrowser === 'function') {
+        await api.loginWithBrowser();
         toast.success("Đã mở trình duyệt đăng nhập. Vui lòng hoàn tất!");
         
-        // ⭐ Bắt đầu polling để kiểm tra token
         let attempts = 0;
         const maxAttempts = 30;
         const delay = 3000;
 
         const checkToken = async () => {
           try {
-            // ⭐ Kiểm tra token đã được lưu chưa
-            const token = await window.electronAPI.getToken();
+            // ⭐ Kiểm tra token an toàn
+            const token = api && typeof api.getToken === 'function' 
+              ? await api.getToken() 
+              : null;
+              
             if (token) {
               console.log("✅ Token detected!");
               toast.success("Đăng nhập thành công!");
@@ -128,7 +127,6 @@ function LoginContent() {
     }
   };
 
-  // ⭐ Cleanup polling
   useEffect(() => {
     return () => {
       if (pollingInterval.current) {
