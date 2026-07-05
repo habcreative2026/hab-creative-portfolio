@@ -16,12 +16,11 @@ const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: true,        // ⭐ LUÔN TRUE
+    sameSite: "none",    // ⭐ LUÔN NONE (quan trọng)
     maxAge: maxAgeMs,
     path: '/',
-    // ⭐ TẠM THỜI BỎ DOMAIN
-    // domain: isProd ? '.onrender.com' : undefined,
+    domain: isProd ? '.onrender.com' : undefined,
   };
 };
 
