@@ -12,6 +12,8 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
+const DESKTOP_SCHEME = 'portfolio://';
+
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
@@ -38,13 +40,16 @@ exports.googleSuccess = async (req, res) => {
   const user = req.user;
   const CLIENT_URL = process.env.CLIENT_URL;
 
+  console.log("🔐 [Auth] ====== GOOGLE SUCCESS ======");
+  console.log("🔐 [Auth] User email:", user?.email);
+
   if (!user || user.isWhitelisted === false) {
-    console.log(`[Auth Controller]: Chặn truy cập. Điều hướng về /auth-denied`);
+    console.log(`❌ [Auth] User not whitelisted: ${user?.email}`);
     return res.redirect(`${CLIENT_URL}/auth-denied`);
   }
 
-  if (!ALLOWED_ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-    console.log(`[Auth]: Email ${user.email} không hợp lệ.`);
+  if (!ALLOWED_ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
+    console.log(`❌ [Auth] Email not allowed: ${user.email}`);
     return res.redirect(`${CLIENT_URL}/auth-denied`);
   }
 
@@ -73,9 +78,10 @@ exports.googleSuccess = async (req, res) => {
     }
   }
 
-  // ⭐ SỬA: Nếu có 2FA, clear token cũ trước khi tạo temp token
+  // 👉 CHECK 2FA
   if (existingUser.twoFactorSecret) {
-    // ⭐ QUAN TRỌNG: Clear auth_token cũ
+    console.log(`🔐 [Auth] 2FA ENABLED for ${existingUser.email}`);
+    
     res.clearCookie("auth_token", getCookieOptions(0));
 
     const tempToken = jwt.sign(
@@ -89,10 +95,82 @@ exports.googleSuccess = async (req, res) => {
       { expiresIn: "5m" },
     );
 
-    res.cookie("temp_auth_token", tempToken, getCookieOptions(5 * 60 * 1000));
-    return res.redirect(`${CLIENT_URL}/admin/login?status=require2fa`);
+    // 👉 REDIRECT VỀ DESKTOP APP VỚI TOKEN 2FA
+    const redirectUrl = `${DESKTOP_SCHEME}auth/2fa?token=${tempToken}&email=${existingUser.email}`;
+    
+    // 👉 HIỂN THỊ TRANG "ACCESS GRANTED" TRÊN TRÌNH DUYỆT
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Access Granted</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0B0F19;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+          }
+          .container {
+            text-align: center;
+            max-width: 400px;
+            padding: 40px;
+            background: #131A2C;
+            border-radius: 24px;
+            border: 1px solid #1E293B;
+          }
+          .icon { font-size: 72px; margin-bottom: 20px; }
+          .title { font-size: 28px; font-weight: 700; color: #34D399; margin-bottom: 10px; }
+          .subtitle { color: #94A3B8; font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
+          .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #1E293B;
+            border-top: 3px solid #34D399;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          .info { margin-top: 20px; font-size: 12px; color: #475569; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="title">Access Granted</div>
+          <div class="subtitle">
+            Xác thực thành công!<br>
+            Vui lòng quay lại ứng dụng desktop để nhập mã OTP.
+          </div>
+          <div class="loading"></div>
+          <div class="info">Email: ${existingUser.email}</div>
+          <button onclick="openApp()" style="margin-top:20px;padding:12px 30px;background:#3B82F6;border:none;border-radius:12px;color:white;font-weight:600;cursor:pointer;font-size:14px;">
+            Mở ứng dụng
+          </button>
+        </div>
+        
+        <script>
+          function openApp() {
+            window.location.href = '${redirectUrl}';
+          }
+          
+          // Tự động mở sau 2s
+          setTimeout(openApp, 2000);
+        </script>
+      </body>
+      </html>
+    `);
   }
 
+  // 👉 KHÔNG 2FA
   const authToken = generateToken(existingUser);
 
   res.cookie(
@@ -101,7 +179,72 @@ exports.googleSuccess = async (req, res) => {
     getCookieOptions(7 * 24 * 60 * 60 * 1000),
   );
 
-  return res.redirect(`${CLIENT_URL}/admin/dashboard`);
+  // 👉 REDIRECT VỀ DESKTOP APP
+  const redirectUrl = `${DESKTOP_SCHEME}auth/success?token=${authToken}`;
+  
+  return res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Access Granted</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: #0B0F19;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+          color: white;
+        }
+        .container {
+          text-align: center;
+          max-width: 400px;
+          padding: 40px;
+          background: #131A2C;
+          border-radius: 24px;
+          border: 1px solid #1E293B;
+        }
+        .icon { font-size: 72px; margin-bottom: 20px; }
+        .title { font-size: 28px; font-weight: 700; color: #34D399; margin-bottom: 10px; }
+        .subtitle { color: #94A3B8; font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
+        .loading {
+          display: inline-block;
+          width: 40px;
+          height: 40px;
+          border: 3px solid #1E293B;
+          border-top: 3px solid #34D399;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .info { margin-top: 20px; font-size: 12px; color: #475569; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="title">Access Granted</div>
+        <div class="subtitle">
+          Xác thực thành công!<br>
+          Đang chuyển hướng về ứng dụng desktop...
+        </div>
+        <div class="loading"></div>
+        <div class="info">Email: ${existingUser.email}</div>
+      </div>
+      
+      <script>
+        setTimeout(() => {
+          window.location.href = '${redirectUrl}';
+        }, 1500);
+      </script>
+    </body>
+    </html>
+  `);
 };
 
 exports.verify2FA = async (req, res) => {
