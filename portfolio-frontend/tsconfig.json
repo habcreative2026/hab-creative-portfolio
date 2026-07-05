@@ -1,4 +1,4 @@
-// frontend/tsconfig.json
+// portfolio-frontend/tsconfig.json
 {
   "compilerOptions": {
     "target": "ES2017",
@@ -29,7 +29,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "globals.d.ts"
+    "globals.d.ts",
+    "middleware.ts"  // ⭐ THÊM DÒNG NÀY
   ],
   "exclude": ["node_modules"]
 }
