@@ -12,33 +12,29 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// const getCookieOptions = (maxAgeMs) => {
-//   const isProd = process.env.NODE_ENV === "production";
-//   return {
-//     httpOnly: true,
-//     secure: isProd,
-//     sameSite: isProd ? "lax" : "lax",
-//     maxAge: maxAgeMs,
-//   };
-// };
+// SỬA getCookieOptions
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: isProd, // local: false, production: true
-    sameSite: "lax", // ⭐ "lax" cho local, "none" cho production
+    secure: true, // ⭐ Luôn true cho production
+    sameSite: "none", // ⭐ QUAN TRỌNG
     maxAge: maxAgeMs,
-    path: "/",
-    // ⭐ THÊM DOMAIN CHO PRODUCTION
-    ...(isProd && { domain: ".onrender.com" }),
+    path: '/',
+    domain: isProd ? '.onrender.com' : undefined,
   };
 };
 
-// ⭐ THÊM HÀM MỚI: Clear tất cả cookies auth
+// SỬA clearAuthCookies
 const clearAuthCookies = (res) => {
-  res.clearCookie("auth_token", getCookieOptions(0));
-  res.clearCookie("temp_auth_token", getCookieOptions(0));
-  res.clearCookie("refresh_token", getCookieOptions(0)); // Nếu có sau này
+  const isProd = process.env.NODE_ENV === "production";
+  const options = {
+    path: '/',
+    domain: isProd ? '.onrender.com' : undefined,
+  };
+  res.clearCookie("auth_token", options);
+  res.clearCookie("temp_auth_token", options);
+  res.clearCookie("refresh_token", options);
 };
 
 exports.googleSuccess = async (req, res) => {
