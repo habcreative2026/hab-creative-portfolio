@@ -1,3 +1,6 @@
+// frontend/next.config.js
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
     return [
@@ -6,6 +9,9 @@ const nextConfig = {
         destination: 'https://habcreative-cms.onrender.com/api/:path*',
       },
     ];
+  },
+  images: {
+    domains: ['res.cloudinary.com'],
   },
 };
 
