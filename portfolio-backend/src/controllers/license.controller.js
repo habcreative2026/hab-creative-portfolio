@@ -494,4 +494,199 @@ exports.verifyQRScan = (req, res) => {
   }
 };
 
+
+// 👉 REGISTER DEVICE - CHO DESKTOP APP
+exports.registerDevice = async (req, res) => {
+  try {
+    console.log('📝 [Register Device] Request received');
+    console.log('📦 Body:', req.body);
+    
+    const { licenseKey, deviceId } = req.body;
+
+    if (!licenseKey || !deviceId) {
+      console.log('❌ Missing fields');
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng cung cấp licenseKey và deviceId",
+      });
+    }
+
+    console.log(`🔑 License: ${licenseKey}`);
+    console.log(`🖥️ Device: ${deviceId.substring(0, 16)}...`);
+
+    // Tìm license
+    const license = await License.findOne({ key: licenseKey });
+    if (!license) {
+      console.log('❌ License not found');
+      return res.status(404).json({
+        success: false,
+        message: "License key không tồn tại",
+      });
+    }
+
+    console.log(`📊 License status: ${license.status}`);
+    console.log(`📅 Expires at: ${license.expiresAt}`);
+
+    // Kiểm tra hiệu lực
+    if (!license.isValid()) {
+      let message = "License không hợp lệ";
+      if (license.status === "used") message = "License đã được sử dụng";
+      else if (license.status === "expired") message = "License đã hết hạn";
+      else if (license.status === "revoked") message = "License đã bị thu hồi";
+
+      console.log(`❌ Invalid license: ${message}`);
+      return res.status(401).json({
+        success: false,
+        message,
+        status: license.status,
+      });
+    }
+
+    // Kiểm tra device đã dùng license nào chưa
+    const existingLicense = await License.findOne({
+      "usedBy.deviceId": deviceId,
+      status: { $in: ["active", "used"] },
+    });
+
+    if (existingLicense) {
+      console.log(`⚠️ Device already registered with: ${existingLicense.key}`);
+      return res.status(400).json({
+        success: false,
+        message: "Device này đã được đăng ký với license khác",
+        data: { licenseKey: existingLicense.key }
+      });
+    }
+
+    // Đăng ký device
+    license.usedCount += 1;
+    license.usedBy = {
+      deviceId,
+      usedAt: new Date(),
+      ip: req.ip || req.connection?.remoteAddress || "unknown",
+    };
+
+    if (license.usedCount >= license.maxUses) {
+      license.status = "used";
+    }
+
+    await license.save();
+    console.log('✅ License saved');
+
+    // Tạo session token
+    const sessionToken = jwt.sign(
+      {
+        deviceId,
+        licenseKey: license.key,
+        expiresAt: license.expiresAt,
+        type: "desktop_session",
+      },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: "7d" }
+    );
+
+    console.log('✅ Device registered successfully');
+
+    res.json({
+      success: true,
+      message: "Đăng ký thiết bị thành công!",
+      data: {
+        deviceId,
+        licenseKey: license.key,
+        expiresAt: license.expiresAt,
+        sessionToken,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Register device error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi đăng ký thiết bị: " + error.message,
+    });
+  }
+};
+
+// 👉 VERIFY DEVICE SESSION
+exports.verifyDeviceSession = async (req, res) => {
+  try {
+    console.log('📝 [Verify Session] Request received');
+    
+    const { sessionToken, deviceId } = req.body;
+
+    if (!sessionToken || !deviceId) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu sessionToken hoặc deviceId",
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET || 'fallback_secret_key');
+    
+    if (decoded.deviceId !== deviceId) {
+      return res.status(401).json({
+        success: false,
+        message: "Device ID không khớp",
+      });
+    }
+
+    // Check license still valid
+    const license = await License.findOne({ key: decoded.licenseKey });
+    if (!license || !license.isValid()) {
+      return res.status(401).json({
+        success: false,
+        message: "License đã hết hạn hoặc không còn hiệu lực",
+      });
+    }
+
+    console.log('✅ Session verified');
+    res.json({
+      success: true,
+      valid: true,
+      expiresAt: license.expiresAt,
+    });
+  } catch (error) {
+    console.error('❌ Verify session error:', error);
+    res.status(401).json({
+      success: false,
+      message: "Session không hợp lệ hoặc đã hết hạn",
+    });
+  }
+};
+
+// 👉 GET LICENSE BY DEVICE
+exports.getLicenseByDevice = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    const license = await License.findOne({
+      "usedBy.deviceId": deviceId,
+      status: { $in: ["active", "used"] },
+    });
+
+    if (!license) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy license cho device này",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        key: license.key,
+        status: license.status,
+        expiresAt: license.expiresAt,
+        usedCount: license.usedCount,
+        maxUses: license.maxUses,
+      },
+    });
+  } catch (error) {
+    console.error('Get license error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi lấy thông tin license",
+    });
+  }
+};
+
 module.exports = exports;
