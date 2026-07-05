@@ -14,12 +14,33 @@ function LoginContent() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const isRequire2FA = searchParams.get("status") === "require2fa";
   const isUnauthorized = searchParams.get("status") === "unauthorized";
   const isSessionExpired = searchParams.get("status") === "session_expired";
 
-  // ⭐ THÊM: Show toast khi session expired
+  // ⭐ Detect desktop app
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Check if running in Electron
+      if (window.electronAPI) {
+        setIsDesktop(true);
+      }
+    }
+  }, []);
+
+  // ⭐ Desktop: check if already authenticated
+  useEffect(() => {
+    if (isDesktop && window.electronAPI) {
+      window.electronAPI.getAuthToken().then((token) => {
+        if (token) {
+          router.push("/admin/dashboard");
+        }
+      });
+    }
+  }, [isDesktop, router]);
+
   useEffect(() => {
     if (isSessionExpired) {
       toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
@@ -33,13 +54,58 @@ function LoginContent() {
   }, [isUnauthorized, router]);
 
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
-
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
   const handleGoogleLogin = () => {
     setLoading(true);
     setError("");
-    window.location.href = `${API_URL}/api/auth/google`;
+
+    // ⭐ Desktop: open browser for login
+    if (isDesktop && window.electronAPI) {
+      window.electronAPI.openBrowserLogin();
+      // Poll for auth completion
+      pollAuthStatus();
+    } else {
+      // Web: redirect
+      window.location.href = `${API_URL}/api/auth/google`;
+    }
+  };
+
+  // ⭐ Desktop: poll auth status
+  const pollAuthStatus = () => {
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/admin/me`, {
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            router.push("/admin/dashboard");
+            return;
+          }
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkAuth, 2000);
+        } else {
+          setLoading(false);
+          toast.error("Không thể xác thực. Vui lòng thử lại.");
+        }
+      } catch (error) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkAuth, 2000);
+        }
+      }
+    };
+
+    setTimeout(checkAuth, 3000);
   };
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
@@ -93,8 +159,16 @@ function LoginContent() {
             <div className="space-y-6">
               <div className="text-center">
                 <p className="mt-2 text-lg text-black font-bold">
-                  Vui lòng đăng nhập bằng tài khoản Google được cấp quyền.
+                  {isDesktop
+                    ? "Đăng nhập bằng Google qua trình duyệt"
+                    : "Vui lòng đăng nhập bằng tài khoản Google được cấp quyền."}
                 </p>
+                {isDesktop && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Trình duyệt sẽ mở để bạn đăng nhập. Sau khi đăng nhập, quay
+                    lại ứng dụng.
+                  </p>
+                )}
               </div>
 
               <button
