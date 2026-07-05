@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Chrome, // 👉 VẪN GIỮ NGUYÊN VÌ LUCIDE-REACT CÓ CHROME
+  Mail, // 👉 THAY CHROME BẰNG MAIL HOẶC ICON KHÁC
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -89,7 +89,7 @@ function LoginContent() {
         <div className="text-white/60 text-sm font-mono animate-pulse">
           Đang kiểm tra quyền truy cập...
         </div>
-    </div>
+      </div>
     );
   }
 
@@ -135,7 +135,7 @@ function LoginContent() {
                   </>
                 ) : (
                   <>
-                    <Chrome className="w-5 h-5 text-indigo-600" />
+                    <Mail className="w-5 h-5 text-indigo-600" />
                     Đăng nhập với Google
                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
                   </>
