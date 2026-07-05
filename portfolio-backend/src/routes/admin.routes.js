@@ -1,3 +1,5 @@
+// backend/routes/admin.routes.js
+
 const router = require("express").Router();
 const authMiddleware = require("../middlewares/auth.middleware");
 const adminController = require("../controllers/admin.controller");
@@ -5,8 +7,12 @@ const activityController = require("../controllers/activity.controller");
 const systemController = require("../controllers/system.controller");
 const dashboardController = require("../controllers/dashboard.controller");
 
+// ✅ Ai cũng xem được profile của mình
 router.get("/me", authMiddleware, adminController.profile);
 
+// ═══════════════════════════════════════════
+// 🔴 SUPER ADMIN + OWNER (Quản lý user)
+// ═══════════════════════════════════════════
 router.delete(
   "/users/:id",
   authMiddleware,
@@ -31,6 +37,9 @@ router.put(
   adminController.toggleUserStatus,
 );
 
+// ═══════════════════════════════════════════
+// 🟡 SUPER ADMIN (Xem danh sách user)
+// ═══════════════════════════════════════════
 router.get(
   "/users",
   authMiddleware,
@@ -45,6 +54,9 @@ router.get(
   adminController.getUserDetail,
 );
 
+// ═══════════════════════════════════════════
+// 🟡 SUPER ADMIN (Xem activity)
+// ═══════════════════════════════════════════
 router.get(
   "/activities",
   authMiddleware,
@@ -66,6 +78,9 @@ router.post(
   activityController.logActivityHandler,
 );
 
+// ═══════════════════════════════════════════
+// 🟡 SUPER ADMIN (Settings)
+// ═══════════════════════════════════════════
 router.get(
   "/settings",
   authMiddleware,
@@ -80,10 +95,12 @@ router.put(
   systemController.updateSettings,
 );
 
+// ═══════════════════════════════════════════
+// 🔴 OWNER ONLY (Backup, Restore, System)
+// ═══════════════════════════════════════════
 router.get(
   "/backup",
   authMiddleware,
-  // authMiddleware.isSuperAdmin,
   authMiddleware.isOwner,
   systemController.backupDatabase,
 );
@@ -91,7 +108,6 @@ router.get(
 router.post(
   "/restore",
   authMiddleware,
-  // authMiddleware.isSuperAdmin,
   authMiddleware.isOwner,
   systemController.restoreDatabase,
 );
@@ -99,11 +115,13 @@ router.post(
 router.get(
   "/system-info",
   authMiddleware,
-  // authMiddleware.isSuperAdmin,
   authMiddleware.isOwner,
   systemController.getSystemInfo,
 );
 
+// ═══════════════════════════════════════════
+// 🟡 SUPER ADMIN (Dashboard stats)
+// ═══════════════════════════════════════════
 router.get(
   "/dashboard/stats",
   authMiddleware,
