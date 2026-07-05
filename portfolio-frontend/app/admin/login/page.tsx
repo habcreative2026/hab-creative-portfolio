@@ -3,7 +3,6 @@
 import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Chrome,
   Home,
   Shield,
   Key,
@@ -11,6 +10,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
+  Chrome, // 👉 VẪN GIỮ NGUYÊN VÌ LUCIDE-REACT CÓ CHROME
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -89,7 +89,7 @@ function LoginContent() {
         <div className="text-white/60 text-sm font-mono animate-pulse">
           Đang kiểm tra quyền truy cập...
         </div>
-      </div>
+    </div>
     );
   }
 
