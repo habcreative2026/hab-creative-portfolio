@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Download, RefreshCw, Trash2 } from "lucide-react";
+import { Copy, Download, RefreshCw, Trash2, Calendar, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// ===== TYPES =====
 interface License {
   _id: string;
   key: string;
@@ -22,10 +21,16 @@ interface License {
     usedAt?: Date;
   };
   expiresAt: Date;
+  licenseExpiresAt: Date;
   maxUses: number;
   usedCount: number;
   notes?: string;
   createdAt: Date;
+  deviceInfo?: {
+    name: string;
+    os: string;
+    version: string;
+  };
 }
 
 interface LicenseStats {
@@ -36,13 +41,21 @@ interface LicenseStats {
   revoked: number;
 }
 
-// ===== COMPONENT =====
+const DURATION_OPTIONS = [
+  { label: "3 ngày", value: "3" },
+  { label: "5 ngày", value: "5" },
+  { label: "7 ngày", value: "7" },
+  { label: "30 ngày", value: "30" },
+  { label: "Vĩnh viễn", value: "forever" },
+];
+
 export default function LicenseManagement() {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [stats, setStats] = useState<LicenseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [count, setCount] = useState(10);
+  const [selectedDuration, setSelectedDuration] = useState("30");
 
   useEffect(() => {
     fetchLicenses();
@@ -86,7 +99,13 @@ export default function LicenseManagement() {
       setGenerating(true);
       const res = await axios.post(
         `${API_URL}/api/license/generate`,
-        { count, expiresIn: 30, maxUses: 1 },
+        { 
+          count, 
+          expiresIn: 30, 
+          maxUses: 1,
+          licenseDuration: selectedDuration,
+          notes: `Duration: ${selectedDuration}`,
+        },
         { withCredentials: true },
       );
 
@@ -96,9 +115,7 @@ export default function LicenseManagement() {
         fetchStats();
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || "Failed to generate licenses",
-      );
+      toast.error(error.response?.data?.message || "Failed to generate licenses");
     } finally {
       setGenerating(false);
     }
@@ -123,7 +140,6 @@ export default function LicenseManagement() {
 
   const revokeLicense = async (id: string) => {
     if (!confirm("Revoke this license?")) return;
-
     try {
       await axios.delete(`${API_URL}/api/license/${id}`, {
         withCredentials: true,
@@ -152,9 +168,7 @@ export default function LicenseManagement() {
     };
 
     return (
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[status]}`}
-      >
+      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[status]}`}>
         {labels[status]}
       </span>
     );
@@ -168,20 +182,38 @@ export default function LicenseManagement() {
     });
   };
 
+  const getDaysLeft = (expiresAt: Date) => {
+    const now = new Date();
+    const diff = new Date(expiresAt).getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    if (days < 0) return "Expired";
+    if (days === 0) return "Today";
+    return `${days} days left`;
+  };
+
   return (
     <div className="min-h-screen bg-[#0B0F19] p-6 scroll-none">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              License Management
-            </h1>
+            <h1 className="text-2xl font-bold text-white">License Management</h1>
             <p className="text-sm text-slate-400 mt-1">
-              Generate license keys for desktop app authentication
+              Quản lý license key và thời hạn sử dụng thiết bị
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <select
+              value={selectedDuration}
+              onChange={(e) => setSelectedDuration(e.target.value)}
+              className="bg-[#1a2332] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+            >
+              {DURATION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -189,9 +221,7 @@ export default function LicenseManagement() {
                 max="100"
                 value={count}
                 onChange={(e) =>
-                  setCount(
-                    Math.min(100, Math.max(1, parseInt(e.target.value) || 1)),
-                  )
+                  setCount(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))
                 }
                 className="w-16 bg-[#1a2332] border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
               />
@@ -200,9 +230,7 @@ export default function LicenseManagement() {
                 disabled={generating}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition disabled:opacity-50"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${generating ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} />
                 Generate
               </button>
             </div>
@@ -221,44 +249,24 @@ export default function LicenseManagement() {
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="bg-[#1a2332] p-4 rounded-lg border border-slate-800">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">
-                Total
-              </p>
-              <p className="text-2xl font-bold text-white mt-1">
-                {stats.total}
-              </p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Total</p>
+              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
             </div>
             <div className="bg-[#1a2332] p-4 rounded-lg border border-green-800/30">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">
-                Active
-              </p>
-              <p className="text-2xl font-bold text-green-400 mt-1">
-                {stats.active}
-              </p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Active</p>
+              <p className="text-2xl font-bold text-green-400 mt-1">{stats.active}</p>
             </div>
             <div className="bg-[#1a2332] p-4 rounded-lg border border-blue-800/30">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">
-                Used
-              </p>
-              <p className="text-2xl font-bold text-blue-400 mt-1">
-                {stats.used}
-              </p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Used</p>
+              <p className="text-2xl font-bold text-blue-400 mt-1">{stats.used}</p>
             </div>
             <div className="bg-[#1a2332] p-4 rounded-lg border border-red-800/30">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">
-                Expired
-              </p>
-              <p className="text-2xl font-bold text-red-400 mt-1">
-                {stats.expired}
-              </p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Expired</p>
+              <p className="text-2xl font-bold text-red-400 mt-1">{stats.expired}</p>
             </div>
             <div className="bg-[#1a2332] p-4 rounded-lg border border-gray-800/30">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">
-                Revoked
-              </p>
-              <p className="text-2xl font-bold text-gray-400 mt-1">
-                {stats.revoked}
-              </p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Revoked</p>
+              <p className="text-2xl font-bold text-gray-400 mt-1">{stats.revoked}</p>
             </div>
           </div>
         )}
@@ -269,72 +277,48 @@ export default function LicenseManagement() {
             <table className="w-full">
               <thead className="bg-black/30 border-b border-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Key
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Used By
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Expires
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Uses
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Key</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Used By</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Expires</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Device</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Uses</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-8 text-slate-400">
+                    <td colSpan={7} className="text-center py-8 text-slate-400">
                       <RefreshCw className="w-4 h-4 animate-spin inline mr-2" />
                       Loading...
                     </td>
                   </tr>
                 ) : licenses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-8 text-slate-400">
-                      No licenses found. Generate some licenses to get started.
+                    <td colSpan={7} className="text-center py-8 text-slate-400">
+                      No licenses found.
                     </td>
                   </tr>
                 ) : (
                   licenses.map((license: License) => (
-                    <tr
-                      key={license._id}
-                      className="border-b border-slate-800 hover:bg-slate-800/30 transition"
-                    >
+                    <tr key={license._id} className="border-b border-slate-800 hover:bg-slate-800/30 transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <code className="text-sm font-mono text-blue-400 bg-blue-400/10 px-2 py-1 rounded">
                             {license.key}
                           </code>
-                          <button
-                            onClick={() => copyLicense(license.key)}
-                            className="text-slate-500 hover:text-white transition p-1 rounded hover:bg-slate-700/50"
-                            title="Copy to clipboard"
-                          >
+                          <button onClick={() => copyLicense(license.key)} className="text-slate-500 hover:text-white">
                             <Copy className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        {getStatusBadge(license.status)}
-                      </td>
+                      <td className="px-4 py-3">{getStatusBadge(license.status)}</td>
                       <td className="px-4 py-3 text-sm text-slate-300">
                         {license.usedBy?.userId ? (
                           <div>
-                            <div className="font-medium">
-                              {license.usedBy.userId.name}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {license.usedBy.userId.email}
-                            </div>
+                            <div className="font-medium">{license.usedBy.userId.name}</div>
+                            <div className="text-xs text-slate-500">{license.usedBy.userId.email}</div>
                           </div>
                         ) : license.usedBy?.deviceId ? (
                           <div className="text-xs font-mono text-slate-400">
@@ -344,33 +328,29 @@ export default function LicenseManagement() {
                           <span className="text-slate-500 text-sm">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-300">
-                        {formatDate(license.expiresAt)}
-                      </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-300">
-                            {license.usedCount}/{license.maxUses}
+                        <div className="flex flex-col">
+                          <span className="text-sm text-slate-300">{formatDate(license.licenseExpiresAt)}</span>
+                          <span className={`text-xs ${
+                            new Date(license.licenseExpiresAt) < new Date() 
+                              ? 'text-red-400' 
+                              : 'text-green-400'
+                          }`}>
+                            {getDaysLeft(license.licenseExpiresAt)}
                           </span>
-                          <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-500 rounded-full transition-all"
-                              style={{
-                                width: `${Math.min((license.usedCount / license.maxUses) * 100, 100)}%`,
-                              }}
-                            />
-                          </div>
                         </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-400">
+                        {license.deviceInfo?.name || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-300">
+                        {license.usedCount}/{license.maxUses}
                       </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => revokeLicense(license._id)}
-                          disabled={
-                            license.status === "revoked" ||
-                            license.status === "expired"
-                          }
-                          className="text-red-400 hover:text-red-300 transition disabled:opacity-30 disabled:cursor-not-allowed p-1 rounded hover:bg-red-500/10"
-                          title="Revoke license"
+                          disabled={license.status === "revoked" || license.status === "expired"}
+                          className="text-red-400 hover:text-red-300 transition disabled:opacity-30"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -383,9 +363,8 @@ export default function LicenseManagement() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="mt-4 text-xs text-slate-500 text-center">
-          <p>Licenses expire after 30 days. Each license can be used once.</p>
+          <p>License keys expire after 30 days. Device license duration can be configured per key.</p>
         </div>
       </div>
     </div>
