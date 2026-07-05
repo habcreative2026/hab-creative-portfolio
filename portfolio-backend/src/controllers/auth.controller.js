@@ -16,23 +16,17 @@ const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: isProd, // true cho production (HTTPS)
-    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
+    sameSite: isProd ? "lax" : "lax",
     maxAge: maxAgeMs,
-    path: '/',
-    domain: isProd ? '.onrender.com' : undefined,
   };
 };
 
+// ⭐ THÊM HÀM MỚI: Clear tất cả cookies auth
 const clearAuthCookies = (res) => {
-  const isProd = process.env.NODE_ENV === "production";
-  const options = {
-    path: '/',
-    domain: isProd ? '.onrender.com' : undefined,
-  };
-  res.clearCookie("auth_token", options);
-  res.clearCookie("temp_auth_token", options);
-  res.clearCookie("refresh_token", options);
+  res.clearCookie("auth_token", getCookieOptions(0));
+  res.clearCookie("temp_auth_token", getCookieOptions(0));
+  res.clearCookie("refresh_token", getCookieOptions(0)); // Nếu có sau này
 };
 
 exports.googleSuccess = async (req, res) => {
