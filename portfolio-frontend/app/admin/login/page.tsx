@@ -11,6 +11,9 @@ import {
   Loader2,
   CheckCircle2,
   Globe,
+  Copy,
+  Check,
+  ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -23,6 +26,7 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const isRequire2FA = searchParams.get("status") === "require2fa";
   const isUnauthorized = searchParams.get("status") === "unauthorized";
@@ -30,7 +34,10 @@ function LoginContent() {
   const token = searchParams.get("token");
   const email = searchParams.get("email");
 
-  // 👉 KIỂM TRA CÓ PHẢI DESKTOP APP KHÔNG
+  // Tạo URL redirect
+  const redirectUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/dashboard`;
+
+  // KIỂM TRA CÓ PHẢI DESKTOP APP KHÔNG
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const userAgent = window.navigator.userAgent;
@@ -39,12 +46,11 @@ function LoginContent() {
     }
   }, []);
 
-  // 👉 LẮNG NGHE SỰ KIỆN TỪ MAIN PROCESS (DESKTOP APP)
+  // LẮNG NGHE SỰ KIỆN TỪ MAIN PROCESS (DESKTOP APP)
   useEffect(() => {
     if (typeof window !== 'undefined' && isDesktop) {
       const electronAPI = (window as any).electronAPI;
       
-      // 👉 NẾU CÓ ELECTRON API, LẮNG NGHE SỰ KIỆN
       if (electronAPI && electronAPI.onOpenBrowserLogin) {
         const unsubscribe = electronAPI.onOpenBrowserLogin((data: any) => {
           console.log('[Login] Received open browser event:', data);
@@ -54,7 +60,7 @@ function LoginContent() {
     }
   }, [isDesktop]);
 
-  // 👉 NẾU LÀ DESKTOP APP VÀ ĐANG Ở TRẠNG THÁI WAITING -> MỞ TRÌNH DUYỆT
+  // NẾU LÀ DESKTOP APP VÀ ĐANG Ở TRẠNG THÁI WAITING -> MỞ TRÌNH DUYỆT
   useEffect(() => {
     if (isDesktop && isWaiting && typeof window !== 'undefined') {
       console.log('[Login] Desktop app - opening browser for Google login');
@@ -87,6 +93,17 @@ function LoginContent() {
       }
     } else {
       window.location.href = `${API_URL}/api/auth/google`;
+    }
+  };
+
+  const handleCopyRedirectUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(redirectUrl);
+      setCopied(true);
+      toast.success("Đã copy URL redirect!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Không thể copy URL");
     }
   };
 
@@ -152,6 +169,7 @@ function LoginContent() {
         {/* Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 border border-white/50 p-8">
           {isRequire2FA ? (
+            // FORM OTP 2FA
             <div className="space-y-6">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-50 rounded-2xl mb-3">
@@ -218,7 +236,8 @@ function LoginContent() {
               </form>
             </div>
           ) : (
-            <div className="space-y-6">
+            // FORM ĐĂNG NHẬP - HIỂN THỊ 3 NÚT
+            <div className="space-y-4">
               <div className="text-center">
                 <p className="text-gray-700 font-medium">
                   Đăng nhập bằng tài khoản Google
@@ -230,6 +249,7 @@ function LoginContent() {
                 </p>
               </div>
 
+              {/* ✅ NÚT 1: ĐĂNG NHẬP VỚI GOOGLE */}
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
@@ -243,12 +263,44 @@ function LoginContent() {
                 ) : (
                   <>
                     <Globe className="w-5 h-5 text-indigo-600" />
-                    {isDesktop ? "Đăng nhập với Google (Mở trình duyệt)" : "Đăng nhập với Google"}
+                    {isDesktop ? "Đăng nhập với Google (Mở trình duyệt)" : "Đăng nhập với Google →"}
                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
                   </>
                 )}
               </button>
 
+              {/* ✅ NÚT 2: COPY URL REDIRECT - NÚT MỚI */}
+              <div className="relative">
+                <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex-1 px-2 py-1">
+                    <p className="text-xs text-gray-500 truncate font-mono">
+                      {redirectUrl}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCopyRedirectUrl}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-xs font-medium text-gray-600 hover:text-indigo-600 transition-all duration-200 shrink-0"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-green-500" />
+                        <span className="text-green-500">Đã copy</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy URL</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1.5 text-center">
+                  <ExternalLink className="w-3 h-3 inline mr-1" />
+                  Dán URL này vào trình duyệt để redirect sau khi đăng nhập
+                </p>
+              </div>
+
+              {/* ✅ NÚT 3: QUAY VỀ TRANG CHỦ */}
               <button
                 onClick={() => router.push("/")}
                 className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-slate-50 hover:bg-slate-100 rounded-2xl text-sm font-medium text-gray-600 transition-colors"
@@ -256,12 +308,24 @@ function LoginContent() {
                 <Home className="w-4 h-4" />
                 Quay về Trang chủ
               </button>
+
+              {/* 👉 HIỂN THỊ THÊM THÔNG BÁO KHI CHƯA CÓ QUYỀN */}
+              {!isDesktop && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                  <p className="text-xs text-amber-700 text-center flex items-center justify-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Chỉ tài khoản đã được cấp quyền mới có thể đăng nhập
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
+        {/* Footer */}
         <div className="text-center mt-6">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 flex items-center justify-center gap-2">
+            <Shield className="w-3 h-3" />
             Bảo mật 2 lớp • Phiên bản 1.0.0
           </p>
         </div>
