@@ -18,6 +18,8 @@ export default function MobileAuthPage() {
   const router = useRouter();
   const qrData = searchParams.get("qr");
 
+  console.log("[Mobile] QR data from URL:", qrData);
+
   useEffect(() => {
     if (!qrData) {
       setStatus('error');
@@ -26,28 +28,67 @@ export default function MobileAuthPage() {
       return;
     }
 
-    // 👉 GIẢI MÃ QR DATA
+    handleQRData(qrData);
+  }, [qrData]);
+
+  const handleQRData = (rawData: string) => {
     try {
-      console.log("[Mobile] Raw QR data:", qrData);
+      console.log("[Mobile] Raw QR data:", rawData);
       
-      // 👉 GIẢI MÃ URL ENCODED
-      const decodedData = decodeURIComponent(qrData);
-      console.log("[Mobile] Decoded QR data:", decodedData);
-      
+      // 👉 GIẢI MÃ URL
+      let decodedData = rawData;
+      try {
+        decodedData = decodeURIComponent(rawData);
+        console.log("[Mobile] Decoded data:", decodedData);
+      } catch (e) {
+        console.log("[Mobile] Failed to decode, using raw data");
+      }
+
       // 👉 PARSE JSON
-      const parsedData = JSON.parse(decodedData);
-      console.log("[Mobile] Parsed QR data:", parsedData);
+      let parsedData;
+      try {
+        parsedData = JSON.parse(decodedData);
+        console.log("[Mobile] Parsed data:", parsedData);
+      } catch (e) {
+        // 👉 THỬ PARSE TRỰC TIẾP NẾU DECODEURI COMPONENT BỊ LỖI
+        try {
+          parsedData = JSON.parse(rawData);
+          console.log("[Mobile] Parsed raw data:", parsedData);
+        } catch (e2) {
+          console.error("[Mobile] Parse error:", e2);
+          setStatus('error');
+          setError('Dữ liệu QR không hợp lệ. Vui lòng quét lại.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 👉 LẤY SESSION ID VÀ TOKEN (HỖ TRỢ CẢ KEY NGẮN VÀ KEY DÀI)
+      const sessionId = parsedData.s || parsedData.sessionId;
+      const token = parsedData.t || parsedData.token;
+
+      if (!sessionId || !token) {
+        console.error("[Mobile] Missing sessionId or token:", parsedData);
+        setStatus('error');
+        setError('Dữ liệu QR không đầy đủ. Vui lòng quét lại.');
+        setLoading(false);
+        return;
+      }
+
+      console.log("[Mobile] SessionId:", sessionId);
+      console.log("[Mobile] Token:", token);
+
+      handleVerify({ sessionId, token });
       
-      handleVerify(parsedData);
-    } catch (err) {
-      console.error("[Mobile] QR parse error:", err);
+    } catch (error) {
+      console.error("[Mobile] QR parse error:", error);
       setStatus('error');
       setError('Dữ liệu QR không hợp lệ. Vui lòng quét lại.');
       setLoading(false);
     }
-  }, [qrData]);
+  };
 
-  const handleVerify = async (data: any) => {
+  const handleVerify = async (data: { sessionId: string; token: string }) => {
     try {
       // Lấy token từ localStorage
       const token = localStorage.getItem('auth_token');
