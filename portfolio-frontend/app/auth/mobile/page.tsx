@@ -10,51 +10,54 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MobileAuthPage() {
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"processing" | "success" | "error">(
-    "processing",
-  );
+  const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [error, setError] = useState("");
   const [userInfo, setUserInfo] = useState<any>(null);
-
+  
   const searchParams = useSearchParams();
   const router = useRouter();
   const qrData = searchParams.get("qr");
 
   useEffect(() => {
     if (!qrData) {
-      setStatus("error");
-      setError("Không tìm thấy dữ liệu QR. Vui lòng quét lại.");
+      setStatus('error');
+      setError('Không tìm thấy dữ liệu QR. Vui lòng quét lại.');
       setLoading(false);
       return;
     }
 
-    // Giải mã QR data
+    // 👉 GIẢI MÃ QR DATA
     try {
-      const decodedData = JSON.parse(decodeURIComponent(qrData));
-      console.log("QR Data received:", decodedData);
-      handleVerify(decodedData);
+      console.log("[Mobile] Raw QR data:", qrData);
+      
+      // 👉 GIẢI MÃ URL ENCODED
+      const decodedData = decodeURIComponent(qrData);
+      console.log("[Mobile] Decoded QR data:", decodedData);
+      
+      // 👉 PARSE JSON
+      const parsedData = JSON.parse(decodedData);
+      console.log("[Mobile] Parsed QR data:", parsedData);
+      
+      handleVerify(parsedData);
     } catch (err) {
-      setStatus("error");
-      setError("Dữ liệu QR không hợp lệ");
+      console.error("[Mobile] QR parse error:", err);
+      setStatus('error');
+      setError('Dữ liệu QR không hợp lệ. Vui lòng quét lại.');
       setLoading(false);
     }
   }, [qrData]);
 
   const handleVerify = async (data: any) => {
     try {
-      // Lấy token từ cookie
-      const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("auth_token="))
-        ?.split("=")[1];
+      // Lấy token từ localStorage
+      const token = localStorage.getItem('auth_token');
 
       if (!token) {
-        setStatus("error");
-        setError("Vui lòng đăng nhập trước khi quét QR");
+        setStatus('error');
+        setError('Vui lòng đăng nhập trước khi quét QR');
         setLoading(false);
-        // Chuyển hướng về login sau 3s
         setTimeout(() => {
-          router.push("/admin/login");
+          router.push('/admin/login');
         }, 3000);
         return;
       }
@@ -63,61 +66,61 @@ export default function MobileAuthPage() {
       try {
         const userRes = await axios.get(`${API_URL}/api/admin/me`, {
           headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
+          withCredentials: true
         });
         if (userRes.data.success) {
-          setUserInfo(userRes.data.data);
+          setUserInfo(userRes.data.user);
         }
       } catch (err) {
-        console.log("Could not fetch user info");
+        console.log("[Mobile] Could not fetch user info");
       }
 
-      // Gửi request xác thực QR
+      // 👉 GỬI REQUEST XÁC THỰC QR
       const response = await axios.post(
         `${API_URL}/api/license/qr/verify`,
         {
           sessionId: data.sessionId,
-          token: data.token,
+          token: data.token
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
-          withCredentials: true,
-        },
+          withCredentials: true
+        }
       );
 
       if (response.data.success) {
-        setStatus("success");
-        toast.success("Xác thực thành công!");
-
-        // Đóng tab sau 2 giây
+        setStatus('success');
+        toast.success('✅ Xác thực thành công!');
+        
         setTimeout(() => {
           window.close();
-          // Nếu không close được, chuyển về dashboard
           if (!window.closed) {
-            router.push("/admin/dashboard");
+            router.push('/admin/dashboard');
           }
         }, 2000);
       } else {
-        setStatus("error");
-        setError(response.data.message || "Xác thực thất bại");
-        toast.error(response.data.message || "Xác thực thất bại");
+        setStatus('error');
+        setError(response.data.message || 'Xác thực thất bại');
+        toast.error(response.data.message || 'Xác thực thất bại');
       }
     } catch (error: any) {
-      console.error("Verify error:", error);
-      setStatus("error");
-
-      if (error.response?.status === 401) {
-        setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      console.error("[Mobile] Verify error:", error);
+      setStatus('error');
+      
+      if (error.response?.status === 403) {
+        setError('🚫 Bạn không có quyền truy cập. Vui lòng liên hệ quản trị viên.');
+      } else if (error.response?.status === 401) {
+        setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         setTimeout(() => {
-          router.push("/admin/login");
+          router.push('/admin/login');
         }, 3000);
       } else {
-        setError(error.response?.data?.message || "Đã xảy ra lỗi khi xác thực");
+        setError(error.response?.data?.message || 'Đã xảy ra lỗi khi xác thực');
       }
-      toast.error(error.response?.data?.message || "Xác thực thất bại");
+      toast.error(error.response?.data?.message || 'Xác thực thất bại');
     } finally {
       setLoading(false);
     }
