@@ -229,33 +229,33 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  // ⭐ LOGOUT
-  const handleLogout = async () => {
-    try {
-      if (isDesktop && window.electronAPI) {
-        console.log("🔓 Logout via Electron API");
-        await window.electronAPI.logout();
-        setUser(null);
-        return;
-      }
-
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Logout failed", error);
-    } finally {
+// ⭐ LOGOUT - GIỮ LICENSE
+const handleLogout = async () => {
+  try {
+    if (isDesktop && window.electronAPI) {
+      console.log("🔓 Logout via Electron API - keeping license");
+      await window.electronAPI.logout();
       setUser(null);
-      if (typeof window !== "undefined") {
-        localStorage.clear();
-        sessionStorage.clear();
-      }
-      if (!isDesktop) {
-        router.push("/admin/login");
-      }
+      return;
     }
-  };
+
+    await fetch(`${API_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Logout failed", error);
+  } finally {
+    setUser(null);
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+    if (!isDesktop) {
+      router.push("/admin/login");
+    }
+  }
+};
 
   if (loading) {
     return (
