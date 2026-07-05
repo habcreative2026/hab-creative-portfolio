@@ -37,9 +37,6 @@ import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
 
-// ⭐ Import type cho electron
-import "../../../types/electron";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API;
 
