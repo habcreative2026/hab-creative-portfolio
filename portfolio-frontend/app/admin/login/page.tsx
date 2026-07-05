@@ -6,7 +6,8 @@ import { useState, Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// ⭐ Dùng relative path, không cần API_URL
+const API_BASE = ""; // Empty vì dùng proxy
 
 function LoginContent() {
   const router = useRouter();
@@ -52,7 +53,7 @@ function LoginContent() {
 
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/admin/me`, {
+        const res = await fetch(`/api/admin/me`, {
           credentials: "include",
         });
 
@@ -75,13 +76,13 @@ function LoginContent() {
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
-  // ⭐ DESKTOP LOGIN - MỞ TRÌNH DUYỆT VÀ POLLING
+  // ⭐ DESKTOP LOGIN
   const handleDesktopLogin = () => {
     setIsWaitingForLogin(true);
     setError("");
 
     // Mở trình duyệt để login
-    window.open(`${API_URL}/api/auth/google`, "_blank");
+    window.open(`/api/auth/google`, "_blank");
 
     let attempts = 0;
     const maxAttempts = 30;
@@ -93,7 +94,6 @@ function LoginContent() {
 
     const checkAuth = async () => {
       try {
-        // ⭐ Kiểm tra cookie trực tiếp
         const hasAuth = document.cookie.includes('auth_token');
         
         if (hasAuth) {
@@ -104,8 +104,7 @@ function LoginContent() {
           return;
         }
 
-        // ⭐ Hoặc kiểm tra qua API
-        const res = await fetch(`${API_URL}/api/admin/me`, {
+        const res = await fetch(`/api/admin/me`, {
           credentials: "include",
         });
 
@@ -148,7 +147,7 @@ function LoginContent() {
   const handleGoogleLogin = () => {
     setLoading(true);
     setError("");
-    window.location.href = `${API_URL}/api/auth/google`;
+    window.location.href = `/api/auth/google`;
   };
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
@@ -162,7 +161,7 @@ function LoginContent() {
     setError("");
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/verify-2fa`, {
+      const res = await fetch(`/api/auth/verify-2fa`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: otp }),
