@@ -98,9 +98,6 @@ function LoginContent() {
       <div className="w-full max-w-md">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/25 mb-4">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
           <h1 className="text-2xl font-bold text-gray-900">HAB Creative</h1>
           <p className="text-sm text-gray-500 mt-1">
             {currentStep === 1
