@@ -422,7 +422,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <nav className="flex-1 max-h-[90vh] overflow-y-auto py-3 px-3 space-y-1 scroll-none">
+        <nav className="flex-1 max-h-[80vh] overflow-y-auto py-3 px-3 space-y-1 scroll-none">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
