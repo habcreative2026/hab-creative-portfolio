@@ -1,52 +1,44 @@
-// frontend/app/middleware.ts
+// // frontend/app/middleware.ts - HOÀN CHỈNH
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// ⭐ DETECT DESKTOP APP
-function isDesktopApp(userAgent: string): boolean {
-  return userAgent.includes('HABCreativeDesktop');
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const userAgent = request.headers.get('user-agent') || '';
 
-  // Admin routes
-  if (pathname.startsWith('/admin')) {
-    // Desktop app detection
-    if (isDesktopApp(userAgent)) {
-      // For desktop app, check session via cookie
-      const token = request.cookies.get('auth_token')?.value;
-      
-      if (!token) {
-        // Don't redirect, let desktop handle via IPC
-        return NextResponse.next();
-      }
-    }
-
-    // Web browser - normal flow
-    if (pathname === '/admin/login' || pathname === '/auth-denied') {
-      return NextResponse.next();
-    }
-
-    const token = request.cookies.get('auth_token')?.value;
-
-    if (!token) {
-      const url = new URL('/admin/login', request.url);
-      url.searchParams.set('status', 'unauthorized');
-      return NextResponse.redirect(url);
-    }
-
+  // Chỉ áp dụng cho admin routes
+  if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
+
+  // Bỏ qua login page và auth-denied
+  if (pathname === "/admin/login" || pathname === "/auth-denied") {
+    return NextResponse.next();
+  }
+
+  // ⭐ Lấy token từ cookie
+  const token = request.cookies.get("auth_token")?.value;
+
+  // ⭐ Nếu không có token, redirect về login
+  if (!token) {
+    console.log(`❌ [Middleware] No token, redirect to login`);
+    const url = new URL("/admin/login", request.url);
+    url.searchParams.set("status", "unauthorized");
+    return NextResponse.redirect(url);
+  }
+
+  // ⭐⭐ BỎ QUA VERIFY VỚI BACKEND TRONG MIDDLEWARE ⭐⭐
+  // Middleware chạy trên Edge, KHÔNG thể gửi cookie sang backend
+  // Chỉ cần check token tồn tại là đủ
 
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+    "/admin/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)",
   ],
 };
