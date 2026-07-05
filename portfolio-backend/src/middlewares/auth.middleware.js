@@ -4,13 +4,23 @@ const jwt = require("jsonwebtoken");
 
 const OWNER_EMAIL = "buihaitrong.dev@gmail.com";
 
-// ⭐ SỬA: Thêm refresh token check
+// ⭐ SỬA: Hỗ trợ cả Cookie (Web) và Header (Desktop)
 const authMiddleware = (req, res, next) => {
   try {
-    const token = req.cookies.auth_token;
+    // ⭐ Ưu tiên lấy token từ header Authorization (Desktop)
+    let token = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+    
+    // ⭐ Fallback: lấy từ cookie (Web)
+    if (!token) {
+      token = req.cookies.auth_token;
+    }
 
     if (!token) {
-      console.log("[Auth Middleware]: Không tìm thấy auth_token trong Cookie.");
+      console.log("[Auth Middleware]: Không tìm thấy token.");
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Vui lòng đăng nhập.",
@@ -66,7 +76,7 @@ authMiddleware.isSuperAdmin = (req, res, next) => {
   next();
 };
 
-// ⭐ THÊM: isAdmin - Cho phép cả admin và super_admin
+// ⭐ isAdmin - Cho phép cả admin và super_admin
 authMiddleware.isAdmin = (req, res, next) => {
   if (req.user.role !== "admin" && req.user.role !== "super_admin") {
     return res.status(403).json({
