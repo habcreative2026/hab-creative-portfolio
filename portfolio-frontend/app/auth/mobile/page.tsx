@@ -50,7 +50,7 @@ export default function MobileAuthPage() {
         parsedData = JSON.parse(decodedData);
         console.log("[Mobile] Parsed data:", parsedData);
       } catch (e) {
-        // 👉 THỬ PARSE TRỰC TIẾP NẾU DECODEURI COMPONENT BỊ LỖI
+        // 👉 THỬ PARSE TRỰC TIẾP
         try {
           parsedData = JSON.parse(rawData);
           console.log("[Mobile] Parsed raw data:", parsedData);
@@ -167,18 +167,20 @@ export default function MobileAuthPage() {
     }
   };
 
-  const handleRetry = () => {
-    setLoading(true);
-    setStatus("processing");
-    setError("");
-    // Refresh page để quét lại QR
-    window.location.reload();
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-indigo-400 animate-spin mx-auto mb-3" />
+          <p className="text-white font-medium">Đang xác thực...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0F19] to-[#1a2332] flex items-center justify-center p-4">
       <div className="bg-[#131A2C] rounded-2xl border border-slate-800 shadow-2xl p-8 max-w-md w-full">
-        {/* Header */}
         <div className="text-center mb-6">
           <div className="flex justify-center mb-3">
             <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center">
@@ -187,25 +189,18 @@ export default function MobileAuthPage() {
           </div>
           <h1 className="text-xl font-bold text-white">📱 Xác thực Desktop</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Đang xác thực thiết bị của bạn
+            {status === 'success' ? 'Xác thực thành công!' : 'Đang xác thực thiết bị của bạn'}
           </p>
         </div>
 
-        {/* User Info */}
         {userInfo && (
           <div className="bg-[#1a2332] rounded-lg p-4 mb-6 border border-slate-700">
             <div className="flex items-center gap-3">
               {userInfo.avatar ? (
-                <img
-                  src={userInfo.avatar}
-                  alt={userInfo.name}
-                  className="w-10 h-10 rounded-full border-2 border-indigo-500"
-                />
+                <img src={userInfo.avatar} alt={userInfo.name} className="w-10 h-10 rounded-full border-2 border-indigo-500" />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                  <span className="text-indigo-400 font-bold">
-                    {userInfo.name?.charAt(0) || "U"}
-                  </span>
+                  <span className="text-indigo-400 font-bold">{userInfo.name?.charAt(0) || 'U'}</span>
                 </div>
               )}
               <div>
@@ -216,52 +211,35 @@ export default function MobileAuthPage() {
           </div>
         )}
 
-        {/* Status */}
         <div className="bg-[#1a2332] rounded-lg p-6 border border-slate-700">
-          {loading ? (
+          {status === 'processing' ? (
             <div className="text-center">
               <Loader2 className="w-12 h-12 text-indigo-400 animate-spin mx-auto mb-3" />
               <p className="text-white font-medium">Đang xác thực...</p>
-              <p className="text-xs text-slate-400 mt-1">
-                Vui lòng chờ trong giây lát
-              </p>
+              <p className="text-xs text-slate-400 mt-1">Vui lòng chờ trong giây lát</p>
             </div>
-          ) : status === "success" ? (
+          ) : status === 'success' ? (
             <div className="text-center">
               <div className="flex justify-center mb-3">
                 <CheckCircle className="w-12 h-12 text-green-400" />
               </div>
-              <p className="text-white font-bold text-lg">
-                Xác thực thành công!
-              </p>
+              <p className="text-white font-bold text-lg">✅ Xác thực thành công!</p>
               <p className="text-sm text-slate-400 mt-2">
                 Desktop đã được xác thực.
                 <br />
-                <span className="text-xs text-slate-500">
-                  Cửa sổ này sẽ tự động đóng.
-                </span>
+                <span className="text-xs text-slate-500">Cửa sổ này sẽ tự động đóng.</span>
               </p>
-              <div className="mt-4 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-green-400 rounded-full animate-[progress_2s_ease-in-out]"></div>
-              </div>
             </div>
           ) : (
             <div className="text-center">
               <div className="flex justify-center mb-3">
                 <XCircle className="w-12 h-12 text-red-400" />
               </div>
-              <p className="text-white font-bold text-lg">Xác thực thất bại</p>
+              <p className="text-white font-bold text-lg">❌ Xác thực thất bại</p>
               <p className="text-sm text-red-400 mt-2">{error}</p>
-
-              {error.includes("đăng nhập") && (
-                <p className="text-xs text-slate-400 mt-2">
-                  Đang chuyển hướng đến trang đăng nhập...
-                </p>
-              )}
-
               <div className="flex gap-3 mt-4">
                 <button
-                  onClick={handleRetry}
+                  onClick={() => window.location.reload()}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg transition"
                 >
                   Thử lại
@@ -277,23 +255,9 @@ export default function MobileAuthPage() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="mt-4 text-center">
-          <p className="text-[10px] text-slate-600">
-            Bảo mật 2 lớp • Phiên bản 1.0.0
-          </p>
+          <p className="text-[10px] text-slate-600">Bảo mật 2 lớp • Phiên bản 1.0.0</p>
         </div>
-
-        <style jsx>{`
-          @keyframes progress {
-            0% {
-              width: 0%;
-            }
-            100% {
-              width: 100%;
-            }
-          }
-        `}</style>
       </div>
     </div>
   );
