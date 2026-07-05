@@ -12,44 +12,43 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// const getCookieOptions = (maxAgeMs) => {
-//   const isProd = process.env.NODE_ENV === "production";
-//   return {
-//     httpOnly: true,
-//     secure: isProd,
-//     sameSite: isProd ? "lax" : "lax",
-//     maxAge: maxAgeMs,
-//   };
-// };
+// 👉 SỬA: BỎ KEY SECURE TRÙNG LẶP
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: isProd, // local: false, production: true
-    sameSite: "lax", // ⭐ "lax" cho local, "none" cho production
+    secure: true,
+    sameSite: "none",
     maxAge: maxAgeMs,
     path: "/",
   };
 };
 
-// ⭐ THÊM HÀM MỚI: Clear tất cả cookies auth
+// Clear auth cookies
 const clearAuthCookies = (res) => {
-  res.clearCookie("auth_token", getCookieOptions(0));
-  res.clearCookie("temp_auth_token", getCookieOptions(0));
-  res.clearCookie("refresh_token", getCookieOptions(0)); // Nếu có sau này
+  const options = {
+    path: "/",
+  };
+  res.clearCookie("auth_token", options);
+  res.clearCookie("temp_auth_token", options);
+  res.clearCookie("refresh_token", options);
 };
 
+// ===== GOOGLE SUCCESS =====
 exports.googleSuccess = async (req, res) => {
   const user = req.user;
   const CLIENT_URL = process.env.CLIENT_URL;
 
+  console.log("🔐 [Auth] ====== GOOGLE SUCCESS ======");
+  console.log("🔐 [Auth] User email:", user?.email);
+
   if (!user || user.isWhitelisted === false) {
-    console.log(`[Auth Controller]: Chặn truy cập. Điều hướng về /auth-denied`);
+    console.log(`❌ [Auth] User not whitelisted: ${user?.email}`);
     return res.redirect(`${CLIENT_URL}/auth-denied`);
   }
 
-  if (!ALLOWED_ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-    console.log(`[Auth]: Email ${user.email} không hợp lệ.`);
+  if (!ALLOWED_ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
+    console.log(`❌ [Auth] Email not allowed: ${user.email}`);
     return res.redirect(`${CLIENT_URL}/auth-denied`);
   }
 
@@ -78,9 +77,10 @@ exports.googleSuccess = async (req, res) => {
     }
   }
 
-  // ⭐ SỬA: Nếu có 2FA, clear token cũ trước khi tạo temp token
+  // 👉 CHECK 2FA
   if (existingUser.twoFactorSecret) {
-    // ⭐ QUAN TRỌNG: Clear auth_token cũ
+    console.log(`🔐 [Auth] 2FA ENABLED for ${existingUser.email}`);
+
     res.clearCookie("auth_token", getCookieOptions(0));
 
     const tempToken = jwt.sign(
@@ -98,8 +98,8 @@ exports.googleSuccess = async (req, res) => {
     return res.redirect(`${CLIENT_URL}/admin/login?status=require2fa`);
   }
 
+  // 👉 KHÔNG 2FA
   const authToken = generateToken(existingUser);
-
   res.cookie(
     "auth_token",
     authToken,
@@ -109,6 +109,7 @@ exports.googleSuccess = async (req, res) => {
   return res.redirect(`${CLIENT_URL}/admin/dashboard`);
 };
 
+// ===== VERIFY 2FA =====
 exports.verify2FA = async (req, res) => {
   try {
     const token = String(req.body.token).trim();
@@ -152,7 +153,6 @@ exports.verify2FA = async (req, res) => {
       });
     }
 
-    // ⭐ SỬA: Clear temp token và tạo auth token mới
     res.clearCookie("temp_auth_token", getCookieOptions(0));
     const authToken = generateToken(user);
 
@@ -181,7 +181,7 @@ exports.verify2FA = async (req, res) => {
   }
 };
 
-// ⭐ SỬA: Logout - Clear tất cả cookies
+// ===== LOGOUT =====
 exports.logout = (req, res) => {
   clearAuthCookies(res);
   return res.json({
@@ -190,10 +190,11 @@ exports.logout = (req, res) => {
   });
 };
 
+// ===== SETUP 2FA =====
 exports.setup2FA = async (req, res) => {
   try {
     const secret = speakeasy.generateSecret({
-      name: `HAB CREATIVE (${req.user.email})`, // ⭐ Thêm email để phân biệt
+      name: `HAB CREATIVE (${req.user.email})`,
     });
 
     QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
@@ -220,6 +221,7 @@ exports.setup2FA = async (req, res) => {
   }
 };
 
+// ===== ACTIVATE 2FA =====
 exports.activate2FA = async (req, res) => {
   try {
     const { token, secret } = req.body;
@@ -260,9 +262,9 @@ exports.activate2FA = async (req, res) => {
   }
 };
 
+// ===== REFRESH TOKEN =====
 exports.refreshToken = async (req, res) => {
   try {
-    // ⭐ SỬA: Lấy auth_token từ cookie
     const token = req.cookies.auth_token;
 
     if (!token) {
@@ -273,7 +275,6 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    // ⭐ Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id);
@@ -284,10 +285,8 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    // ⭐ Tạo token mới
     const newAuthToken = generateToken(user);
 
-    // ⭐ Set cookie mới
     res.cookie(
       "auth_token",
       newAuthToken,
