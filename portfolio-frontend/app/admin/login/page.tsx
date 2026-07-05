@@ -11,9 +11,6 @@ import {
   Loader2,
   CheckCircle2,
   Globe,
-  Copy,
-  Check,
-  ExternalLink,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -26,16 +23,12 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const isRequire2FA = searchParams.get("status") === "require2fa";
   const isUnauthorized = searchParams.get("status") === "unauthorized";
   const isWaiting = searchParams.get("status") === "waiting";
   const token = searchParams.get("token");
   const email = searchParams.get("email");
-
-  // Tạo URL redirect
-  const redirectUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/admin/dashboard`;
 
   // KIỂM TRA CÓ PHẢI DESKTOP APP KHÔNG
   useEffect(() => {
@@ -93,17 +86,6 @@ function LoginContent() {
       }
     } else {
       window.location.href = `${API_URL}/api/auth/google`;
-    }
-  };
-
-  const handleCopyRedirectUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(redirectUrl);
-      setCopied(true);
-      toast.success("Đã copy URL redirect!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast.error("Không thể copy URL");
     }
   };
 
@@ -236,8 +218,8 @@ function LoginContent() {
               </form>
             </div>
           ) : (
-            // FORM ĐĂNG NHẬP - HIỂN THỊ 3 NÚT
-            <div className="space-y-4">
+            // FORM ĐĂNG NHẬP - HIỂN THỊ 2 NÚT
+            <div className="space-y-6">
               <div className="text-center">
                 <p className="text-gray-700 font-medium">
                   Đăng nhập bằng tài khoản Google
@@ -269,38 +251,7 @@ function LoginContent() {
                 )}
               </button>
 
-              {/* ✅ NÚT 2: COPY URL REDIRECT - NÚT MỚI */}
-              <div className="relative">
-                <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="flex-1 px-2 py-1">
-                    <p className="text-xs text-gray-500 truncate font-mono">
-                      {redirectUrl}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCopyRedirectUrl}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-xs font-medium text-gray-600 hover:text-indigo-600 transition-all duration-200 shrink-0"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-green-500" />
-                        <span className="text-green-500">Đã copy</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy URL</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-                  <ExternalLink className="w-3 h-3 inline mr-1" />
-                  Dán URL này vào trình duyệt để redirect sau khi đăng nhập
-                </p>
-              </div>
-
-              {/* ✅ NÚT 3: QUAY VỀ TRANG CHỦ */}
+              {/* ✅ NÚT 2: QUAY VỀ TRANG CHỦ */}
               <button
                 onClick={() => router.push("/")}
                 className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-slate-50 hover:bg-slate-100 rounded-2xl text-sm font-medium text-gray-600 transition-colors"
