@@ -77,77 +77,55 @@ function LoginContent() {
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
-  // ⭐ DESKTOP LOGIN - MỞ TRÌNH DUYỆT VÀ POLLING
-  const handleDesktopLogin = () => {
+  // ⭐ DESKTOP LOGIN - MỞ TRÌNH DUYỆT
+  const handleDesktopLogin = async () => {
     setIsWaitingForLogin(true);
     setError("");
 
-    // ⭐ Mở trình duyệt với URL login
-    window.open(`/api/auth/google`, "_blank");
-
-    let attempts = 0;
-    const maxAttempts = 30;
-    const delay = 3000;
-
-    if (pollingInterval.current) {
-      clearInterval(pollingInterval.current);
-    }
-
-    const checkAuth = async () => {
-      try {
-        // ⭐ Cách 1: Kiểm tra cookie trực tiếp trong desktop app
-        const hasAuthCookie = document.cookie.includes('auth_token');
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.loginWithBrowser();
+        toast.success("Đã mở trình duyệt đăng nhập. Vui lòng hoàn tất!");
         
-        if (hasAuthCookie) {
-          console.log("✅ Auth detected via cookie!");
-          toast.success("Đăng nhập thành công!");
-          setIsWaitingForLogin(false);
-          
-          // ⭐ Sau khi có cookie, gọi API để lấy user
-          const res = await fetch(`/api/admin/me`, {
-            credentials: "include",
-          });
-          
-          if (res.ok) {
-            const data = await res.json();
-            if (data.user) {
+        // ⭐ Bắt đầu polling để kiểm tra token
+        let attempts = 0;
+        const maxAttempts = 30;
+        const delay = 3000;
+
+        const checkToken = async () => {
+          try {
+            // ⭐ Kiểm tra token đã được lưu chưa
+            const token = await window.electronAPI.getToken();
+            if (token) {
+              console.log("✅ Token detected!");
+              toast.success("Đăng nhập thành công!");
+              setIsWaitingForLogin(false);
               router.push("/admin/dashboard");
               return;
             }
+          } catch (err) {
+            // Ignore
           }
-        }
 
-        // ⭐ Cách 2: Gọi API check auth
-        const res = await fetch(`/api/admin/me`, {
-          credentials: "include",
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user) {
-            console.log("✅ Auth detected via API!");
-            toast.success("Đăng nhập thành công!");
+          attempts++;
+          if (attempts < maxAttempts) {
+            console.log(`⏳ Waiting for token... (${attempts}/${maxAttempts})`);
+            setTimeout(checkToken, delay);
+          } else {
             setIsWaitingForLogin(false);
-            router.push("/admin/dashboard");
-            return;
+            toast.error("Không thể xác thực. Vui lòng thử lại.");
           }
-        }
-      } catch (error) {
-        // Ignore
-        console.log("⏳ Waiting for auth...", error);
-      }
+        };
 
-      attempts++;
-      if (attempts < maxAttempts) {
-        console.log(`⏳ Waiting for auth... (${attempts}/${maxAttempts})`);
-        pollingInterval.current = setTimeout(checkAuth, delay);
+        setTimeout(checkToken, 3000);
       } else {
-        setIsWaitingForLogin(false);
-        toast.error("Không thể xác thực. Vui lòng thử lại.");
+        throw new Error("Electron API not available");
       }
-    };
-
-    setTimeout(checkAuth, 3000);
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Không thể mở trình duyệt đăng nhập.");
+      toast.error("Lỗi mở trình duyệt!");
+    }
   };
 
   // ⭐ Cleanup polling
@@ -233,14 +211,14 @@ function LoginContent() {
                     {isWaitingForLogin ? (
                       <>
                         <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></span>
-                        Đang chờ xác thực...
+                        Đang mở trình duyệt...
                       </>
                     ) : (
                       "Đăng nhập với Google"
                     )}
                   </button>
                   <p className="text-xs text-gray-400 text-center">
-                    Trình duyệt sẽ mở để bạn đăng nhập. Sau đó quay lại ứng dụng.
+                    Trình duyệt sẽ mở để bạn đăng nhập. Sau khi đăng nhập, ứng dụng sẽ tự động cập nhật.
                   </p>
                 </div>
               ) : (
