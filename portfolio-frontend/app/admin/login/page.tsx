@@ -23,9 +23,9 @@ function LoginContent() {
   // ⭐ Detect desktop app
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Check if running in Electron
       if (window.electronAPI) {
         setIsDesktop(true);
+        console.log("✅ Running in Electron desktop app");
       }
     }
   }, []);
@@ -33,11 +33,16 @@ function LoginContent() {
   // ⭐ Desktop: check if already authenticated
   useEffect(() => {
     if (isDesktop && window.electronAPI) {
-      window.electronAPI.getAuthToken().then((token) => {
-        if (token) {
-          router.push("/admin/dashboard");
-        }
-      });
+      window.electronAPI
+        .getAuthToken()
+        .then((token) => {
+          if (token) {
+            router.push("/admin/dashboard");
+          }
+        })
+        .catch(() => {
+          // Ignore error
+        });
     }
   }, [isDesktop, router]);
 
@@ -60,18 +65,14 @@ function LoginContent() {
     setLoading(true);
     setError("");
 
-    // ⭐ Desktop: open browser for login
     if (isDesktop && window.electronAPI) {
       window.electronAPI.openBrowserLogin();
-      // Poll for auth completion
       pollAuthStatus();
     } else {
-      // Web: redirect
       window.location.href = `${API_URL}/api/auth/google`;
     }
   };
 
-  // ⭐ Desktop: poll auth status
   const pollAuthStatus = () => {
     let attempts = 0;
     const maxAttempts = 30;
