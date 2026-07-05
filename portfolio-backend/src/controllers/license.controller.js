@@ -317,7 +317,6 @@ exports.generateQR = async (req, res) => {
     const sessionId = crypto.randomBytes(16).toString("hex");
     const token = crypto.randomBytes(32).toString("hex");
 
-    // 👉 LƯU SESSION VỚI TOKEN
     qrSessions.set(sessionId, {
       sessionId,
       token,
@@ -326,16 +325,13 @@ exports.generateQR = async (req, res) => {
       createdAt: Date.now()
     });
 
-    // 👉 TẠO QR DATA
+    // 👉 ĐƠN GIẢN HÓA QR DATA - CHỈ CÓ SESSION ID VÀ TOKEN
     const qrData = {
-      sessionId,
-      token,  // 👉 QUAN TRỌNG: PHẢI CÓ TOKEN
-      deviceId: deviceId || 'desktop-' + Date.now(),
-      timestamp: Date.now(),
-      type: 'desktop_auth'
+      s: sessionId,  // 👉 RÚT GỌN KEY
+      t: token       // 👉 RÚT GỌN KEY
     };
 
-    // 👉 TẠO QR CODE TỪ JSON
+    // 👉 TẠO QR TỪ JSON ĐƠN GIẢN
     const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrData));
 
     setTimeout(() => {
@@ -352,7 +348,7 @@ exports.generateQR = async (req, res) => {
       success: true,
       qrCode: qrCodeUrl,
       sessionId,
-      token,  // 👉 TRẢ VỀ TOKEN CHO DESKTOP
+      token,
       expiresIn: 120,
     });
   } catch (error) {
