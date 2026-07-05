@@ -6,7 +6,6 @@ const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const rateLimit = require("express-rate-limit");
 const licenseRoutes = require("./routes/license.routes");
-const desktopOnly = require("./middlewares/desktop-only.middleware");
 
 require("./config/passport");
 
@@ -107,7 +106,6 @@ app.get("/api/debug/cookies", (req, res) => {
 
 // ⭐ 7. ROUTES - ÁP DỤNG DESKTOP ONLY CHO ADMIN ROUTES
 app.use("/api/auth", require("./routes/auth.routes"));
-app.use("/api/admin", desktopOnly); // 👉 CHỈ 1 LẦN
 app.use("/api/admin", require("./routes/admin.routes"));
 app.use("/api/translations", require("./routes/translation.routes"));
 app.use("/api/links", require("./routes/link.routes"));
