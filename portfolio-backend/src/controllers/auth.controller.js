@@ -12,42 +12,44 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
+// const getCookieOptions = (maxAgeMs) => {
+//   const isProd = process.env.NODE_ENV === "production";
+//   return {
+//     httpOnly: true,
+//     secure: isProd,
+//     sameSite: isProd ? "lax" : "lax",
+//     maxAge: maxAgeMs,
+//   };
+// };
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: true,        // ⭐ LUÔN TRUE
-    sameSite: "none",    // ⭐ LUÔN NONE (quan trọng)
+    secure: isProd, // local: false, production: true
+    sameSite: "lax", // ⭐ "lax" cho local, "none" cho production
     maxAge: maxAgeMs,
-    path: '/',
+    path: "/",
   };
 };
 
-// SỬA clearAuthCookies
+// ⭐ THÊM HÀM MỚI: Clear tất cả cookies auth
 const clearAuthCookies = (res) => {
-  const isProd = process.env.NODE_ENV === "production";
-  const options = {
-    path: '/',
-  };
-  res.clearCookie("auth_token", options);
-  res.clearCookie("temp_auth_token", options);
-  res.clearCookie("refresh_token", options);
+  res.clearCookie("auth_token", getCookieOptions(0));
+  res.clearCookie("temp_auth_token", getCookieOptions(0));
+  res.clearCookie("refresh_token", getCookieOptions(0)); // Nếu có sau này
 };
 
 exports.googleSuccess = async (req, res) => {
   const user = req.user;
   const CLIENT_URL = process.env.CLIENT_URL;
 
-  console.log("🔐 [Auth] ====== GOOGLE SUCCESS ======");
-  console.log("🔐 [Auth] User email:", user?.email);
-
   if (!user || user.isWhitelisted === false) {
-    console.log(`❌ [Auth] User not whitelisted: ${user?.email}`);
+    console.log(`[Auth Controller]: Chặn truy cập. Điều hướng về /auth-denied`);
     return res.redirect(`${CLIENT_URL}/auth-denied`);
   }
 
-  if (!ALLOWED_ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
-    console.log(`❌ [Auth] Email not allowed: ${user.email}`);
+  if (!ALLOWED_ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+    console.log(`[Auth]: Email ${user.email} không hợp lệ.`);
     return res.redirect(`${CLIENT_URL}/auth-denied`);
   }
 
@@ -76,10 +78,9 @@ exports.googleSuccess = async (req, res) => {
     }
   }
 
-  // 👉 CHECK 2FA
+  // ⭐ SỬA: Nếu có 2FA, clear token cũ trước khi tạo temp token
   if (existingUser.twoFactorSecret) {
-    console.log(`🔐 [Auth] 2FA ENABLED for ${existingUser.email}`);
-    
+    // ⭐ QUAN TRỌNG: Clear auth_token cũ
     res.clearCookie("auth_token", getCookieOptions(0));
 
     const tempToken = jwt.sign(
@@ -92,6 +93,21 @@ exports.googleSuccess = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "5m" },
     );
+
+    res.cookie("temp_auth_token", tempToken, getCookieOptions(5 * 60 * 1000));
+    return res.redirect(`${CLIENT_URL}/admin/login?status=require2fa`);
+  }
+
+  const authToken = generateToken(existingUser);
+
+  res.cookie(
+    "auth_token",
+    authToken,
+    getCookieOptions(7 * 24 * 60 * 60 * 1000),
+  );
+
+  return res.redirect(`${CLIENT_URL}/admin/dashboard`);
+};
 
 exports.verify2FA = async (req, res) => {
   try {
