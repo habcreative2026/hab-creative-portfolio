@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Menu,
-  X,
   RefreshCw,
   ExternalLink,
   Languages,
@@ -37,7 +36,7 @@ import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// ⭐ Dùng relative path qua proxy
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API;
 
 interface User {
@@ -92,18 +91,16 @@ export default function DashboardPage() {
 
   const isOwner = user?.email === "buihaitrong.dev@gmail.com";
 
-  // ⭐ THÊM: Hàm refresh token
+  // ⭐ Refresh token
   const refreshAuthToken = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/refresh-token`, {
+      const res = await fetch(`/api/auth/refresh-token`, {
         method: "POST",
         credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) {
-          return true;
-        }
+        return data.success;
       }
       return false;
     } catch (error) {
@@ -165,17 +162,16 @@ export default function DashboardPage() {
     let isMounted = true;
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/admin/me`, {
+        // ⭐ Gọi qua proxy
+        const res = await fetch(`/api/admin/me`, {
           credentials: "include",
         });
 
-        // ⭐ SỬA: Nếu 401, thử refresh token
         if (res.status === 401) {
           console.log("Token expired, attempting refresh...");
           const refreshed = await refreshAuthToken();
           if (refreshed) {
-            // Thử lại sau khi refresh
-            const retryRes = await fetch(`${API_URL}/api/admin/me`, {
+            const retryRes = await fetch(`/api/admin/me`, {
               credentials: "include",
             });
             if (retryRes.ok) {
@@ -187,7 +183,6 @@ export default function DashboardPage() {
               return;
             }
           }
-          // Refresh thất bại → redirect login
           if (isMounted) {
             router.push("/admin/login?status=session_expired");
           }
@@ -211,7 +206,6 @@ export default function DashboardPage() {
 
     fetchUser();
 
-    // ⭐ THÊM: Auto refresh token mỗi 5 phút
     const refreshInterval = setInterval(
       async () => {
         if (isMounted) {
