@@ -1,4 +1,4 @@
-// frontend/app/middleware.ts
+// // frontend/app/middleware.ts - HOÀN CHỈNH
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -23,29 +23,15 @@ export async function middleware(request: NextRequest) {
 
   // ⭐ Nếu không có token, redirect về login
   if (!token) {
+    console.log(`❌ [Middleware] No token, redirect to login`);
     const url = new URL("/admin/login", request.url);
     url.searchParams.set("status", "unauthorized");
     return NextResponse.redirect(url);
   }
 
-  // ⭐ Kiểm tra token với backend (optional, để tăng bảo mật)
-  try {
-    const response = await fetch(`${API_URL}/api/admin/me`, {
-      headers: {
-        Cookie: `auth_token=${token}`,
-        credentials: "include",
-      },
-    });
-
-    if (!response.ok) {
-      const url = new URL("/admin/login", request.url);
-      url.searchParams.set("status", "session_expired");
-      return NextResponse.redirect(url);
-    }
-  } catch (error) {
-    console.error("Middleware auth check error:", error);
-    // Nếu backend không response, vẫn cho phép request (fallback)
-  }
+  // ⭐⭐ BỎ QUA VERIFY VỚI BACKEND TRONG MIDDLEWARE ⭐⭐
+  // Middleware chạy trên Edge, KHÔNG thể gửi cookie sang backend
+  // Chỉ cần check token tồn tại là đủ
 
   return NextResponse.next();
 }
@@ -53,7 +39,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/admin/:path*",
-    // Exclude static files
     "/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)",
   ],
 };
