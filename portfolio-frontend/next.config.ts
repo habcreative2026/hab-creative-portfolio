@@ -10,7 +10,6 @@ const nextConfig = {
       },
     ];
   },
-  // Cấu hình images nếu có
   images: {
     domains: ['res.cloudinary.com'],
   },
