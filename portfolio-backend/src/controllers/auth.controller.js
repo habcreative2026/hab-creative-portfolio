@@ -12,22 +12,22 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// ⭐ SỬA: Cookie options với domain và secure phù hợp
+// ⭐ SỬA: Cookie options - domain frontend
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
-  const domain = isProd ? ".habcreative-portfolio.vercel.app" : undefined;
   
   return {
     httpOnly: true,
-    secure: isProd, // ⭐ Chỉ secure khi production
+    secure: isProd,
     sameSite: isProd ? "none" : "lax",
     maxAge: maxAgeMs,
     path: "/",
-    domain: domain, // ⭐ Set domain để share cookie
+    // ⭐ Set domain cho frontend
+    domain: isProd ? ".habcreative-portfolio.vercel.app" : undefined,
   };
 };
 
-// ⭐ SỬA: Clear auth cookies với đúng options
+// ⭐ SỬA: Clear auth cookies
 const clearAuthCookies = (res) => {
   const isProd = process.env.NODE_ENV === "production";
   const domain = isProd ? ".habcreative-portfolio.vercel.app" : undefined;
@@ -44,7 +44,7 @@ const clearAuthCookies = (res) => {
   res.clearCookie("temp_auth_token", options);
   res.clearCookie("refresh_token", options);
   
-  console.log("✅ All auth cookies cleared with options:", options);
+  console.log("✅ All auth cookies cleared");
 };
 
 // ===== GOOGLE SUCCESS =====
