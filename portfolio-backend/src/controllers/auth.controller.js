@@ -28,7 +28,6 @@ const clearAuthCookies = (res) => {
   const isProd = process.env.NODE_ENV === "production";
   const options = {
     path: '/',
-    domain: isProd ? '.onrender.com' : undefined,
   };
   res.clearCookie("auth_token", options);
   res.clearCookie("temp_auth_token", options);
