@@ -37,8 +37,8 @@ import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API || "";
 
 interface User {
   email: string;
@@ -117,10 +117,12 @@ export default function DashboardPage() {
 
   // ⭐ Get iframe URL - LUÔN TẮT INTRO
   const getIframeUrl = () => {
+    // ⭐ Kiểm tra PREVIEW_URL có tồn tại không
+    if (!PREVIEW_URL) {
+      return "#";
+    }
     // ⭐ THÊM PARAM intro=off để tắt intro
-    const url = new URL(PREVIEW_URL);
-    url.searchParams.set("intro", "off");
-    return url.toString();
+    return `${PREVIEW_URL}?intro=off`;
   };
 
   const toggleMenu = (menuId: string) => {
@@ -336,7 +338,7 @@ export default function DashboardPage() {
               </button>
 
               <div className="flex-1 max-w-xl mx-auto bg-white border border-gray-200 rounded-lg px-3 py-1 text-xs text-gray-500 font-mono text-center truncate shadow-sm">
-                {PREVIEW_URL}
+                {PREVIEW_URL || "Loading..."}
               </div>
 
               <div className="flex items-center gap-1">
@@ -352,7 +354,7 @@ export default function DashboardPage() {
                 </button>
 
                 <a
-                  href={PREVIEW_URL}
+                  href={PREVIEW_URL || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Mở trong tab mới"
