@@ -10,7 +10,7 @@ exports.getVideoConfig = async (req, res) => {
     if (!config || !config.activeResource) {
       return res.json({
         success: true,
-        data: { url: "/video_intro.mp4", title: "Default Intro" },
+        data: { url: "/video.mp4", title: "Default Intro" },
       });
     }
     return res.json({ success: true, data: config.activeResource });
