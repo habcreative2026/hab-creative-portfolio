@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 
 const OWNER_EMAIL = "buihaitrong.dev@gmail.com";
 
-// ⭐ SỬA: Hỗ trợ cả Cookie (Web) và Header (Desktop)
 const authMiddleware = (req, res, next) => {
   try {
     // ⭐ Ưu tiên lấy token từ header Authorization (Desktop)
@@ -61,22 +60,16 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// ⭐ isSuperAdmin - Chỉ super_admin
 authMiddleware.isSuperAdmin = (req, res, next) => {
   if (req.user.role !== "super_admin") {
-    console.warn(
-      `[Auth] ⚠️ User ${req.user.email} (${req.user.role}) cố gắng truy cập Super Admin route`,
-    );
     return res.status(403).json({
       success: false,
-      message:
-        "Bạn không có quyền thực hiện hành động này. Chỉ Super Admin mới được phép.",
+      message: "Bạn không có quyền thực hiện hành động này. Chỉ Super Admin mới được phép.",
     });
   }
   next();
 };
 
-// ⭐ isAdmin - Cho phép cả admin và super_admin
 authMiddleware.isAdmin = (req, res, next) => {
   if (req.user.role !== "admin" && req.user.role !== "super_admin") {
     return res.status(403).json({
@@ -87,21 +80,16 @@ authMiddleware.isAdmin = (req, res, next) => {
   next();
 };
 
-// ⭐ isOwner - Chỉ owner
 authMiddleware.isOwner = (req, res, next) => {
   if (req.user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
-    console.warn(
-      `[Auth] ⚠️ User ${req.user.email} cố gắng truy cập Owner-only route`,
-    );
     return res.status(403).json({
       success: false,
-      message: "Chỉ Bùi Hải Trọng mới có quyền thực hiện hành động này!",
+      message: "Chỉ Owner mới có quyền thực hiện hành động này!",
     });
   }
   next();
 };
 
-// ⭐ is2FAVerified - Kiểm tra 2FA
 authMiddleware.is2FAVerified = (req, res, next) => {
   if (req.user.isPending2FA) {
     return res.status(403).json({
