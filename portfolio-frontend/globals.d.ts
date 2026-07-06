@@ -12,11 +12,11 @@ declare global {
       reload: () => Promise<void>;
       quitApp: () => Promise<void>;
       onLogoutRequested: (callback: () => void) => void;
-      // ⭐ THÊM CÁC METHOD MỚI
       loginWithBrowser: () => Promise<void>;
       getToken: () => Promise<string | null>;
       getUser: () => Promise<any | null>;
       getDeviceId: () => Promise<string>;
+      verify2FA: (otp: string) => Promise<{ success: boolean; message?: string }>;
       onDeepLink: (callback: (data: any) => void) => void;
     };
   }
