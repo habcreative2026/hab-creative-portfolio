@@ -19,7 +19,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 interface TwoFactorAuthModalProps {
   has2FA: boolean;
   onActivationSuccess: () => void;
-  isSidebarOpen?: boolean; // ⭐ Thêm prop để biết sidebar trạng thái
+  isSidebarOpen?: boolean;
 }
 
 export default function TwoFactorAuthModal({
@@ -35,7 +35,6 @@ export default function TwoFactorAuthModal({
   const [error, setError] = useState("");
   const [step, setStep] = useState<"init" | "qr" | "verify">("init");
 
-  // Reset state khi mở modal
   useEffect(() => {
     if (isOpen && !has2FA) {
       setStep("init");
@@ -129,7 +128,6 @@ export default function TwoFactorAuthModal({
     setOtp("");
   };
 
-  // ⭐ Button hiển thị - tối ưu cho sidebar thu gọn
   return (
     <>
       <button
@@ -168,17 +166,19 @@ export default function TwoFactorAuthModal({
         )}
       </button>
 
-      {/* Modal */}
+      {/* ⭐ Modal - center màn hình */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
           <div
-            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={handleCloseModal}
           />
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md overflow-hidden relative z-10 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95">
+          {/* Modal content - center màn hình */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md overflow-hidden relative z-10 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <Lock size={18} className="text-indigo-600" />
@@ -200,10 +200,9 @@ export default function TwoFactorAuthModal({
               </button>
             </div>
 
-            {/* Body */}
-            <div className="p-6 max-h-[80vh] overflow-y-auto">
+            {/* Body - scrollable */}
+            <div className="p-6 overflow-y-auto flex-1">
               {has2FA ? (
-                // ⭐ Đã kích hoạt 2FA
                 <div className="flex flex-col items-center text-center py-6 space-y-4">
                   <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full">
                     <CheckCircle2 size={48} />
@@ -232,9 +231,7 @@ export default function TwoFactorAuthModal({
                   </div>
                 </div>
               ) : (
-                // ⭐ Chưa kích hoạt 2FA
                 <div className="space-y-5">
-                  {/* Loading QR */}
                   {loading && !qrCodeImg && step === "init" ? (
                     <div className="flex flex-col items-center justify-center py-12 space-y-3">
                       <RefreshCw
@@ -247,7 +244,6 @@ export default function TwoFactorAuthModal({
                     </div>
                   ) : (
                     <>
-                      {/* QR Code */}
                       {step === "qr" && qrCodeImg && (
                         <div className="flex flex-col items-center">
                           <div className="flex items-center gap-2 mb-2">
@@ -271,7 +267,6 @@ export default function TwoFactorAuthModal({
                         </div>
                       )}
 
-                      {/* OTP Input */}
                       <form
                         onSubmit={handleVerifyAndActivate}
                         className="space-y-4 border-t border-gray-100 pt-4"
@@ -334,7 +329,6 @@ export default function TwoFactorAuthModal({
                         </div>
                       </form>
 
-                      {/* Hướng dẫn */}
                       <div className="mt-2 p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
                         <p className="text-[10px] text-blue-700 flex items-center gap-2">
                           <QrCode size={14} className="shrink-0" />
