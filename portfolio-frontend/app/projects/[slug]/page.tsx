@@ -166,15 +166,15 @@ export default function ProjectDetailDisplay() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center font-mono text-xs tracking-widest text-neutral-400">
-        LOADING ARTWORK...
+      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-white">
+        ...
       </div>
     );
 
   if (!project)
     return (
-      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-red-500">
-        PROJECT NOT FOUND
+      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-gray-500">
+        404
       </div>
     );
 
