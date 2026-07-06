@@ -3,7 +3,6 @@
 const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
-const { OAuth2Client } = require("google-auth-library");
 const generateToken = require("../utils/generateToken");
 const User = require("../models/User");
 
@@ -13,35 +12,29 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
+// 👉 SỬA: BỎ KEY SECURE TRÙNG LẶP
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: maxAgeMs,
     path: "/",
-    domain: isProd ? ".habcreative-portfolio.vercel.app" : undefined,
   };
 };
 
+// Clear auth cookies
 const clearAuthCookies = (res) => {
-  const isProd = process.env.NODE_ENV === "production";
-  const domain = isProd ? ".habcreative-portfolio.vercel.app" : undefined;
   const options = {
     path: "/",
-    domain: domain,
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax",
   };
   res.clearCookie("auth_token", options);
   res.clearCookie("temp_auth_token", options);
   res.clearCookie("refresh_token", options);
-  console.log("✅ All auth cookies cleared");
 };
 
-// ===== GOOGLE SUCCESS (Web) =====
+// ===== GOOGLE SUCCESS =====
 exports.googleSuccess = async (req, res) => {
   const user = req.user;
   const CLIENT_URL = process.env.CLIENT_URL;
@@ -62,7 +55,11 @@ exports.googleSuccess = async (req, res) => {
   let existingUser = await User.findOne({ email: user.email.toLowerCase() });
 
   if (!existingUser) {
-    const role = user.email.toLowerCase() === "buihaitrong.dev@gmail.com" ? "super_admin" : "admin";
+    const role =
+      user.email.toLowerCase() === "buihaitrong.dev@gmail.com"
+        ? "super_admin"
+        : "admin";
+
     existingUser = await User.create({
       oauthId: user.oauthId || user.id,
       email: user.email.toLowerCase(),
@@ -71,15 +68,21 @@ exports.googleSuccess = async (req, res) => {
       role: role,
     });
   } else {
-    if (existingUser.email === "buihaitrong.dev@gmail.com" && existingUser.role !== "super_admin") {
+    if (
+      existingUser.email === "buihaitrong.dev@gmail.com" &&
+      existingUser.role !== "super_admin"
+    ) {
       existingUser.role = "super_admin";
       await existingUser.save();
     }
   }
 
+  // 👉 CHECK 2FA
   if (existingUser.twoFactorSecret) {
     console.log(`🔐 [Auth] 2FA ENABLED for ${existingUser.email}`);
+
     res.clearCookie("auth_token", getCookieOptions(0));
+
     const tempToken = jwt.sign(
       {
         id: existingUser._id,
@@ -90,201 +93,23 @@ exports.googleSuccess = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "5m" },
     );
+
     res.cookie("temp_auth_token", tempToken, getCookieOptions(5 * 60 * 1000));
     return res.redirect(`${CLIENT_URL}/admin/login?status=require2fa`);
   }
 
+  // 👉 KHÔNG 2FA
   const authToken = generateToken(existingUser);
-  res.cookie("auth_token", authToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
-  console.log(`✅ [Auth] Token set for: ${existingUser.email}`);
+  res.cookie(
+    "auth_token",
+    authToken,
+    getCookieOptions(7 * 24 * 60 * 60 * 1000),
+  );
+
   return res.redirect(`${CLIENT_URL}/admin/dashboard`);
 };
 
-// ===== EXCHANGE CODE (Desktop) =====
-exports.exchangeCode = async (req, res) => {
-  try {
-    const { code } = req.query;
-    if (!code) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing authorization code",
-      });
-    }
-
-    console.log("🔑 [Exchange] Code received, exchanging for token...");
-
-    const oauth2Client = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      'http://localhost:3000/auth/callback'
-    );
-
-    const { tokens } = await oauth2Client.getToken(code);
-    console.log("✅ Tokens received from Google");
-
-    const ticket = await oauth2Client.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    
-    const payload = ticket.getPayload();
-    const email = payload.email;
-    const name = payload.name;
-    const avatar = payload.picture;
-
-    console.log(`📧 [Exchange] User email: ${email}`);
-
-    if (!ALLOWED_ADMIN_EMAILS.includes(email)) {
-      console.log(`❌ [Exchange] Email not allowed: ${email}`);
-      return res.status(403).json({
-        success: false,
-        message: "Email not allowed",
-      });
-    }
-
-    let user = await User.findOne({ email });
-    if (!user) {
-      const role = email === "buihaitrong.dev@gmail.com" ? "super_admin" : "admin";
-      user = await User.create({
-        email,
-        name: name || "Admin",
-        avatar: avatar || "",
-        role,
-        oauthId: payload.sub,
-      });
-      console.log(`✅ [Exchange] User created: ${email}`);
-    }
-
-    // ⭐ CHECK 2FA
-    if (user.twoFactorSecret) {
-      console.log(`🔐 [Exchange] 2FA enabled for ${email}, requiring 2FA verification`);
-      const tempToken = jwt.sign(
-        {
-          id: user._id,
-          email: user.email,
-          role: user.role,
-          isPending2FA: true,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "5m" }
-      );
-      return res.status(200).json({
-        success: true,
-        require2FA: true,
-        tempToken: tempToken,
-        message: "Vui lòng nhập mã 2FA để hoàn tất đăng nhập.",
-      });
-    }
-
-    const sessionToken = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    console.log(`✅ [Exchange] Token issued for: ${email}`);
-
-    res.json({
-      success: true,
-      token: sessionToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
-        has2FA: !!user.twoFactorSecret,
-      },
-    });
-  } catch (error) {
-    console.error('❌ [Exchange] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// ===== VERIFY 2FA FOR DESKTOP =====
-exports.verifyDesktop2FA = async (req, res) => {
-  try {
-    const { tempToken, otp } = req.body;
-
-    if (!tempToken || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Thiếu thông tin xác thực.",
-      });
-    }
-
-    const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
-    if (!decoded.isPending2FA) {
-      return res.status(401).json({
-        success: false,
-        message: "Phiên xác thực không hợp lệ.",
-      });
-    }
-
-    const user = await User.findById(decoded.id);
-    if (!user || !user.twoFactorSecret) {
-      return res.status(404).json({
-        success: false,
-        message: "Tài khoản chưa kích hoạt 2FA.",
-      });
-    }
-
-    const isVerified = speakeasy.totp.verify({
-      secret: user.twoFactorSecret,
-      encoding: "base32",
-      token: otp,
-      window: 2,
-    });
-
-    if (!isVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Mã OTP không chính xác hoặc đã hết hạn.",
-      });
-    }
-
-    const sessionToken = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    console.log(`✅ [2FA] Verified for: ${user.email}`);
-
-    res.json({
-      success: true,
-      token: sessionToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
-        has2FA: true,
-      },
-    });
-  } catch (error) {
-    console.error('❌ [Verify2FA] Error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi xác thực 2FA.",
-    });
-  }
-};
-
-// ===== VERIFY 2FA (Web) =====
+// ===== VERIFY 2FA =====
 exports.verify2FA = async (req, res) => {
   try {
     const token = String(req.body.token).trim();
@@ -293,7 +118,8 @@ exports.verify2FA = async (req, res) => {
     if (!tempToken) {
       return res.status(401).json({
         success: false,
-        message: "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại với Google.",
+        message:
+          "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại với Google.",
       });
     }
 
@@ -329,7 +155,12 @@ exports.verify2FA = async (req, res) => {
 
     res.clearCookie("temp_auth_token", getCookieOptions(0));
     const authToken = generateToken(user);
-    res.cookie("auth_token", authToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+
+    res.cookie(
+      "auth_token",
+      authToken,
+      getCookieOptions(7 * 24 * 60 * 60 * 1000),
+    );
 
     return res.json({
       success: true,
@@ -352,7 +183,6 @@ exports.verify2FA = async (req, res) => {
 
 // ===== LOGOUT =====
 exports.logout = (req, res) => {
-  console.log("🔓 Logout called");
   clearAuthCookies(res);
   return res.json({
     success: true,
@@ -375,6 +205,7 @@ exports.setup2FA = async (req, res) => {
           message: "Lỗi sinh mã QR Code.",
         });
       }
+
       return res.json({
         success: true,
         secret: secret.base32,
@@ -455,7 +286,12 @@ exports.refreshToken = async (req, res) => {
     }
 
     const newAuthToken = generateToken(user);
-    res.cookie("auth_token", newAuthToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
+
+    res.cookie(
+      "auth_token",
+      newAuthToken,
+      getCookieOptions(7 * 24 * 60 * 60 * 1000),
+    );
 
     console.log(`✅ [Refresh] New token issued for: ${user.email}`);
 
