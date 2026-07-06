@@ -4,22 +4,13 @@ const jwt = require("jsonwebtoken");
 
 const OWNER_EMAIL = "buihaitrong.dev@gmail.com";
 
+// ⭐ SỬA: Thêm refresh token check
 const authMiddleware = (req, res, next) => {
   try {
-    // ⭐ Ưu tiên lấy token từ header Authorization (Desktop)
-    let token = null;
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-    
-    // ⭐ Fallback: lấy từ cookie (Web)
-    if (!token) {
-      token = req.cookies.auth_token;
-    }
+    const token = req.cookies.auth_token;
 
     if (!token) {
-      console.log("[Auth Middleware]: Không tìm thấy token.");
+      console.log("[Auth Middleware]: Không tìm thấy auth_token trong Cookie.");
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Vui lòng đăng nhập.",
@@ -60,16 +51,22 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+// ⭐ isSuperAdmin - Chỉ super_admin
 authMiddleware.isSuperAdmin = (req, res, next) => {
   if (req.user.role !== "super_admin") {
+    console.warn(
+      `[Auth] ⚠️ User ${req.user.email} (${req.user.role}) cố gắng truy cập Super Admin route`,
+    );
     return res.status(403).json({
       success: false,
-      message: "Bạn không có quyền thực hiện hành động này. Chỉ Super Admin mới được phép.",
+      message:
+        "Bạn không có quyền thực hiện hành động này. Chỉ Super Admin mới được phép.",
     });
   }
   next();
 };
 
+// ⭐ THÊM: isAdmin - Cho phép cả admin và super_admin
 authMiddleware.isAdmin = (req, res, next) => {
   if (req.user.role !== "admin" && req.user.role !== "super_admin") {
     return res.status(403).json({
@@ -80,16 +77,21 @@ authMiddleware.isAdmin = (req, res, next) => {
   next();
 };
 
+// ⭐ isOwner - Chỉ owner
 authMiddleware.isOwner = (req, res, next) => {
   if (req.user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
+    console.warn(
+      `[Auth] ⚠️ User ${req.user.email} cố gắng truy cập Owner-only route`,
+    );
     return res.status(403).json({
       success: false,
-      message: "Chỉ Owner mới có quyền thực hiện hành động này!",
+      message: "Chỉ Bùi Hải Trọng mới có quyền thực hiện hành động này!",
     });
   }
   next();
 };
 
+// ⭐ is2FAVerified - Kiểm tra 2FA
 authMiddleware.is2FAVerified = (req, res, next) => {
   if (req.user.isPending2FA) {
     return res.status(403).json({
