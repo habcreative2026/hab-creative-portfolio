@@ -35,7 +35,6 @@ import ContactAdminPage from "../contact/page";
 import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
-import "./globals.css"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API;
