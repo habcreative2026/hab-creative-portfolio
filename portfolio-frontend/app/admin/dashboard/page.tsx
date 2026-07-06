@@ -610,6 +610,7 @@ export default function DashboardPage() {
           <TwoFactorAuthModal
             has2FA={!!user?.has2FA}
             onActivationSuccess={handle2FASuccess}
+            isSidebarOpen={isSidebarOpen}
           />
 
           <button
