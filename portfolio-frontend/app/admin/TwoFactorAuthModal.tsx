@@ -19,7 +19,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 interface TwoFactorAuthModalProps {
   has2FA: boolean;
   onActivationSuccess: () => void;
-  isSidebarOpen?: boolean; // ⭐ Thêm prop
+  isSidebarOpen?: boolean;
 }
 
 export default function TwoFactorAuthModal({
@@ -166,17 +166,17 @@ export default function TwoFactorAuthModal({
         )}
       </button>
 
-      {/* Modal - center màn hình */}
+      {/* ⭐ Modal - z-index cực cao để luôn hiển thị trên cùng */}
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          {/* Overlay */}
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          {/* Overlay - chiếm toàn màn hình */}
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
             onClick={handleCloseModal}
           />
-
+          
           {/* Modal content */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md overflow-hidden relative z-10 transform scale-100 transition-all duration-300 max-h-[90vh] flex flex-col">
+          <div className="relative bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col z-10">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 shrink-0">
               <div className="flex items-center gap-3">
