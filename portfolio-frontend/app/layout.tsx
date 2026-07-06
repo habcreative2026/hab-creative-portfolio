@@ -2,7 +2,6 @@ import "./globals.css";
 import ClientLayout from "./ClientLayout";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { LinkProvider } from "./context/LinkContext";
-import { IntroProvider } from "./context/IntroContext"; // ⭐ Thêm
 import MaintenanceGuard from "./components/MaintenanceGuard";
 
 export const metadata = {
@@ -22,13 +21,11 @@ export default function RootLayout({
     <html lang="en">
       <body cz-shortcut-listen="true">
         <MaintenanceGuard>
-          <IntroProvider> {/* ⭐ Wrap */}
-            <LinkProvider>
-              <LanguageProvider>
-                <ClientLayout>{children}</ClientLayout>
-              </LanguageProvider>
-            </LinkProvider>
-          </IntroProvider>
+          <LinkProvider>
+            <LanguageProvider>
+              <ClientLayout>{children}</ClientLayout>
+            </LanguageProvider>
+          </LinkProvider>
         </MaintenanceGuard>
       </body>
     </html>
