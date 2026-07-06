@@ -1,5 +1,3 @@
-// frontend/app/admin/dashboard/page.tsx
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -162,15 +160,53 @@ export default function DashboardPage() {
     return false;
   };
 
+  // ⭐ HÀM LOGOUT MỚI - XỬ LÝ ĐÚNG CÁCH
+  const handleLogout = async () => {
+    try {
+      // 1. Gọi API logout để xóa cookie trên server
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout API error:", error);
+    } finally {
+      // 2. Xóa state user
+      setUser(null);
+      
+      // 3. Xóa localStorage và sessionStorage
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // 4. ⭐ QUAN TRỌNG: Force redirect về login
+      // Sử dụng window.location để chắc chắn không cache
+      if (typeof window !== "undefined") {
+        // Xóa toàn bộ cookies trên client
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+        
+        // Redirect về login page
+        window.location.href = `/admin/login?status=logged_out`;
+      }
+    }
+  };
+
+  // ⭐ HÀM CHECK AUTH - ĐƯỢC GỌI KHI LOAD PAGE
   useEffect(() => {
     let isMounted = true;
     const fetchUser = async () => {
       try {
         const res = await fetch(`${API_URL}/api/admin/me`, {
           credentials: "include",
+          cache: "no-store", // Không cache
         });
 
-        // ⭐ SỬA: Nếu 401, thử refresh token
+        // Nếu 401, thử refresh token
         if (res.status === 401) {
           console.log("Token expired, attempting refresh...");
           const refreshed = await refreshAuthToken();
@@ -178,6 +214,7 @@ export default function DashboardPage() {
             // Thử lại sau khi refresh
             const retryRes = await fetch(`${API_URL}/api/admin/me`, {
               credentials: "include",
+              cache: "no-store",
             });
             if (retryRes.ok) {
               const data = await retryRes.json();
@@ -212,7 +249,7 @@ export default function DashboardPage() {
 
     fetchUser();
 
-    // ⭐ THÊM: Auto refresh token mỗi 5 phút
+    // Auto refresh token mỗi 5 phút
     const refreshInterval = setInterval(
       async () => {
         if (isMounted) {
@@ -227,26 +264,6 @@ export default function DashboardPage() {
       clearInterval(refreshInterval);
     };
   }, [router]);
-
-  // ⭐ SỬA: Logout - clear cookies
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Logout failed", error);
-    } finally {
-      setUser(null);
-      // ⭐ Xóa cache và redirect
-      if (typeof window !== "undefined") {
-        localStorage.clear();
-        sessionStorage.clear();
-      }
-      router.push("/admin/login");
-    }
-  };
 
   if (loading) {
     return (
