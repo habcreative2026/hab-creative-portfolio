@@ -99,14 +99,6 @@ export default function AboutPage() {
     return obj[lang] || obj.vi || obj.en || "";
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-slate-400">
-        LOADING...
-      </div>
-    );
-  }
-
   const experiences = aboutData?.experiences || [];
   const achievements = aboutData?.achievements || [];
 
