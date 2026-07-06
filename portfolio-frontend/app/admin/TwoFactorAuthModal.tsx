@@ -13,6 +13,7 @@ import {
   Lock,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import Portal from "../components/Portal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -130,6 +131,7 @@ export default function TwoFactorAuthModal({
 
   return (
     <>
+      {/* Button trong sidebar */}
       <button
         onClick={handleOpenModal}
         className={`
@@ -166,201 +168,203 @@ export default function TwoFactorAuthModal({
         )}
       </button>
 
-      {/* ⭐ Modal - z-index cực cao để luôn hiển thị trên cùng */}
+      {/* ⭐ Modal - Render qua Portal ra ngoài sidebar */}
       {isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          {/* Overlay - chiếm toàn màn hình */}
-          <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={handleCloseModal}
-          />
-          
-          {/* Modal content */}
-          <div className="relative bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col z-10">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Lock size={18} className="text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">
-                    Xác thực hai lớp
-                  </h3>
-                  <p className="text-[10px] text-gray-500">
-                    {has2FA ? "Đã kích hoạt" : "Thiết lập bảo mật"}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 overflow-y-auto flex-1">
-              {has2FA ? (
-                <div className="flex flex-col items-center text-center py-6 space-y-4">
-                  <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full">
-                    <CheckCircle2 size={48} />
+        <Portal>
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={handleCloseModal}
+            />
+            
+            {/* Modal content */}
+            <div className="relative bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col z-10">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <Lock size={18} className="text-indigo-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 text-lg">
-                      Tài khoản được bảo vệ
-                    </h4>
-                    <p className="text-sm text-gray-500 mt-1 max-w-xs">
-                      Xác thực hai lớp (2FA) đang hoạt động trên tài khoản của
-                      bạn.
+                    <h3 className="font-semibold text-gray-900 text-sm">
+                      Xác thực hai lớp
+                    </h3>
+                    <p className="text-[10px] text-gray-500">
+                      {has2FA ? "Đã kích hoạt" : "Thiết lập bảo mật"}
                     </p>
                   </div>
-                  <div className="w-full bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl flex gap-3 text-left">
-                    <ShieldCheck
-                      size={18}
-                      className="text-emerald-600 shrink-0 mt-0.5"
-                    />
-                    <div className="text-xs text-emerald-800 space-y-1">
-                      <p className="font-medium">Bảo mật nâng cao</p>
-                      <p className="text-emerald-700/80">
-                        Hệ thống sẽ yêu cầu mã OTP 6 chữ số từ Google
-                        Authenticator mỗi lần đăng nhập.
+                </div>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 overflow-y-auto flex-1">
+                {has2FA ? (
+                  <div className="flex flex-col items-center text-center py-6 space-y-4">
+                    <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full">
+                      <CheckCircle2 size={48} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 text-lg">
+                        Tài khoản được bảo vệ
+                      </h4>
+                      <p className="text-sm text-gray-500 mt-1 max-w-xs">
+                        Xác thực hai lớp (2FA) đang hoạt động trên tài khoản của
+                        bạn.
                       </p>
+                    </div>
+                    <div className="w-full bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl flex gap-3 text-left">
+                      <ShieldCheck
+                        size={18}
+                        className="text-emerald-600 shrink-0 mt-0.5"
+                      />
+                      <div className="text-xs text-emerald-800 space-y-1">
+                        <p className="font-medium">Bảo mật nâng cao</p>
+                        <p className="text-emerald-700/80">
+                          Hệ thống sẽ yêu cầu mã OTP 6 chữ số từ Google
+                          Authenticator mỗi lần đăng nhập.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {loading && !qrCodeImg && step === "init" ? (
-                    <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                      <RefreshCw
-                        size={32}
-                        className="animate-spin text-indigo-600"
-                      />
-                      <p className="text-sm text-gray-500">
-                        Đang khởi tạo mã QR...
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {step === "qr" && qrCodeImg && (
-                        <div className="flex flex-col items-center">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Smartphone size={16} className="text-indigo-600" />
-                            <span className="text-xs font-medium text-gray-700">
-                              Quét mã QR với Google Authenticator
-                            </span>
-                          </div>
-                          <div className="p-3 bg-white border-2 border-indigo-100 rounded-xl shadow-inner">
-                            <img
-                              src={qrCodeImg}
-                              alt="2FA QR Code"
-                              className="w-44 h-44 object-contain"
-                            />
-                          </div>
-                          <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-[10px] text-gray-500 font-mono truncate max-w-[200px]">
-                              Secret: {secretKey.substring(0, 16)}...
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <form
-                        onSubmit={handleVerifyAndActivate}
-                        className="space-y-4 border-t border-gray-100 pt-4"
-                      >
-                        <div>
-                          <label
-                            htmlFor="modal-otp"
-                            className="flex items-center gap-2 text-xs font-medium text-gray-700 mb-1.5"
-                          >
-                            <KeyRound size={14} className="text-gray-400" />
-                            <span>Nhập mã OTP xác nhận (6 chữ số)</span>
-                          </label>
-                          <input
-                            id="modal-otp"
-                            type="text"
-                            maxLength={6}
-                            placeholder="0 0 0 0 0 0"
-                            value={otp}
-                            onChange={(e) =>
-                              setOtp(e.target.value.replace(/\D/g, ""))
-                            }
-                            className="w-full text-center font-mono tracking-[0.4em] text-xl py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none shadow-sm transition-all"
-                            required
-                            autoFocus
-                            disabled={loading}
-                          />
-                          <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-                            Mã OTP được tạo từ ứng dụng Google Authenticator
-                          </p>
-                        </div>
-
-                        {error && (
-                          <div className="p-3 bg-red-50 text-red-700 border border-red-100 rounded-xl text-xs flex gap-2 items-start">
-                            <ShieldAlert
-                              size={14}
-                              className="shrink-0 mt-0.5"
-                            />
-                            <span>{error}</span>
+                ) : (
+                  <div className="space-y-5">
+                    {loading && !qrCodeImg && step === "init" ? (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                        <RefreshCw
+                          size={32}
+                          className="animate-spin text-indigo-600"
+                        />
+                        <p className="text-sm text-gray-500">
+                          Đang khởi tạo mã QR...
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {step === "qr" && qrCodeImg && (
+                          <div className="flex flex-col items-center">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Smartphone size={16} className="text-indigo-600" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Quét mã QR với Google Authenticator
+                              </span>
+                            </div>
+                            <div className="p-3 bg-white border-2 border-indigo-100 rounded-xl shadow-inner">
+                              <img
+                                src={qrCodeImg}
+                                alt="2FA QR Code"
+                                className="w-44 h-44 object-contain"
+                              />
+                            </div>
+                            <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-[10px] text-gray-500 font-mono truncate max-w-[200px]">
+                                Secret: {secretKey.substring(0, 16)}...
+                              </p>
+                            </div>
                           </div>
                         )}
 
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={handleCloseModal}
-                            className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
-                          >
-                            Để sau
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={loading || otp.length !== 6}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl text-sm font-medium shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                          >
-                            {loading && (
-                              <RefreshCw size={14} className="animate-spin" />
-                            )}
-                            <span>Kích hoạt</span>
-                          </button>
-                        </div>
-                      </form>
+                        <form
+                          onSubmit={handleVerifyAndActivate}
+                          className="space-y-4 border-t border-gray-100 pt-4"
+                        >
+                          <div>
+                            <label
+                              htmlFor="modal-otp"
+                              className="flex items-center gap-2 text-xs font-medium text-gray-700 mb-1.5"
+                            >
+                              <KeyRound size={14} className="text-gray-400" />
+                              <span>Nhập mã OTP xác nhận (6 chữ số)</span>
+                            </label>
+                            <input
+                              id="modal-otp"
+                              type="text"
+                              maxLength={6}
+                              placeholder="0 0 0 0 0 0"
+                              value={otp}
+                              onChange={(e) =>
+                                setOtp(e.target.value.replace(/\D/g, ""))
+                              }
+                              className="w-full text-center font-mono tracking-[0.4em] text-xl py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none shadow-sm transition-all"
+                              required
+                              autoFocus
+                              disabled={loading}
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1.5 text-center">
+                              Mã OTP được tạo từ ứng dụng Google Authenticator
+                            </p>
+                          </div>
 
-                      <div className="mt-2 p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
-                        <p className="text-[10px] text-blue-700 flex items-center gap-2">
-                          <QrCode size={14} className="shrink-0" />
-                          <span>
-                            Chưa có Google Authenticator? Tải từ{" "}
-                            <a
-                              href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline hover:text-blue-800"
+                          {error && (
+                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 rounded-xl text-xs flex gap-2 items-start">
+                              <ShieldAlert
+                                size={14}
+                                className="shrink-0 mt-0.5"
+                              />
+                              <span>{error}</span>
+                            </div>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={handleCloseModal}
+                              className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                             >
-                              Play Store
-                            </a>{" "}
-                            hoặc{" "}
-                            <a
-                              href="https://apps.apple.com/app/google-authenticator/id388497605"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline hover:text-blue-800"
+                              Để sau
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={loading || otp.length !== 6}
+                              className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl text-sm font-medium shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                              App Store
-                            </a>
-                          </span>
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+                              {loading && (
+                                <RefreshCw size={14} className="animate-spin" />
+                              )}
+                              <span>Kích hoạt</span>
+                            </button>
+                          </div>
+                        </form>
+
+                        <div className="mt-2 p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
+                          <p className="text-[10px] text-blue-700 flex items-center gap-2">
+                            <QrCode size={14} className="shrink-0" />
+                            <span>
+                              Chưa có Google Authenticator? Tải từ{" "}
+                              <a
+                                href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline hover:text-blue-800"
+                              >
+                                Play Store
+                              </a>{" "}
+                              hoặc{" "}
+                              <a
+                                href="https://apps.apple.com/app/google-authenticator/id388497605"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline hover:text-blue-800"
+                              >
+                                App Store
+                              </a>
+                            </span>
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
     </>
   );
