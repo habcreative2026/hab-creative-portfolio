@@ -212,7 +212,7 @@ export default function ContactCMSAdmin() {
     try {
       setLoading(true);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/upload-avatar`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/upload/avatar`,
         {
           method: "POST",
           body: formData,
