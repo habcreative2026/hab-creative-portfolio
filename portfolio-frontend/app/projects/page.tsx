@@ -45,10 +45,8 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-40 px-4 flex justify-center items-center">
-        <p className="text-lg font-medium animate-pulse text-gray-500">
-          Loading projects...
-        </p>
+      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-white">
+        ...
       </div>
     );
   }
