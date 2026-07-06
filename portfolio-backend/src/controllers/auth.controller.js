@@ -141,7 +141,7 @@ exports.exchangeCode = async (req, res) => {
     const oauth2Client = new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      'https://habcreative-portfolio.vercel.app/auth/callback'
+      'http://localhost:3000/auth/callback'
     );
 
     // ⭐ Lấy token từ Google
