@@ -7,7 +7,10 @@ export function middleware(request: NextRequest) {
   const pathname = url.pathname;
   const userAgent = request.headers.get('user-agent') || '';
   const referer = request.headers.get('referer') || '';
-
+  
+  // ⭐ Kiểm tra header từ desktop app
+  const isDesktopApp = request.headers.get('x-desktop-app') === 'true';
+  
   // 🚫 Chặn truy cập vào admin/dashboard từ trình duyệt web
   const isAdminDashboard = pathname === '/admin/dashboard' || pathname.startsWith('/admin/dashboard');
   
@@ -16,22 +19,22 @@ export function middleware(request: NextRequest) {
     userAgent.includes('Electron') || 
     userAgent.includes('HAB Creative') ||
     referer.includes('desktop-app') ||
-    request.headers.get('x-desktop-app') === 'true';
+    isDesktopApp;
 
   // Kiểm tra có phải từ localhost dev không
   const isLocalDev = 
     request.headers.get('origin')?.includes('localhost') ||
-    request.headers.get('host')?.includes('localhost');
+    request.headers.get('host')?.includes('localhost') ||
+    request.headers.get('origin')?.includes('127.0.0.1');
 
   // Nếu là admin/dashboard và KHÔNG PHẢI từ Electron hoặc local dev
   if (isAdminDashboard && !isElectron && !isLocalDev) {
     console.log(`🚫 [Middleware] Chặn truy cập: ${pathname} từ trình duyệt web`);
     console.log(`   User-Agent: ${userAgent}`);
+    console.log(`   Desktop App: ${isDesktopApp}`);
     
     // Redirect đến website https://bhtdev.work
     const redirectUrl = new URL('https://bhtdev.work');
-    
-    // Thêm tham số để biết lý do redirect
     redirectUrl.searchParams.set('redirected_from', 'browser_access');
     redirectUrl.searchParams.set('target', pathname);
     
@@ -42,7 +45,6 @@ export function middleware(request: NextRequest) {
   if (isAdminDashboard && (isElectron || isLocalDev)) {
     console.log(`✅ [Middleware] Cho phép truy cập: ${pathname} từ ${isElectron ? 'Electron App' : 'Local Dev'}`);
     
-    // Thêm header để xác nhận đang chạy trong desktop app
     const response = NextResponse.next();
     response.headers.set('x-app-source', 'desktop-app');
     return response;
@@ -70,11 +72,12 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// ⭐ Cấu hình matcher - áp dụng cho các route cần chặn
+// ⭐ Cấu hình matcher
 export const config = {
   matcher: [
     '/admin/dashboard',
     '/admin/dashboard/:path*',
-    '/admin/:path*', // Có thể mở rộng
+    '/admin/:path*',
+    '/api/admin/:path*', // Bảo vệ cả API routes
   ],
 };
