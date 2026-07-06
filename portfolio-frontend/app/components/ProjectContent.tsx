@@ -47,7 +47,6 @@ export default function ProjectContent() {
         ...
       </div>
     );
-    );
 
   const isHomePage = pathname === "/";
   const displayedProjects = isHomePage ? projects.slice(0, 6) : projects;
