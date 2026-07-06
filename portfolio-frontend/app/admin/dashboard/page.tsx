@@ -129,16 +129,13 @@ export default function DashboardPage() {
     setIframeKey((prev) => prev + 1);
   };
 
-  const getIframeUrl = () => {
-    const baseUrl = PREVIEW_URL;
-    const params = new URLSearchParams();
-
-    if (!iframeIntroEnabled) {
-      params.set("intro", "off");
-    }
-
-    return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
-  };
+const getIframeUrl = () => {
+  const baseUrl = PREVIEW_URL;
+  if (!baseUrl) return "#";
+  
+  // Luôn thêm intro=off để tắt intro trong iframe
+  return `${baseUrl}?intro=off`;
+};
 
   const toggleMenu = (menuId: string) => {
     setExpandedMenus((prev) => {
