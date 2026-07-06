@@ -13,7 +13,7 @@ import {
   Lock,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import Portal from "../components/Portal";
+import Portal from "@/app/components/Portal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
