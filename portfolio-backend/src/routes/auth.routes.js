@@ -1,13 +1,10 @@
-// backend/routes/auth.routes.js
-
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/auth.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 const passport = require("passport");
 
-const CLIENT_URL = process.env.CLIENT_URL || "https://habcreative-portfolio.vercel.app";
-
+// 👉 THÊM MIDDLEWARE VALIDATE (nếu chưa có)
 const validateGoogleCallback = (req, res, next) => {
   console.log("[Auth] ====== CALLBACK RECEIVED ======");
   console.log("[Auth] Query params:", req.query);
@@ -25,7 +22,6 @@ const validateGoogleCallback = (req, res, next) => {
   next();
 };
 
-// Web OAuth
 router.get(
   "/google",
   validateGoogleCallback,
@@ -44,15 +40,9 @@ router.get(
   authController.googleSuccess,
 );
 
-// Desktop OAuth
-router.get("/exchange", authController.exchangeCode);
-router.post("/verify-2fa-desktop", authController.verifyDesktop2FA);
-
-// 2FA (Web)
 router.post("/verify-2fa", authController.verify2FA);
-
-// Auth
 router.post("/logout", authController.logout);
+
 router.get("/setup-2fa", authMiddleware, authController.setup2FA);
 router.post("/activate-2fa", authMiddleware, authController.activate2FA);
 router.post("/refresh-token", authController.refreshToken);
