@@ -72,14 +72,14 @@ function LoginContent() {
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
-  // ⭐ DESKTOP LOGIN
+  // ⭐ DESKTOP LOGIN - Dùng type an toàn
   const handleDesktopLogin = async () => {
     setIsWaitingForLogin(true);
     setError("");
 
     try {
-      // ⭐ Kiểm tra electronAPI an toàn
-      const api = window.electronAPI;
+      // ⭐ Kiểm tra an toàn
+      const api = (window as any).electronAPI;
       if (api && typeof api.loginWithBrowser === 'function') {
         await api.loginWithBrowser();
         toast.success("Đã mở trình duyệt đăng nhập. Vui lòng hoàn tất!");
@@ -90,7 +90,6 @@ function LoginContent() {
 
         const checkToken = async () => {
           try {
-            // ⭐ Kiểm tra token an toàn
             const token = api && typeof api.getToken === 'function' 
               ? await api.getToken() 
               : null;
