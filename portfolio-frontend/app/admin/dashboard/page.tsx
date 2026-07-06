@@ -82,15 +82,6 @@ export default function DashboardPage() {
   const [iframeKey, setIframeKey] = useState(0);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  
-  // ⭐ INTRO: lưu riêng cho trang chủ
-  const [introEnabled, setIntroEnabled] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("introEnabled");
-      return saved !== null ? JSON.parse(saved) : true;
-    }
-    return true;
-  });
 
   const isOwner = user?.email === "buihaitrong.dev@gmail.com";
 
@@ -124,27 +115,9 @@ export default function DashboardPage() {
     }
   };
 
-  // ⭐ Toggle intro - chỉ áp dụng cho trang chủ (/)
-  const handleToggleIntro = () => {
-    const newStatus = !introEnabled;
-    setIntroEnabled(newStatus);
-    localStorage.setItem("introEnabled", JSON.stringify(newStatus));
-    toast.success(`Intro video ${newStatus ? "đã bật" : "đã tắt"}`);
-    setIframeKey((prev) => prev + 1);
-  };
-
-  // ⭐ Get iframe URL - intro chỉ áp dụng cho trang chủ
+  // ⭐ Get iframe URL - KHÔNG CÓ INTRO
   const getIframeUrl = () => {
-    const baseUrl = PREVIEW_URL;
-    const params = new URLSearchParams();
-
-    // Chỉ thêm param intro khi truy cập trang chủ (mặc định)
-    // Dashboard preview luôn hiển thị trang chủ
-    if (!introEnabled) {
-      params.set("intro", "off");
-    }
-
-    return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+    return PREVIEW_URL;
   };
 
   const toggleMenu = (menuId: string) => {
@@ -336,9 +309,9 @@ export default function DashboardPage() {
       default:
         return (
           <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-0">
-            {/* ⭐ Header - thu gọn hơn */}
+            {/* ⭐ Header */}
             <div className="flex items-center justify-between bg-gray-50 px-3 py-2 border-b border-gray-200 shrink-0 select-none">
-              {/* ⭐ Nút toggle sidebar - desktop */}
+              {/* ⭐ Nút toggle sidebar */}
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="hidden md:flex items-center gap-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg px-2 py-1.5 transition-colors"
@@ -364,24 +337,6 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-1">
-                {/* ⭐ Toggle Intro - chỉ ảnh hưởng trang chủ */}
-                <button
-                  onClick={handleToggleIntro}
-                  className={`
-                    relative inline-flex h-6 w-10 items-center rounded-full transition-colors duration-200
-                    ${introEnabled ? "bg-indigo-600" : "bg-gray-300"}
-                    hover:opacity-80
-                  `}
-                  title={`${introEnabled ? "Tắt" : "Bật"} intro video`}
-                >
-                  <span
-                    className={`
-                      inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200
-                      ${introEnabled ? "translate-x-5" : "translate-x-1"}
-                    `}
-                  />
-                </button>
-
                 <button
                   onClick={handleRefresh}
                   title="Làm mới trang"
@@ -423,7 +378,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-row text-gray-800 antialiased">
-      {/* ⭐ Sidebar - thu gọn/mở rộng trên desktop */}
+      {/* ⭐ Sidebar - thu gọn/mở rộng */}
       <aside
         className={`
           bg-white border-r border-gray-200 shadow-sm flex flex-col z-40
@@ -434,7 +389,7 @@ export default function DashboardPage() {
           overflow-hidden
         `}
       >
-        {/* User info - ẩn khi thu gọn */}
+        {/* User info - hiển thị khi mở rộng */}
         <div className={`
           bg-white p-3 border-b border-gray-200 flex items-center gap-2
           ${isSidebarOpen ? "flex" : "hidden md:hidden"}
