@@ -115,12 +115,6 @@ function LoginContent() {
               >
                 {loading ? "Đang chuyển hướng..." : "Đăng nhập với Google"}
               </button>
-              <button
-                onClick={() => router.push("/")}
-                className="w-full flex items-center justify-center gap-3 rounded-xl bg-white border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 transition-all"
-              >
-                <span>Quay về Trang chủ</span>
-              </button>
             </div>
           )}
 
