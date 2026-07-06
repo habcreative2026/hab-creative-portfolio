@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useIntro } from "@/app/context/IntroContext";
 import Cursor from "@/app/components/Cursor";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
@@ -16,35 +17,26 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { introDisabled, setIntroDisabled } = useIntro();
   
   const [isReady, setIsReady] = useState(false);
-  const [showIntro, setShowIntro] = useState(() => {
-    // ⭐ Lấy trạng thái từ localStorage khi mount
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("introDisabled");
-      return saved !== "true";
-    }
-    return true;
-  });
+  const [showIntro, setShowIntro] = useState(!introDisabled);
   const [videoUrl, setVideoUrl] = useState("/video.mp4");
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const isAdminRoute = pathname?.startsWith("/admin") ?? false;
   const introParam = searchParams?.get("intro");
 
-  // ⭐ 1. Xử lý intro param từ iframe (chỉ áp dụng lần đầu)
+  // ⭐ Xử lý intro param từ iframe
   useEffect(() => {
     if (isAdminRoute) return;
     
-    // Chỉ xử lý khi có param intro=off và là lần đầu load
-    if (introParam === "off" && isFirstLoad) {
-      localStorage.setItem("introDisabled", "true");
+    if (introParam === "off") {
+      setIntroDisabled(true);
       setShowIntro(false);
-      setIsFirstLoad(false);
     }
-  }, [introParam, isAdminRoute, isFirstLoad]);
+  }, [introParam, isAdminRoute, setIntroDisabled]);
 
-  // ⭐ 2. Fetch video URL
+  // ⭐ Fetch video URL
   useEffect(() => {
     if (isAdminRoute) return;
 
@@ -65,30 +57,28 @@ export default function ClientLayout({
     fetchIntroVideo();
   }, [isAdminRoute]);
 
-  // ⭐ 3. Xử lý ready state
+  // ⭐ Xử lý ready state
   useEffect(() => {
     if (isAdminRoute) {
       setIsReady(true);
       return;
     }
 
-    // Nếu showIntro = false (đã tắt), set ready
-    if (!showIntro) {
+    if (!showIntro || introDisabled) {
       setIsReady(true);
       return;
     }
 
-    // Nếu showIntro = true, chờ intro kết thúc
     setIsReady(false);
-  }, [showIntro, isAdminRoute]);
+  }, [showIntro, introDisabled, isAdminRoute]);
 
-  // ⭐ 4. Khi intro kết thúc
-  const handleIntroFinish = useCallback(() => {
+  // ⭐ Khi intro kết thúc
+  const handleIntroFinish = () => {
     setShowIntro(false);
-    localStorage.setItem("introDisabled", "true");
-  }, []);
+    setIntroDisabled(true);
+  };
 
-  // Admin routes → render trực tiếp
+  // Admin routes
   if (isAdminRoute) {
     return <>{children}</>;
   }
@@ -97,7 +87,7 @@ export default function ClientLayout({
     <>
       <Cursor />
 
-      {showIntro && (
+      {showIntro && !introDisabled && (
         <IntroVideo 
           src={videoUrl} 
           onFinish={handleIntroFinish} 
