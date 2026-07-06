@@ -1,5 +1,3 @@
-// frontend/app/admin/login/page.tsx
-
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
@@ -18,13 +16,16 @@ function LoginContent() {
   const isRequire2FA = searchParams.get("status") === "require2fa";
   const isUnauthorized = searchParams.get("status") === "unauthorized";
   const isSessionExpired = searchParams.get("status") === "session_expired";
+  const isLoggedOut = searchParams.get("status") === "logged_out";
 
-  // ⭐ THÊM: Show toast khi session expired
+  // ⭐ Xử lý các status khác nhau
   useEffect(() => {
-    if (isSessionExpired) {
+    if (isLoggedOut) {
+      toast.success("Đã đăng xuất thành công!");
+    } else if (isSessionExpired) {
       toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
     }
-  }, [isSessionExpired]);
+  }, [isLoggedOut, isSessionExpired]);
 
   useEffect(() => {
     if (isUnauthorized) {
@@ -39,6 +40,16 @@ function LoginContent() {
   const handleGoogleLogin = () => {
     setLoading(true);
     setError("");
+    
+    // ⭐ Xóa cookies cũ trước khi login để tránh conflict
+    if (typeof document !== "undefined") {
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+    }
+    
     window.location.href = `${API_URL}/api/auth/google`;
   };
 
