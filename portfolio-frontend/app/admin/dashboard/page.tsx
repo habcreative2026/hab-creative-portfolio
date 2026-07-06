@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  LogOut,
   Menu,
+  X,
   RefreshCw,
   ExternalLink,
   Languages,
@@ -36,6 +38,7 @@ import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API;
 
 interface User {
@@ -90,6 +93,26 @@ export default function DashboardPage() {
 
   const isOwner = user?.email === "buihaitrong.dev@gmail.com";
 
+  // ⭐ THÊM: Hàm refresh token
+  const refreshAuthToken = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/refresh-token`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error("Refresh token error:", error);
+      return false;
+    }
+  };
+
   const handleRefresh = () => {
     setIframeKey((prev) => prev + 1);
   };
@@ -111,9 +134,11 @@ export default function DashboardPage() {
   const getIframeUrl = () => {
     const baseUrl = PREVIEW_URL;
     const params = new URLSearchParams();
+
     if (!iframeIntroEnabled) {
       params.set("intro", "off");
     }
+
     return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
   };
 
@@ -141,19 +166,29 @@ export default function DashboardPage() {
     let isMounted = true;
     const fetchUser = async () => {
       try {
-        let token = null;
-        if (typeof window !== "undefined" && window.electronAPI) {
-          token = await window.electronAPI.getToken();
-        }
-
-        const res = await fetch(`/api/admin/me`, {
+        const res = await fetch(`${API_URL}/api/admin/me`, {
           credentials: "include",
-          headers: {
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
         });
 
+        // ⭐ SỬA: Nếu 401, thử refresh token
         if (res.status === 401) {
+          console.log("Token expired, attempting refresh...");
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            // Thử lại sau khi refresh
+            const retryRes = await fetch(`${API_URL}/api/admin/me`, {
+              credentials: "include",
+            });
+            if (retryRes.ok) {
+              const data = await retryRes.json();
+              if (isMounted) {
+                setUser(data.user);
+                setLoading(false);
+              }
+              return;
+            }
+          }
+          // Refresh thất bại → redirect login
           if (isMounted) {
             router.push("/admin/login?status=session_expired");
           }
@@ -177,11 +212,15 @@ export default function DashboardPage() {
 
     fetchUser();
 
-    const refreshInterval = setInterval(() => {
-      if (isMounted) {
-        // Refresh token tự động
-      }
-    }, 5 * 60 * 1000);
+    // ⭐ THÊM: Auto refresh token mỗi 5 phút
+    const refreshInterval = setInterval(
+      async () => {
+        if (isMounted) {
+          await refreshAuthToken();
+        }
+      },
+      5 * 60 * 1000,
+    );
 
     return () => {
       isMounted = false;
@@ -189,15 +228,10 @@ export default function DashboardPage() {
     };
   }, [router]);
 
+  // ⭐ SỬA: Logout - clear cookies
   const handleLogout = async () => {
     try {
-      if (typeof window !== "undefined" && window.electronAPI) {
-        await window.electronAPI.logout();
-        setUser(null);
-        return;
-      }
-
-      await fetch(`/api/auth/logout`, {
+      await fetch(`${API_URL}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -205,13 +239,12 @@ export default function DashboardPage() {
       console.error("Logout failed", error);
     } finally {
       setUser(null);
+      // ⭐ Xóa cache và redirect
       if (typeof window !== "undefined") {
         localStorage.clear();
         sessionStorage.clear();
       }
-      if (!window.electronAPI) {
-        router.push("/admin/login");
-      }
+      router.push("/admin/login");
     }
   };
 
@@ -253,22 +286,43 @@ export default function DashboardPage() {
       label: "Super Admin",
       icon: Shield,
     },
-    ...(isOwner ? [{ id: "license", label: "License", icon: Shield }] : []),
+    ...(isOwner
+      ? [
+          {
+            id: "license",
+            label: "License",
+            icon: Shield,
+          },
+        ]
+      : []),
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case "language": return <LanguageDashboard />;
-      case "link": return <LinkAdminDashboard />;
-      case "audio": return <AudioAdminDashboard />;
-      case "video": return <VideoAdminDashboard />;
-      case "marquee": return <MarqueeAdminPage />;
-      case "cardprojects": return <CardProjectAdmin />;
-      case "detailprojects": return <AdminProjectsPage />;
-      case "about": return <AboutAdminPage />;
-      case "contact": return <ContactAdminPage />;
-      case "superadmin": return <SuperAdminPage />;
-      case "license": return <LicenseManagement />;
+      case "language":
+        return <LanguageDashboard />;
+      case "link":
+        return <LinkAdminDashboard />;
+      case "audio":
+        return <AudioAdminDashboard />;
+      case "video":
+        return <VideoAdminDashboard />;
+      case "marquee":
+        return <MarqueeAdminPage />;
+      case "cardprojects":
+        return <CardProjectAdmin />;
+      case "detailprojects":
+        return <AdminProjectsPage />;
+      case "about":
+        return <AboutAdminPage />;
+      case "contact":
+        return <ContactAdminPage />;
+      case "superadmin":
+        return <SuperAdminPage />;
+      case "license":
+        return <LicenseManagement />;
+
+      case "dashboard":
       default:
         return (
           <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-0">
@@ -278,23 +332,63 @@ export default function DashboardPage() {
                 <span className="w-3 h-3 rounded-full bg-yellow-400"></span>
                 <span className="w-3 h-3 rounded-full bg-green-400"></span>
               </div>
+
               <div className="flex-1 max-w-xl mx-auto bg-white border border-gray-200 rounded-lg px-3 py-1 text-xs text-gray-500 font-mono text-center truncate shadow-sm">
                 {PREVIEW_URL}
               </div>
+
               <div className="flex items-center gap-1 sm:w-24 justify-end">
-                <button onClick={handleToggleIframeIntro} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${iframeIntroEnabled ? "bg-indigo-600" : "bg-gray-300"} hover:opacity-80`}>
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${iframeIntroEnabled ? "translate-x-6" : "translate-x-1"}`} />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleToggleIframeIntro}
+                    className={`
+                      relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200
+                      ${iframeIntroEnabled ? "bg-indigo-600" : "bg-gray-300"}
+                      hover:opacity-80
+                    `}
+                    title={`${iframeIntroEnabled ? "Tắt" : "Bật"} intro video trong preview`}
+                  >
+                    <span
+                      className={`
+                        inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200
+                        ${iframeIntroEnabled ? "translate-x-6" : "translate-x-1"}
+                      `}
+                    />
+                  </button>
+                </div>
+                <button
+                  onClick={handleRefresh}
+                  title="Làm mới trang"
+                  className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                >
+                  <RefreshCw
+                    size={16}
+                    className="active:rotate-180 transition-transform duration-300"
+                  />
                 </button>
-                <button onClick={handleRefresh} className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors">
-                  <RefreshCw size={16} className="active:rotate-180 transition-transform duration-300" />
-                </button>
-                <a href={PREVIEW_URL} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors flex items-center">
+
+                <a
+                  href={PREVIEW_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Mở trong tab mới"
+                  className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors flex items-center"
+                >
                   <ExternalLink size={16} />
                 </a>
               </div>
             </div>
+
             <div className="flex-1 w-full h-full relative bg-white">
-              <iframe key={iframeKey} ref={iframeRef} src={getIframeUrl()} title="Localhost Project Preview" className="absolute inset-0 w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <iframe
+                key={iframeKey}
+                ref={iframeRef}
+                src={getIframeUrl()}
+                title="Localhost Project Preview"
+                className="absolute inset-0 w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
             </div>
           </div>
         );
@@ -305,33 +399,51 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row text-gray-800 antialiased">
       <header className="flex md:hidden items-center justify-between bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40 shadow-sm">
         <div className="flex items-center gap-2">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+          >
             <Menu size={24} />
           </button>
-          <span className="font-semibold text-sm text-gray-900">HAB CREATIVE</span>
+          <span className="font-semibold text-sm text-gray-900">
+            HAB CREATIVE
+          </span>
         </div>
       </header>
 
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity" onClick={() => setIsSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col z-50 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:w-1/4 lg:w-1/5 xl:w-64 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col z-50 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:w-1/4 lg:w-1/5 xl:w-64 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         <div className="bg-white p-3 border border-gray-200 flex items-center gap-2">
           {user?.avatar ? (
-            <img src={user.avatar} alt="avatar" className="w-8 h-8 rounded-full border border-gray-100 shrink-0" />
+            <img
+              src={user.avatar}
+              alt="avatar"
+              className="w-8 h-8 rounded-full border border-gray-100 shrink-0"
+            />
           ) : (
             <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0 uppercase">
               {user?.email?.charAt(0)}
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-gray-900 truncate">{user?.name}</p>
-            <p className="text-[10px] text-gray-400 truncate font-mono">{user?.email}</p>
+            <p className="text-xs font-semibold text-gray-900 truncate">
+              {user?.name}
+            </p>
+            <p className="text-[10px] text-gray-400 truncate font-mono">
+              {user?.email}
+            </p>
           </div>
         </div>
 
-        <nav className="flex-1 max-h-[80vh] overflow-y-auto py-3 px-3 space-y-1 scroll-none">
+        <nav className="flex-1 max-h-[76vh] overflow-y-auto py-3 px-3 space-y-1 scroll-none">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
@@ -349,19 +461,57 @@ export default function DashboardPage() {
                       setIsSidebarOpen(false);
                     }
                   }}
-                  className={`flex items-center w-full rounded-xl transition-all duration-200 gap-3 px-4 py-2.5 text-sm font-medium ${isActive && !hasChildren ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"} ${hasChildren && isExpanded ? "bg-gray-50" : ""}`}
+                  className={`
+                    flex items-center w-full rounded-xl transition-all duration-200
+                    gap-3 px-4 py-2.5 text-sm font-medium
+                    ${
+                      isActive && !hasChildren
+                        ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                    ${hasChildren && isExpanded ? "bg-gray-50" : ""}
+                  `}
                 >
-                  <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-400"} />
-                  <span className="flex-1 text-left text-ellipsis line-clamp-1">{item.label}</span>
-                  {item.badge && <span className={`px-2 py-0.5 text-xs rounded-full ${item.badgeColor || "bg-indigo-100 text-indigo-600"}`}>{item.badge}</span>}
-                  {hasChildren && <span className="text-gray-400 transition-transform duration-200">{isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>}
-                  {isActive && !hasChildren && <div className="w-1.5 h-8 bg-indigo-600 rounded-full" />}
+                  <Icon
+                    size={18}
+                    className={isActive ? "text-indigo-600" : "text-gray-400"}
+                  />
+                  <span className="flex-1 text-left text-ellipsis line-clamp-1">
+                    {item.label}
+                  </span>
+
+                  {item.badge && (
+                    <span
+                      className={`
+                        px-2 py-0.5 text-xs rounded-full
+                        ${item.badgeColor || "bg-indigo-100 text-indigo-600"}
+                      `}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {hasChildren && (
+                    <span className="text-gray-400 transition-transform duration-200">
+                      {isExpanded ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
+                      )}
+                    </span>
+                  )}
+
+                  {isActive && !hasChildren && (
+                    <div className="w-1.5 h-8 bg-indigo-600 rounded-full" />
+                  )}
                 </button>
+
                 {hasChildren && isExpanded && (
                   <div className="mt-1 ml-6 space-y-1 border-l-2 border-gray-200 pl-2">
                     {item.children!.map((child) => {
                       const ChildIcon = child.icon;
                       const isChildActive = activeTab === child.id;
+
                       return (
                         <button
                           key={child.id}
@@ -369,11 +519,30 @@ export default function DashboardPage() {
                             setActiveTab(child.id as TabType);
                             setIsSidebarOpen(false);
                           }}
-                          className={`flex items-center w-full rounded-xl transition-all duration-200 gap-3 px-4 py-2 text-sm font-medium ${isChildActive ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}`}
+                          className={`
+                            flex items-center w-full rounded-xl transition-all duration-200
+                            gap-3 px-4 py-2 text-sm font-medium
+                            ${
+                              isChildActive
+                                ? "bg-indigo-50 text-indigo-600 shadow-sm"
+                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                            }
+                          `}
                         >
-                          <ChildIcon size={16} className={isChildActive ? "text-indigo-600" : "text-gray-400"} />
-                          <span className="flex-1 text-left">{child.label}</span>
-                          {isChildActive && <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />}
+                          <ChildIcon
+                            size={16}
+                            className={
+                              isChildActive
+                                ? "text-indigo-600"
+                                : "text-gray-400"
+                            }
+                          />
+                          <span className="flex-1 text-left">
+                            {child.label}
+                          </span>
+                          {isChildActive && (
+                            <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
+                          )}
                         </button>
                       );
                     })}
@@ -385,8 +554,16 @@ export default function DashboardPage() {
         </nav>
 
         <div className="p-4 border-t border-gray-100 bg-gray-50/60 space-y-3 shrink-0">
-          <TwoFactorAuthModal has2FA={!!user?.has2FA} onActivationSuccess={handle2FASuccess} />
-          <button onClick={handleLogout} className="flex items-center justify-center gap-2 w-full border border-gray-200 bg-white text-gray-600 py-2 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-150 shadow-sm">
+          <TwoFactorAuthModal
+            has2FA={!!user?.has2FA}
+            onActivationSuccess={handle2FASuccess}
+          />
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-2 w-full border border-gray-200 bg-white text-gray-600 py-2 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-150 shadow-sm"
+          >
+            <LogOut size={14} />
             <span>Đăng xuất</span>
           </button>
         </div>
