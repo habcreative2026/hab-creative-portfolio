@@ -111,7 +111,7 @@ export default function AboutCMSAdmin() {
   const fetchAboutData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/about`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload/avatar`);
       const data = await res.json();
       if (data.success && data.data) {
         const c = data.data;
@@ -233,7 +233,7 @@ export default function AboutCMSAdmin() {
     try {
       setLoading(true);
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/upload-image`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/upload/image`,
         {
           method: "POST",
           body: formData,
