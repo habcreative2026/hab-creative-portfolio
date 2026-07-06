@@ -135,8 +135,8 @@ app.use("/api/about", require("./routes/about.route"));
 app.use("/api/contact", require("./routes/contact.route"));
 app.use("/api/settings", require("./routes/settings.routes"));
 app.use("/api/license", licenseRoutes);
-app.use("/upload-image", require("./routes/about.route"));
-app.use("/upload-avatar", require("./routes/contact.route"));
+app.use("/api/upload-image", require("./routes/about.route"));
+app.use("/api/upload-avatar", require("./routes/contact.route"));
 
 // ⭐ 8. ERROR HANDLER
 app.use((err, req, res, next) => {
