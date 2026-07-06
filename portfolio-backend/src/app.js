@@ -19,8 +19,8 @@ app.set('trust proxy', 1);
 // ⭐ 2. CORS
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  "https://habcreative-portfolio.vercel.app",
-  "https://habcreative-cms.onrender.com",
+  "https://hab-creative-portfolio.vercel.app",
+  "https://hab-creative-portfolio.onrender.com",
   "http://localhost:3000",
   "http://localhost:5000",
 ];
