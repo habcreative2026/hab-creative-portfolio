@@ -15,10 +15,10 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac --x64",
-    "build:linux": "electron-builder --linux --x64",
-    "build:all": "electron-builder -wml"
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:mac": "electron-builder --mac --x64 --publish never",
+    "build:linux": "electron-builder --linux --x64 --publish never",
+    "build:all": "electron-builder -wml --publish never"
   },
   "devDependencies": {
     "electron": "^28.0.0",
@@ -38,6 +38,10 @@
       "loading.html",
       "assets/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
     "win": {
       "target": [
         {
