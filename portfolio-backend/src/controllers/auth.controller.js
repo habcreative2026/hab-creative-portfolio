@@ -1,5 +1,3 @@
-// backend/controllers/auth.controller.js
-
 const jwt = require("jsonwebtoken");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
@@ -12,7 +10,7 @@ const ALLOWED_ADMIN_EMAILS = [
   "buihaitronglop962018@gmail.com",
 ];
 
-// 👉 SỬA: BỎ KEY SECURE TRÙNG LẶP
+// Cookie options
 const getCookieOptions = (maxAgeMs) => {
   const isProd = process.env.NODE_ENV === "production";
   return {
@@ -183,7 +181,28 @@ exports.verify2FA = async (req, res) => {
 
 // ===== LOGOUT =====
 exports.logout = (req, res) => {
+  console.log("🔐 [Auth] ====== LOGOUT ======");
+  console.log("🔐 [Auth] User:", req.user?.email || "Unknown");
+  
+  // ⭐ Xóa tất cả cookies
   clearAuthCookies(res);
+  
+  // ⭐ Clear session nếu có
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+      }
+    });
+  }
+  
+  // ⭐ THÊM: Cache control headers
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
+  console.log("✅ [Auth] Logout successful");
+  
   return res.json({
     success: true,
     message: "Đăng xuất thành công!",
