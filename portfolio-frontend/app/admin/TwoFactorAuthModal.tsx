@@ -166,17 +166,17 @@ export default function TwoFactorAuthModal({
         )}
       </button>
 
-      {/* ⭐ Modal - center màn hình */}
+      {/* ⭐ Modal - center màn hình với z-index cao */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={handleCloseModal}
           />
 
-          {/* Modal content - center màn hình */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md overflow-hidden relative z-10 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+          {/* Modal content */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-md overflow-hidden relative z-10 transform scale-100 transition-all duration-300 max-h-[90vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 shrink-0">
               <div className="flex items-center gap-3">
@@ -200,7 +200,7 @@ export default function TwoFactorAuthModal({
               </button>
             </div>
 
-            {/* Body - scrollable */}
+            {/* Body */}
             <div className="p-6 overflow-y-auto flex-1">
               {has2FA ? (
                 <div className="flex flex-col items-center text-center py-6 space-y-4">
