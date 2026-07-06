@@ -115,9 +115,12 @@ export default function DashboardPage() {
     }
   };
 
-  // ⭐ Get iframe URL - KHÔNG CÓ INTRO
+  // ⭐ Get iframe URL - LUÔN TẮT INTRO
   const getIframeUrl = () => {
-    return PREVIEW_URL;
+    // ⭐ THÊM PARAM intro=off để tắt intro
+    const url = new URL(PREVIEW_URL);
+    url.searchParams.set("intro", "off");
+    return url.toString();
   };
 
   const toggleMenu = (menuId: string) => {
@@ -309,9 +312,9 @@ export default function DashboardPage() {
       default:
         return (
           <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-0">
-            {/* ⭐ Header */}
+            {/* Header */}
             <div className="flex items-center justify-between bg-gray-50 px-3 py-2 border-b border-gray-200 shrink-0 select-none">
-              {/* ⭐ Nút toggle sidebar */}
+              {/* Nút toggle sidebar */}
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="hidden md:flex items-center gap-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg px-2 py-1.5 transition-colors"
@@ -324,7 +327,7 @@ export default function DashboardPage() {
                 )}
               </button>
 
-              {/* ⭐ Mobile menu button */}
+              {/* Mobile menu button */}
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
@@ -378,7 +381,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-row text-gray-800 antialiased">
-      {/* ⭐ Sidebar - thu gọn/mở rộng */}
+      {/* Sidebar - thu gọn/mở rộng */}
       <aside
         className={`
           bg-white border-r border-gray-200 shadow-sm flex flex-col z-40
@@ -415,7 +418,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ⭐ User avatar - chỉ hiển thị khi thu gọn */}
+        {/* User avatar - chỉ hiển thị khi thu gọn */}
         <div className={`
           ${isSidebarOpen ? "hidden" : "hidden md:flex"}
           items-center justify-center p-3 border-b border-gray-200
@@ -583,7 +586,7 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* ⭐ Main content - full width */}
+      {/* Main content - full width */}
       <main className={`
         flex-1 flex flex-col min-h-screen overflow-hidden w-full p-2 bg-gray-100
         transition-all duration-300
@@ -591,7 +594,7 @@ export default function DashboardPage() {
         {renderContent()}
       </main>
 
-      {/* ⭐ Mobile overlay */}
+      {/* Mobile overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden transition-opacity"
