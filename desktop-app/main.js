@@ -17,8 +17,9 @@ let loadingWindow = null;
 let loginLoadingWindow = null;
 let cachedDeviceId = null;
 let isAppReady = false;
+let isDeviceVerified = false;
 
-// ⭐ TỐI ƯU HỆ THỐNG - BẬT GPU
+// ⭐ TỐI ƯU HỆ THỐNG
 app.commandLine.appendSwitch("enable-gpu-rasterization");
 app.commandLine.appendSwitch("enable-zero-copy");
 app.commandLine.appendSwitch("enable-oop-rasterization");
@@ -26,7 +27,7 @@ app.commandLine.appendSwitch("disable-software-rasterizer");
 app.commandLine.appendSwitch("js-flags", "--max-old-space-size=512");
 app.commandLine.appendSwitch("disable-renderer-backgrounding");
 
-// ===== DEVICE ID CỐ ĐỊNH (CÓ CACHE) =====
+// ===== DEVICE ID =====
 function getDeviceId() {
   if (cachedDeviceId) {
     return cachedDeviceId;
@@ -95,7 +96,76 @@ function getDeviceId() {
   }
 }
 
-// ===== ⭐ TẠO MENU VỚI DEVICE ID TRÊN MENU BAR =====
+// ===== ⭐ KIỂM TRA XÁC THỰC DEVICE =====
+async function checkDeviceStatus() {
+  try {
+    const deviceId = getDeviceId();
+    console.log("🔍 Checking device:", deviceId);
+
+    const response = await fetch(
+      "https://hab-creative-portfolio.vercel.app/api/device/check",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ deviceId }),
+      },
+    );
+
+    const data = await response.json();
+    console.log("📊 Check result:", data);
+
+    if (data.success) {
+      isDeviceVerified = true;
+      return { verified: true, data: data.data };
+    } else {
+      isDeviceVerified = false;
+      return { verified: false, message: data.message };
+    }
+  } catch (error) {
+    console.error("Check device error:", error);
+    isDeviceVerified = false;
+    return { verified: false, message: "Không thể kết nối server" };
+  }
+}
+
+// ===== ⭐ HIỂN THỊ POPUP YÊU CẦU XÁC THỰC =====
+function showActivationRequired() {
+  const deviceId = getDeviceId();
+
+  dialog
+    .showMessageBox(mainWindow, {
+      type: "warning",
+      title: "Yêu cầu kích hoạt",
+      message: "Device chưa được xác thực. Vui lòng kích hoạt để sử dụng!",
+      detail:
+        "Device ID: " +
+        deviceId +
+        "\n\nHướng dẫn:\n1. Copy Device ID\n2. Truy cập website TRONGBUI_\n3. Nhập Device ID và xác thực",
+      buttons: ["Copy Device ID", "Mở website", "Thoát"],
+      defaultId: 0,
+      cancelId: 2,
+    })
+    .then((result) => {
+      if (result.response === 0) {
+        clipboard.writeText(deviceId);
+        dialog.showMessageBox(mainWindow, {
+          type: "info",
+          title: "Đã sao chép",
+          message:
+            "Device ID đã được sao chép vào clipboard!\n\nTruy cập website để xác thực.",
+          buttons: ["OK"],
+        });
+      } else if (result.response === 1) {
+        shell.openExternal("https://hab-creative-portfolio.vercel.app");
+      } else {
+        app.quit();
+      }
+    });
+}
+
+// ===== ⭐ TẠO MENU =====
 function createMenu() {
   const deviceId = getDeviceId();
   const shortId = deviceId.substring(0, 16) + "...";
@@ -107,7 +177,6 @@ function createMenu() {
         {
           label: `Device ID: ${shortId}`,
           click: () => {
-            // ⭐ Dùng clipboard module thay vì mainWindow.webContents.copy
             clipboard.writeText(deviceId);
             dialog.showMessageBox(mainWindow, {
               type: "info",
@@ -122,7 +191,6 @@ function createMenu() {
           label: "Copy Device ID",
           accelerator: "CmdOrCtrl+I",
           click: () => {
-            // ⭐ Dùng clipboard module thay vì mainWindow.webContents.copy
             clipboard.writeText(deviceId);
             dialog.showMessageBox(mainWindow, {
               type: "info",
@@ -130,6 +198,29 @@ function createMenu() {
               message: "Device ID đã được sao chép vào clipboard!",
               buttons: ["OK"],
             });
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Kiểm tra kích hoạt",
+          click: async () => {
+            const result = await checkDeviceStatus();
+            if (result.verified) {
+              dialog.showMessageBox(mainWindow, {
+                type: "info",
+                title: "Đã kích hoạt",
+                message: `Device đã được kích hoạt!\nCòn ${result.data.daysLeft} ngày sử dụng.`,
+                buttons: ["OK"],
+              });
+            } else {
+              showActivationRequired();
+            }
+          },
+        },
+        {
+          label: "Mở website kích hoạt",
+          click: () => {
+            shell.openExternal("https://hab-creative-portfolio.vercel.app");
           },
         },
         { type: "separator" },
@@ -161,7 +252,7 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-// ===== ⭐ LOADING MỞ APP - FULL MÀN HÌNH =====
+// ===== LOADING WINDOW =====
 function showAppLoadingWindow() {
   if (loadingWindow) {
     loadingWindow.show();
@@ -227,7 +318,7 @@ function hideAppLoadingWindow() {
   }
 }
 
-// ===== ⭐ LOADING LOGIN - FULL MÀN HÌNH =====
+// ===== LOGIN LOADING =====
 function showLoginLoading() {
   if (loginLoadingWindow) {
     loginLoadingWindow.show();
@@ -259,7 +350,6 @@ function showLoginLoading() {
       <title>Đang đăng nhập...</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
           background: #0a0e1a;
           display: flex;
@@ -270,18 +360,15 @@ function showLoginLoading() {
           overflow: hidden;
           user-select: none;
         }
-        
         .container {
           text-align: center;
           padding: 20px;
           animation: fadeIn 0.6s ease;
         }
-        
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
         }
-        
         .logo {
           font-size: 42px;
           font-weight: 800;
@@ -292,14 +379,12 @@ function showLoginLoading() {
           margin-bottom: 6px;
           text-shadow: 0 0 60px rgba(233, 69, 96, 0.2);
         }
-        
         .spinner-wrapper {
           margin: 0 auto 28px;
           position: relative;
           width: 50px;
           height: 50px;
         }
-        
         .spinner-ring {
           position: absolute;
           inset: -8px;
@@ -307,12 +392,10 @@ function showLoginLoading() {
           border: 1px solid rgba(233, 69, 96, 0.1);
           animation: ringPulse 2s ease-in-out infinite;
         }
-        
         @keyframes ringPulse {
           0%, 100% { transform: scale(1); opacity: 0.3; }
           50% { transform: scale(1.1); opacity: 0.8; }
         }
-        
         .spinner {
           width: 50px;
           height: 50px;
@@ -325,11 +408,9 @@ function showLoginLoading() {
           position: relative;
           z-index: 1;
         }
-        
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-        
         .status {
           color: #94a3b8;
           font-size: 16px;
@@ -338,19 +419,16 @@ function showLoginLoading() {
           margin-bottom: 4px;
           min-height: 28px;
         }
-        
         .status-dots::after {
           content: '';
           animation: dots 1.5s steps(4, end) infinite;
         }
-        
         @keyframes dots {
           0% { content: ''; }
           25% { content: '.'; }
           50% { content: '..'; }
           75% { content: '...'; }
         }
-        
         .status-detail {
           color: #475569;
           font-size: 13px;
@@ -358,7 +436,6 @@ function showLoginLoading() {
           min-height: 24px;
           font-weight: 300;
         }
-        
         .particle {
           position: fixed;
           border-radius: 50%;
@@ -366,14 +443,12 @@ function showLoginLoading() {
           pointer-events: none;
           animation: float 20s infinite linear;
         }
-        
         @keyframes float {
           0% { transform: translateY(0) rotate(0deg); opacity: 0; }
           10% { opacity: 1; }
           90% { opacity: 1; }
           100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
         }
-        
         .glow-dot {
           position: fixed;
           border-radius: 50%;
@@ -383,11 +458,8 @@ function showLoginLoading() {
       </style>
     </head>
     <body>
-      <!-- Glow dots -->
       <div class="glow-dot" style="width:400px;height:400px;left:-100px;top:-100px;background:rgba(233,69,96,0.05);"></div>
       <div class="glow-dot" style="width:300px;height:300px;right:-80px;bottom:-80px;background:rgba(255,107,107,0.04);"></div>
-      
-      <!-- Particles -->
       <div class="particle" style="width:80px;height:80px;left:10%;bottom:-80px;animation-duration:25s;"></div>
       <div class="particle" style="width:40px;height:40px;left:30%;bottom:-40px;animation-duration:18s;animation-delay:2s;"></div>
       <div class="particle" style="width:60px;height:60px;left:55%;bottom:-60px;animation-duration:22s;animation-delay:4s;"></div>
@@ -396,15 +468,11 @@ function showLoginLoading() {
 
       <div class="container">
         <div class="logo">HAB CREATIVE</div>
-
         <div class="spinner-wrapper">
           <div class="spinner-ring"></div>
           <div class="spinner"></div>
         </div>
-
-        <div class="status" id="status">
-          Đang xác thực tài khoản<span class="status-dots"></span>
-        </div>
+        <div class="status" id="status">Đang xác thực tài khoản<span class="status-dots"></span></div>
         <div class="status-detail" id="statusDetail">Vui lòng đợi trong giây lát...</div>
       </div>
 
@@ -423,19 +491,15 @@ function showLoginLoading() {
         
         function updateStatus() {
           if (currentIndex >= messages.length) return;
-          
           const msg = messages[currentIndex];
           statusText.textContent = msg.status;
           statusDetail.textContent = msg.detail;
-          
           currentIndex++;
-          
           if (currentIndex < messages.length) {
             const delay = Math.random() * 500 + 500;
             setTimeout(updateStatus, delay);
           }
         }
-        
         setTimeout(updateStatus, 300);
       </script>
     </body>
@@ -486,7 +550,7 @@ function hideLoginLoading() {
   }
 }
 
-// ===== TẠO MAIN WINDOW =====
+// ===== MAIN WINDOW =====
 function createMainWindow() {
   const mainSession = session.fromPartition("persist:main");
 
@@ -518,15 +582,14 @@ function createMainWindow() {
     extraHeaders: "x-desktop-app: true\n",
   });
 
-  // ⭐ Theo dõi navigation để hiện loading login
   mainWindow.webContents.on("will-navigate", (event, url) => {
     if (url.includes("accounts.google.com") || url.includes("google.com")) {
       showLoginLoading();
     }
   });
 
-  // ⭐ Khi load xong thì ẩn loading login
-  mainWindow.webContents.on("did-finish-load", () => {
+  // ⭐ KHI LOAD XONG - KIỂM TRA XÁC THỰC
+  mainWindow.webContents.on("did-finish-load", async () => {
     hideLoginLoading();
 
     if (!isAppReady) {
@@ -536,6 +599,26 @@ function createMainWindow() {
         mainWindow.show();
         mainWindow.focus();
       }, 300);
+    }
+
+    // ⭐ KIỂM TRA XÁC THỰC DEVICE
+    const result = await checkDeviceStatus();
+
+    if (!result.verified) {
+      // Chưa xác thực → Hiển thị popup yêu cầu
+      setTimeout(() => {
+        showActivationRequired();
+      }, 1000);
+    } else {
+      // Đã xác thực → Hiển thị thông báo
+      console.log("Device verified:", result.data);
+      dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "Đã kích hoạt",
+        message: `Device đã được kích hoạt thành công!`,
+        detail: `Còn ${result.data.daysLeft} ngày sử dụng.\nPlan: ${result.data.plan}`,
+        buttons: ["OK"],
+      });
     }
 
     mainWindow.webContents
@@ -569,7 +652,6 @@ function createMainWindow() {
     return { action: "deny" };
   });
 
-  // ⭐ Tạo menu với Device ID
   createMenu();
 
   mainWindow.on("closed", () => {
@@ -578,7 +660,7 @@ function createMainWindow() {
   });
 }
 
-// ===== IPC HANDLERS =====
+// ===== IPC =====
 ipcMain.handle("get-device-id", () => {
   return getDeviceId();
 });
@@ -595,7 +677,7 @@ app.whenReady().then(() => {
 
   setTimeout(() => {
     if (!mainWindow) {
-      // Tạo main window ẩn, đợi loading-ready
+      // Tạo main window ẩn
     }
   }, 500);
 
