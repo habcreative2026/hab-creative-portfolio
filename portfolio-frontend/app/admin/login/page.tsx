@@ -14,6 +14,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isWaitingForLogin, setIsWaitingForLogin] = useState(false);
+  const [isWaitingFor2FA, setIsWaitingFor2FA] = useState(false);
   
   const hasCheckedAuth = useRef(false);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
@@ -49,8 +50,16 @@ function LoginContent() {
 
     const checkAuth = async () => {
       try {
+        let token = null;
+        if (typeof window !== "undefined" && window.electronAPI) {
+          token = await window.electronAPI.getToken();
+        }
+
         const res = await fetch(`/api/admin/me`, {
           credentials: "include",
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
         });
 
         if (res.ok) {
@@ -72,13 +81,12 @@ function LoginContent() {
   const [overrideStep, setOverrideStep] = useState<1 | null>(null);
   const currentStep = overrideStep === 1 ? 1 : isRequire2FA ? 2 : 1;
 
-  // ⭐ DESKTOP LOGIN - Dùng type an toàn
+  // ⭐ DESKTOP LOGIN
   const handleDesktopLogin = async () => {
     setIsWaitingForLogin(true);
     setError("");
 
     try {
-      // ⭐ Kiểm tra an toàn
       const api = (window as any).electronAPI;
       if (api && typeof api.loginWithBrowser === 'function') {
         await api.loginWithBrowser();
