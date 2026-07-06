@@ -102,14 +102,6 @@ export default function ContactPage() {
     ];
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-slate-400">
-        LOADING...
-      </div>
-    );
-  }
-
   const services = getServices();
 
   return (
