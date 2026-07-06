@@ -37,8 +37,8 @@ import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API || "";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API;
 
 interface User {
   email: string;
@@ -82,6 +82,15 @@ export default function DashboardPage() {
   const [iframeKey, setIframeKey] = useState(0);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  // ⭐ INTRO: lưu riêng cho trang chủ
+  const [introEnabled, setIntroEnabled] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("introEnabled");
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
 
   const isOwner = user?.email === "buihaitrong.dev@gmail.com";
 
@@ -115,14 +124,27 @@ export default function DashboardPage() {
     }
   };
 
-  // ⭐ Get iframe URL - LUÔN TẮT INTRO
+  // ⭐ Toggle intro - chỉ áp dụng cho trang chủ (/)
+  const handleToggleIntro = () => {
+    const newStatus = !introEnabled;
+    setIntroEnabled(newStatus);
+    localStorage.setItem("introEnabled", JSON.stringify(newStatus));
+    toast.success(`Intro video ${newStatus ? "đã bật" : "đã tắt"}`);
+    setIframeKey((prev) => prev + 1);
+  };
+
+  // ⭐ Get iframe URL - intro chỉ áp dụng cho trang chủ
   const getIframeUrl = () => {
-    // ⭐ Kiểm tra PREVIEW_URL có tồn tại không
-    if (!PREVIEW_URL) {
-      return "#";
+    const baseUrl = PREVIEW_URL;
+    const params = new URLSearchParams();
+
+    // Chỉ thêm param intro khi truy cập trang chủ (mặc định)
+    // Dashboard preview luôn hiển thị trang chủ
+    if (!introEnabled) {
+      params.set("intro", "off");
     }
-    // ⭐ THÊM PARAM intro=off để tắt intro
-    return `${PREVIEW_URL}?intro=off`;
+
+    return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
   };
 
   const toggleMenu = (menuId: string) => {
@@ -314,9 +336,9 @@ export default function DashboardPage() {
       default:
         return (
           <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-0">
-            {/* Header */}
+            {/* ⭐ Header - thu gọn hơn */}
             <div className="flex items-center justify-between bg-gray-50 px-3 py-2 border-b border-gray-200 shrink-0 select-none">
-              {/* Nút toggle sidebar */}
+              {/* ⭐ Nút toggle sidebar - desktop */}
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="hidden md:flex items-center gap-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg px-2 py-1.5 transition-colors"
@@ -329,7 +351,7 @@ export default function DashboardPage() {
                 )}
               </button>
 
-              {/* Mobile menu button */}
+              {/* ⭐ Mobile menu button */}
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
@@ -338,10 +360,28 @@ export default function DashboardPage() {
               </button>
 
               <div className="flex-1 max-w-xl mx-auto bg-white border border-gray-200 rounded-lg px-3 py-1 text-xs text-gray-500 font-mono text-center truncate shadow-sm">
-                {PREVIEW_URL || "Loading..."}
+                {PREVIEW_URL}
               </div>
 
               <div className="flex items-center gap-1">
+                {/* ⭐ Toggle Intro - chỉ ảnh hưởng trang chủ */}
+                <button
+                  onClick={handleToggleIntro}
+                  className={`
+                    relative inline-flex h-6 w-10 items-center rounded-full transition-colors duration-200
+                    ${introEnabled ? "bg-indigo-600" : "bg-gray-300"}
+                    hover:opacity-80
+                  `}
+                  title={`${introEnabled ? "Tắt" : "Bật"} intro video`}
+                >
+                  <span
+                    className={`
+                      inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200
+                      ${introEnabled ? "translate-x-5" : "translate-x-1"}
+                    `}
+                  />
+                </button>
+
                 <button
                   onClick={handleRefresh}
                   title="Làm mới trang"
@@ -354,7 +394,7 @@ export default function DashboardPage() {
                 </button>
 
                 <a
-                  href={PREVIEW_URL || "#"}
+                  href={PREVIEW_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Mở trong tab mới"
@@ -383,7 +423,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-row text-gray-800 antialiased">
-      {/* Sidebar - thu gọn/mở rộng */}
+      {/* ⭐ Sidebar - thu gọn/mở rộng trên desktop */}
       <aside
         className={`
           bg-white border-r border-gray-200 shadow-sm flex flex-col z-40
@@ -394,7 +434,7 @@ export default function DashboardPage() {
           overflow-hidden
         `}
       >
-        {/* User info - hiển thị khi mở rộng */}
+        {/* User info - ẩn khi thu gọn */}
         <div className={`
           bg-white p-3 border-b border-gray-200 flex items-center gap-2
           ${isSidebarOpen ? "flex" : "hidden md:hidden"}
@@ -420,7 +460,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* User avatar - chỉ hiển thị khi thu gọn */}
+        {/* ⭐ User avatar - chỉ hiển thị khi thu gọn */}
         <div className={`
           ${isSidebarOpen ? "hidden" : "hidden md:flex"}
           items-center justify-center p-3 border-b border-gray-200
@@ -570,7 +610,6 @@ export default function DashboardPage() {
           <TwoFactorAuthModal
             has2FA={!!user?.has2FA}
             onActivationSuccess={handle2FASuccess}
-            isSidebarOpen={isSidebarOpen}
           />
 
           <button
@@ -588,7 +627,7 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main content - full width */}
+      {/* ⭐ Main content - full width */}
       <main className={`
         flex-1 flex flex-col min-h-screen overflow-hidden w-full p-2 bg-gray-100
         transition-all duration-300
@@ -596,7 +635,7 @@ export default function DashboardPage() {
         {renderContent()}
       </main>
 
-      {/* Mobile overlay */}
+      {/* ⭐ Mobile overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden transition-opacity"
