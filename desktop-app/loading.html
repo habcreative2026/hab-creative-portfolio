@@ -1,0 +1,421 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loading...</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0e1a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      .container {
+        text-align: center;
+        padding: 20px;
+        animation: fadeIn 0.6s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* ⭐ Logo HAB CREATIVE */
+      .logo {
+        font-size: 52px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        background: linear-gradient(135deg, #e94560, #ff6b6b, #ff8e8e);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 6px;
+        text-shadow: 0 0 60px rgba(233, 69, 96, 0.2);
+      }
+
+      .logo-dot {
+        color: #e94560;
+        -webkit-text-fill-color: #e94560;
+      }
+
+      .logo-sub {
+        color: #475569;
+        font-size: 12px;
+        letter-spacing: 6px;
+        text-transform: uppercase;
+        font-weight: 300;
+        margin-bottom: 44px;
+      }
+
+      .spinner-wrapper {
+        margin: 0 auto 28px;
+        position: relative;
+        width: 60px;
+        height: 60px;
+      }
+
+      @keyframes ringPulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.3;
+        }
+        50% {
+          transform: scale(1.1);
+          opacity: 0.8;
+        }
+      }
+
+      .spinner {
+        width: 60px;
+        height: 60px;
+        border: 3px solid rgba(255, 255, 255, 0.04);
+        border-top-color: #e94560;
+        border-right-color: #ff6b6b;
+        border-radius: 50%;
+        animation: spin 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        box-shadow:
+          0 0 40px rgba(233, 69, 96, 0.12),
+          inset 0 0 40px rgba(233, 69, 96, 0.04);
+        position: relative;
+        z-index: 1;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .progress-container {
+        width: 300px;
+        max-width: 80%;
+        margin: 0 auto 22px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 100px;
+        height: 4px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #e94560, #ff6b6b, #ff8e8e);
+        border-radius: 100px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 30px rgba(233, 69, 96, 0.25);
+      }
+
+      .status {
+        color: #94a3b8;
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        min-height: 24px;
+      }
+
+      .status-dots::after {
+        content: "";
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+
+      @keyframes dots {
+        0% {
+          content: "";
+        }
+        25% {
+          content: ".";
+        }
+        50% {
+          content: "..";
+        }
+        75% {
+          content: "...";
+        }
+      }
+
+      .status-detail {
+        color: #475569;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        min-height: 20px;
+        font-weight: 300;
+      }
+
+      /* ⭐ Footer - Bản quyền + link */
+      .footer {
+        position: fixed;
+        bottom: 28px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: #334155;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+      }
+
+      .footer-version {
+        color: #334155;
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-bottom: 4px;
+      }
+
+      .footer-copyright {
+        font-size: 10px;
+        color: #2d3748;
+        letter-spacing: 0.5px;
+      }
+
+      .footer-copyright a {
+        color: #64748b;
+        text-decoration: none;
+        transition: color 0.3s ease;
+        font-weight: 500;
+      }
+
+      .footer-copyright a:hover {
+        color: #e94560;
+        text-decoration: underline;
+      }
+
+      .footer-divider {
+        display: inline-block;
+        width: 1px;
+        height: 10px;
+        background: #2d3748;
+        margin: 0 8px;
+        vertical-align: middle;
+      }
+
+      /* ⭐ Particles */
+      .particle {
+        position: fixed;
+        border-radius: 50%;
+        background: rgba(233, 69, 96, 0.06);
+        pointer-events: none;
+        animation: float 20s infinite linear;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0) rotate(0deg) scale(1);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-100vh) rotate(720deg) scale(0.5);
+          opacity: 0;
+        }
+      }
+
+      /* ⭐ Glow dot nền */
+      .glow-dot {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(80px);
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Glow dots nền -->
+    <div
+      class="glow-dot"
+      style="
+        width: 400px;
+        height: 400px;
+        left: -100px;
+        top: -100px;
+        background: rgba(233, 69, 96, 0.05);
+      "
+    ></div>
+    <div
+      class="glow-dot"
+      style="
+        width: 300px;
+        height: 300px;
+        right: -80px;
+        bottom: -80px;
+        background: rgba(255, 107, 107, 0.04);
+      "
+    ></div>
+
+    <!-- Particles -->
+    <div
+      class="particle"
+      style="
+        width: 80px;
+        height: 80px;
+        left: 10%;
+        bottom: -80px;
+        animation-duration: 25s;
+      "
+    ></div>
+    <div
+      class="particle"
+      style="
+        width: 40px;
+        height: 40px;
+        left: 30%;
+        bottom: -40px;
+        animation-duration: 18s;
+        animation-delay: 2s;
+      "
+    ></div>
+    <div
+      class="particle"
+      style="
+        width: 60px;
+        height: 60px;
+        left: 55%;
+        bottom: -60px;
+        animation-duration: 22s;
+        animation-delay: 4s;
+      "
+    ></div>
+    <div
+      class="particle"
+      style="
+        width: 30px;
+        height: 30px;
+        left: 75%;
+        bottom: -30px;
+        animation-duration: 20s;
+        animation-delay: 1s;
+      "
+    ></div>
+    <div
+      class="particle"
+      style="
+        width: 50px;
+        height: 50px;
+        left: 90%;
+        bottom: -50px;
+        animation-duration: 28s;
+        animation-delay: 3s;
+      "
+    ></div>
+
+    <div class="container">
+      <!-- ⭐ Logo HAB CREATIVE -->
+      <div class="logo">HAB CREATIVE</div>
+
+      <div class="spinner-wrapper">
+        <div class="spinner-ring"></div>
+        <div class="spinner"></div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="status" id="status">
+        Đang khởi động<span class="status-dots"></span>
+      </div>
+      <div class="status-detail" id="statusDetail">Khởi tạo hệ thống...</div>
+    </div>
+
+    <!-- ⭐ Footer -->
+    <div class="footer">
+      <div class="footer-version">v1.0.0</div>
+      <div class="footer-copyright">
+        <span>© 2024</span>
+        <span class="footer-divider"></span>
+        <span
+          >Bản Quyền Thuộc Về
+          <a href="https://bhtdev.work" target="_blank">TrongBui_</a></span
+        >
+      </div>
+    </div>
+
+    <script>
+      const progressBar = document.getElementById("progressBar");
+      const statusText = document.getElementById("status");
+      const statusDetail = document.getElementById("statusDetail");
+
+      const messages = [
+        {
+          progress: 10,
+          status: "Đang khởi động",
+          detail: "Kiểm tra hệ thống...",
+        },
+        {
+          progress: 25,
+          status: "Đang tải cấu hình",
+          detail: "Khởi tạo môi trường...",
+        },
+        {
+          progress: 40,
+          status: "Kết nối máy chủ",
+          detail: "Đang kết nối server...",
+        },
+        {
+          progress: 55,
+          status: "Đang tải dữ liệu",
+          detail: "Đồng bộ dữ liệu...",
+        },
+        {
+          progress: 70,
+          status: "Đang tối ưu hệ thống",
+          detail: "Cấu hình hiệu suất...",
+        },
+        { progress: 85, status: "Hoàn tất", detail: "Chuẩn bị mở ứng dụng..." },
+        { progress: 100, status: "Hoàn tất", detail: "Đang mở ứng dụng..." },
+      ];
+
+      let currentIndex = 0;
+
+      function updateProgress() {
+        if (currentIndex >= messages.length) return;
+
+        const msg = messages[currentIndex];
+        progressBar.style.width = msg.progress + "%";
+        statusText.textContent = msg.status;
+        statusDetail.textContent = msg.detail;
+
+        currentIndex++;
+
+        if (currentIndex < messages.length) {
+          const delay = Math.random() * 400 + 400;
+          setTimeout(updateProgress, delay);
+        } else {
+          setTimeout(() => {
+            if (window.electronAPI && window.electronAPI.ready) {
+              window.electronAPI.ready();
+            }
+          }, 500);
+        }
+      }
+
+      setTimeout(updateProgress, 300);
+    </script>
+  </body>
+</html>
