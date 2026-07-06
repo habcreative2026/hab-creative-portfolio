@@ -102,29 +102,9 @@ function LoginContent() {
       </div>
 
       <div className="relative z-10 w-full max-w-md px-4">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold tracking-wider">
-            <span className="text-white">HAB</span>
-            <span className="bg-gradient-to-r from-[#e94560] to-[#ff6b6b] bg-clip-text text-transparent">
-              CREATIVE
-            </span>
-          </h1>
-          <p className="text-gray-500 text-sm mt-2 tracking-widest">ADMIN PANEL</p>
-        </div>
-
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="text-center">
-                <p className="text-gray-300 text-sm font-medium">
-                  Đăng nhập bằng tài khoản Google
-                </p>
-                <p className="text-gray-500 text-xs mt-1">
-                  Chỉ tài khoản được cấp quyền mới có thể truy cập
-                </p>
-              </div>
-
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
@@ -155,13 +135,6 @@ function LoginContent() {
                   )}
                 </span>
               </button>
-
-              {/* Footer */}
-              <div className="text-center pt-2">
-                <p className="text-[10px] text-gray-600 tracking-widest">
-                  BẢO MẬT &bull; XÁC THỰC HAI LỚP
-                </p>
-              </div>
             </div>
           )}
 
