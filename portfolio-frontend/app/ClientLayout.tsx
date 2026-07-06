@@ -16,7 +16,7 @@ export default function ClientLayout({
 }) {
   const [isReady, setIsReady] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
-  const [videoUrl, setVideoUrl] = useState<string>("/video_intro.mp4");
+  const [videoUrl, setVideoUrl] = useState<string>("/video.mp4");
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
