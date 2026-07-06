@@ -43,9 +43,10 @@ export default function ProjectContent() {
 
   if (loading)
     return (
-      <div className="p-4 text-center text-sm text-gray-400">
-        Loading dynamic tiles...
+      <div className="min-h-screen flex items-center justify-center font-mono text-xs text-white">
+        ...
       </div>
+    );
     );
 
   const isHomePage = pathname === "/";
