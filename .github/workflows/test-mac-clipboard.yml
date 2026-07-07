@@ -1,0 +1,37 @@
+# .github/workflows/test-mac-clipboard.yml
+
+name: Test Clipboard on macOS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      
+      - name: 📦 Install dependencies
+        run: |
+          cd desktop-app
+          npm install
+      
+      - name: 🧪 Test clipboard on macOS
+        run: |
+          cd desktop-app
+          node test-clipboard.js
+        env:
+          CI: true
+      
+      - name: 📊 Result
+        run: |
+          echo "✅ macOS clipboard test completed!"
