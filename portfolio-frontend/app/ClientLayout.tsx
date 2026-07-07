@@ -1,9 +1,7 @@
-// app/ClientLayout.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useIntro } from "@/app/context/IntroContext";
 import Cursor from "@/app/components/Cursor";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
@@ -12,41 +10,33 @@ import IntroVideo from "./IntroVideo";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function ClientLayout({
-  children,
+children,
 }: {
-  children: React.ReactNode;
+children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { introDisabled, setIntroDisabled } = useIntro();
-  
-  const [isReady, setIsReady] = useState(false);
-  const [showIntro, setShowIntro] = useState(!introDisabled);
-  const [videoUrl, setVideoUrl] = useState("/video.mp4");
+const pathname = usePathname();
+const searchParams = useSearchParams();
 
-  const isAdminRoute = pathname?.startsWith("/admin") ?? false;
-  const introParam = searchParams?.get("intro");
+const [isReady, setIsReady] = useState(true);
+const [showIntro, setShowIntro] = useState(false);
+const [videoUrl, setVideoUrl] = useState("/video.mp4");
 
-  // Xử lý intro param từ iframe
-  useEffect(() => {
-    if (isAdminRoute) return;
-    
-    if (introParam === "off") {
-      setIntroDisabled(true);
-      setShowIntro(false);
-    }
-  }, [introParam, isAdminRoute, setIntroDisabled]);
+const isAdminRoute = pathname?.startsWith("/admin") ?? false;
+const isHomePage = pathname === "/";
+const introDisabled = searchParams?.get("intro") === "off";
 
-  // Fetch video URL
-  useEffect(() => {
-    if (isAdminRoute) return;
+// Fetch video
+useEffect(() => {
+if (isAdminRoute) return;
 
     const fetchIntroVideo = async () => {
       try {
         const res = await fetch(`${API_URL}/api/video/public`);
+
         if (!res.ok) throw new Error("Failed to fetch video");
-        
+
         const json = await res.json();
+
         if (json.success && json.data?.url) {
           setVideoUrl(json.data.url);
         }
@@ -56,42 +46,45 @@ export default function ClientLayout({
     };
 
     fetchIntroVideo();
-  }, [isAdminRoute]);
 
-  // Xử lý ready state
-  useEffect(() => {
-    if (isAdminRoute) {
+}, [isAdminRoute]);
+
+// Điều khiển Intro theo route
+useEffect(() => {
+if (isAdminRoute || introDisabled) {
+setShowIntro(false);
+setIsReady(true);
+return;
+}
+
+    if (isHomePage) {
+      setShowIntro(true);
+      setIsReady(false);
+    } else {
+      setShowIntro(false);
       setIsReady(true);
-      return;
     }
 
-    if (!showIntro || introDisabled) {
-      setIsReady(true);
-      return;
-    }
+}, [pathname, isAdminRoute, isHomePage, introDisabled]);
 
-    setIsReady(false);
-  }, [showIntro, introDisabled, isAdminRoute]);
+const handleIntroFinish = () => {
+setShowIntro(false);
+setIsReady(true);
+};
 
-  // Khi intro kết thúc
-  const handleIntroFinish = () => {
-    setShowIntro(false);
-    setIntroDisabled(true);
-  };
+// Admin không render layout
+if (isAdminRoute) {
+return <>{children}</>;
+}
 
-  // Admin routes - render trực tiếp
-  if (isAdminRoute) {
-    return <>{children}</>;
-  }
+return (
+<>
+<Cursor />
 
-  return (
-    <>
-      <Cursor />
-
-      {showIntro && !introDisabled && (
-        <IntroVideo 
-          src={videoUrl} 
-          onFinish={handleIntroFinish} 
+      {showIntro && (
+        <IntroVideo
+          src={videoUrl}
+          onFinish={handleIntroFinish}
         />
       )}
 
@@ -106,5 +99,6 @@ export default function ClientLayout({
         <Footer />
       </div>
     </>
-  );
+
+);
 }
