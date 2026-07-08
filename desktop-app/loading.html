@@ -40,7 +40,6 @@
         }
       }
 
-      /* ⭐ Logo HAB CREATIVE */
       .logo {
         font-size: 52px;
         font-weight: 800;
@@ -163,8 +162,6 @@
         min-height: 20px;
         font-weight: 300;
       }
-
-      /* ⭐ Footer - Bản quyền + link */
       .footer {
         position: fixed;
         bottom: 28px;
@@ -210,7 +207,6 @@
         vertical-align: middle;
       }
 
-      /* ⭐ Particles */
       .particle {
         position: fixed;
         border-radius: 50%;
@@ -236,7 +232,6 @@
         }
       }
 
-      /* ⭐ Glow dot nền */
       .glow-dot {
         position: fixed;
         border-radius: 50%;
@@ -246,7 +241,6 @@
     </style>
   </head>
   <body>
-    <!-- Glow dots nền -->
     <div
       class="glow-dot"
       style="
@@ -268,7 +262,6 @@
       "
     ></div>
 
-    <!-- Particles -->
     <div
       class="particle"
       style="
@@ -325,7 +318,6 @@
     ></div>
 
     <div class="container">
-      <!-- ⭐ Logo HAB CREATIVE -->
       <div class="logo">HAB CREATIVE</div>
 
       <div class="spinner-wrapper">
@@ -343,7 +335,6 @@
       <div class="status-detail" id="statusDetail">Khởi tạo hệ thống...</div>
     </div>
 
-    <!-- ⭐ Footer -->
     <div class="footer">
       <div class="footer-version">v1.0.0</div>
       <div class="footer-copyright">
@@ -379,8 +370,8 @@
         },
         {
           progress: 55,
-          status: "Đang tải dữ liệu",
-          detail: "Đồng bộ dữ liệu...",
+          status: "Đang kiểm tra thiết bị",
+          detail: "Xác thực thông tin...",
         },
         {
           progress: 70,
@@ -393,7 +384,30 @@
 
       let currentIndex = 0;
 
-      function updateProgress() {
+      async function checkBeforeLoading() {
+        try {
+          if (window.electronAPI && window.electronAPI.checkDeviceStatus) {
+            const result = await window.electronAPI.checkDeviceStatus();
+
+            if (!result.verified) {
+              statusText.textContent = "Thiết bị không hợp lệ";
+              statusDetail.textContent =
+                result.message || "Vui lòng kích hoạt lại";
+
+              setTimeout(() => {
+                window.electronAPI.quitApp();
+              }, 2000);
+              return false;
+            }
+          }
+          return true;
+        } catch (error) {
+          console.error("Check before loading error:", error);
+          return true;
+        }
+      }
+
+      async function updateProgress() {
         if (currentIndex >= messages.length) return;
 
         const msg = messages[currentIndex];
@@ -414,8 +428,11 @@
           }, 500);
         }
       }
-
-      setTimeout(updateProgress, 300);
+      checkBeforeLoading().then((ok) => {
+        if (ok) {
+          setTimeout(updateProgress, 300);
+        }
+      });
     </script>
   </body>
 </html>

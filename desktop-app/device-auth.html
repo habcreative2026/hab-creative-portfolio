@@ -1,0 +1,458 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kích hoạt thiết bị</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100vh;
+        background: #0a0e1a;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .container {
+        width: 100%;
+        max-width: 460px;
+        padding: 24px;
+        text-align: center;
+        animation: fadeIn 0.5s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .logo {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        background: linear-gradient(135deg, #e94560, #ff6b6b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 20px;
+      }
+      .device-box {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 24px 20px;
+        margin-bottom: 20px;
+      }
+      .device-label {
+        color: #64748b;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 10px;
+      }
+      .device-id {
+        font-family: "SF Mono", "Menlo", "Monaco", monospace;
+        font-size: 13px;
+        color: #60a5fa;
+        background: rgba(96, 165, 250, 0.06);
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(96, 165, 250, 0.12);
+        word-break: break-all;
+        line-height: 1.6;
+        cursor: pointer;
+        transition: all 0.3s;
+        user-select: all;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .device-id:hover {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.25);
+      }
+      .device-id.copied {
+        border-color: #34d399;
+        background: rgba(52, 211, 153, 0.08);
+        color: #34d399;
+      }
+      .device-hint {
+        font-size: 11px;
+        color: #475569;
+        margin-top: 8px;
+      }
+      .btn-copy {
+        width: 100%;
+        background: linear-gradient(135deg, #e94560, #ff6b6b);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 10px;
+      }
+      .btn-copy:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 24px rgba(233, 69, 96, 0.25);
+      }
+      .btn-copy:active {
+        transform: scale(0.98);
+      }
+      .btn-group {
+        display: flex;
+        gap: 10px;
+      }
+      .btn-group .btn-secondary {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.04);
+        color: #94a3b8;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .btn-group .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+      }
+      .btn-quit {
+        margin-top: 10px;
+        width: 100%;
+        background: transparent;
+        color: #475569;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .btn-quit:hover {
+        background: rgba(239, 68, 68, 0.05);
+        border-color: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+      .status {
+        font-size: 13px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        margin-bottom: 14px;
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .status.info {
+        background: rgba(96, 165, 250, 0.08);
+        border: 1px solid rgba(96, 165, 250, 0.12);
+        color: #60a5fa;
+      }
+      .status.success {
+        background: rgba(52, 211, 153, 0.08);
+        border: 1px solid rgba(52, 211, 153, 0.12);
+        color: #34d399;
+      }
+      .status.error {
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.12);
+        color: #f87171;
+      }
+      .status.warning {
+        background: rgba(251, 191, 36, 0.08);
+        border: 1px solid rgba(251, 191, 36, 0.12);
+        color: #fbbf24;
+      }
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        vertical-align: middle;
+        margin-right: 8px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .footer {
+        margin-top: 16px;
+        color: #334155;
+        font-size: 10px;
+      }
+      .footer a {
+        color: #64748b;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        color: #e94560;
+      }
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 14, 26, 0.85);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+      .loading-overlay.active {
+        display: flex;
+      }
+      .loading-overlay .spinner {
+        width: 32px;
+        height: 32px;
+        border-width: 3px;
+      }
+      .loading-overlay .text {
+        color: #94a3b8;
+        font-size: 14px;
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading-overlay" id="loadingOverlay">
+      <div style="text-align: center">
+        <div class="spinner"></div>
+        <div class="text">Đang kiểm tra thiết bị...</div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="logo">HAB CREATIVE</div>
+
+      <div id="statusMessage" class="status info">
+        Vui lòng copy Device ID và đăng ký trên website
+      </div>
+
+      <div class="device-box">
+        <div class="device-label">DEVICE ID</div>
+        <div class="device-id" id="deviceIdDisplay">Đang tải...</div>
+      </div>
+
+      <button class="btn-copy" id="copyButton">Sao chép Device ID</button>
+
+      <div class="btn-group">
+        <button class="btn-secondary" id="openWebsiteButton">
+          Mở website đăng ký
+        </button>
+        <button class="btn-secondary" id="checkButton">
+          Đã duyệt, kiểm tra
+        </button>
+      </div>
+
+      <button class="btn-quit" id="quitButton">Thoát</button>
+
+      <div class="footer">
+        <span>© 2024</span>
+        <span style="color: #2d3748; margin: 0 6px">|</span>
+        <a href="https://bhtdev.work" target="_blank">TrongBui_</a>
+      </div>
+    </div>
+
+    <script>
+      const api = window.electronAPI;
+
+      const deviceIdDisplay = document.getElementById("deviceIdDisplay");
+      const statusMessage = document.getElementById("statusMessage");
+      const checkButton = document.getElementById("checkButton");
+      const copyButton = document.getElementById("copyButton");
+      const openWebsiteButton = document.getElementById("openWebsiteButton");
+      const quitButton = document.getElementById("quitButton");
+      const loadingOverlay = document.getElementById("loadingOverlay");
+
+      let deviceId = "";
+
+      function setStatus(message, type = "info") {
+        statusMessage.textContent = message;
+        statusMessage.className = "status " + type;
+      }
+
+      function loadDeviceId() {
+        deviceIdDisplay.textContent = "Đang tải...";
+
+        if (!api) {
+          deviceIdDisplay.textContent = "Không kết nối";
+          return;
+        }
+
+        api
+          .getDeviceId()
+          .then((id) => {
+            if (id && id.length > 0) {
+              deviceId = id;
+              deviceIdDisplay.textContent = id;
+              console.log("Device ID loaded");
+            } else {
+              deviceIdDisplay.textContent = "Không lấy được ID";
+            }
+          })
+          .catch((err) => {
+            deviceIdDisplay.textContent = "Lỗi: " + err.message;
+            console.error("Error:", err);
+          });
+      }
+
+      function copyDeviceId() {
+        if (!deviceId) {
+          setStatus("Chưa có Device ID", "error");
+          return;
+        }
+
+        console.log("Copying device ID:", deviceId);
+
+        if (api && api.copyToClipboard) {
+          api
+            .copyToClipboard(deviceId)
+            .then((result) => {
+              console.log("Copy result:", result);
+              if (result) {
+                showCopySuccess();
+              } else {
+                setStatus("Copy thất bại", "error");
+              }
+            })
+            .catch((err) => {
+              console.error("Copy error:", err);
+              setStatus("Lỗi copy: " + err.message, "error");
+            });
+        } else {
+          setStatus("API không khả dụng", "error");
+        }
+      }
+
+      function showCopySuccess() {
+        const original = deviceIdDisplay.textContent;
+        deviceIdDisplay.textContent = "Đã copy!";
+        deviceIdDisplay.classList.add("copied");
+        setStatus("Device ID đã được sao chép!", "success");
+        setTimeout(() => {
+          deviceIdDisplay.textContent = original;
+          deviceIdDisplay.classList.remove("copied");
+        }, 2000);
+      }
+      function fallbackCopy() {
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = deviceId;
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          textArea.style.left = "-9999px";
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand("copy");
+          textArea.remove();
+          showCopySuccess();
+        } catch (err) {
+          console.error("All copy methods failed:", err);
+          setStatus("Không thể copy. Vui lòng chọn và copy thủ công.", "error");
+        }
+      }
+
+      function checkActivation() {
+        if (!deviceId) {
+          setStatus("Không tìm thấy Device ID", "error");
+          return;
+        }
+
+        loadingOverlay.classList.add("active");
+        checkButton.disabled = true;
+        setStatus("Đang kiểm tra...", "info");
+
+        api
+          .checkDevice(deviceId)
+          .then((result) => {
+            loadingOverlay.classList.remove("active");
+            checkButton.disabled = false;
+
+            if (result.verified) {
+              const daysLeft = result.data?.daysLeft || 0;
+              setStatus(
+                `Đã kích hoạt! Còn ${daysLeft} ngày sử dụng.`,
+                "success",
+              );
+              setTimeout(() => {
+                api.deviceVerified();
+              }, 1000);
+            } else {
+              const msg = result.message || "Chưa được duyệt.";
+              if (msg.includes("locked")) {
+                setStatus(
+                  "Thiết bị đã bị khóa. Vui lòng liên hệ Admin.",
+                  "error",
+                );
+              } else if (msg.includes("expired")) {
+                setStatus("License đã hết hạn. Vui lòng gia hạn.", "error");
+              } else if (msg.includes("pending")) {
+                setStatus(
+                  "Device đang chờ duyệt. Vui lòng đợi Admin.",
+                  "warning",
+                );
+              } else if (msg.includes("rejected")) {
+                setStatus(
+                  "Device đã bị từ chối. Vui lòng liên hệ Admin.",
+                  "error",
+                );
+              } else {
+                setStatus("" + msg, "info");
+              }
+            }
+          })
+          .catch((err) => {
+            loadingOverlay.classList.remove("active");
+            checkButton.disabled = false;
+            setStatus("Lỗi kết nối server", "error");
+            console.error("Check error:", err);
+          });
+      }
+
+      function openWebsite() {
+        api.openExternal("https://trongbui-swe.vercel.app");
+      }
+
+      function quitApp() {
+        console.log("Quit button clicked");
+        if (api && api.quitApp) {
+          api.quitApp();
+        } else {
+          window.close();
+        }
+      }
+
+      deviceIdDisplay.addEventListener("click", copyDeviceId);
+      copyButton.addEventListener("click", copyDeviceId);
+      checkButton.addEventListener("click", checkActivation);
+      openWebsiteButton.addEventListener("click", openWebsite);
+      quitButton.addEventListener("click", quitApp);
+
+      loadDeviceId();
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") checkActivation();
+      });
+    </script>
+  </body>
+</html>

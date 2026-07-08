@@ -11,15 +11,25 @@ const {
 const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
+const fs = require("fs");
 
 let mainWindow = null;
 let loadingWindow = null;
 let loginLoadingWindow = null;
+let authWindow = null;
 let cachedDeviceId = null;
 let isAppReady = false;
 let isDeviceVerified = false;
+let deviceExpiryData = null;
+let isLoginLoadingShowing = false;
+let menuUpdateInterval = null;
 
-// ⭐ TỐI ƯU HỆ THỐNG
+const API_URL = process.env.API_URL || "https://trongbui-com.onrender.com";
+const VERIFIED_FILE = path.join(
+  app.getPath("userData"),
+  "device_verified.json",
+);
+
 app.commandLine.appendSwitch("enable-gpu-rasterization");
 app.commandLine.appendSwitch("enable-zero-copy");
 app.commandLine.appendSwitch("enable-oop-rasterization");
@@ -27,11 +37,8 @@ app.commandLine.appendSwitch("disable-software-rasterizer");
 app.commandLine.appendSwitch("js-flags", "--max-old-space-size=512");
 app.commandLine.appendSwitch("disable-renderer-backgrounding");
 
-// ===== DEVICE ID =====
 function getDeviceId() {
-  if (cachedDeviceId) {
-    return cachedDeviceId;
-  }
+  if (cachedDeviceId) return cachedDeviceId;
 
   try {
     const networkInterfaces = os.networkInterfaces();
@@ -96,163 +103,145 @@ function getDeviceId() {
   }
 }
 
-// ===== ⭐ KIỂM TRA XÁC THỰC DEVICE =====
-async function checkDeviceStatus() {
+async function checkVerifiedFromFile() {
   try {
-    const deviceId = getDeviceId();
-    console.log("🔍 Checking device:", deviceId);
+    if (!fs.existsSync(VERIFIED_FILE)) {
+      return { verified: false, reason: "No file" };
+    }
 
-    const response = await fetch(
-      "https://hab-creative-portfolio.vercel.app/api/device/check",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ deviceId }),
-      },
-    );
+    const data = JSON.parse(fs.readFileSync(VERIFIED_FILE, "utf8"));
+    const currentDeviceId = getDeviceId();
+
+    if (data.deviceId !== currentDeviceId) {
+      fs.unlinkSync(VERIFIED_FILE);
+      return { verified: false, reason: "Device ID mismatch" };
+    }
+    const serverCheck = await checkDeviceStatus(currentDeviceId);
+
+    if (serverCheck.verified) {
+      saveVerifiedStatus(
+        currentDeviceId,
+        serverCheck.data.daysLeft,
+        serverCheck.data.plan,
+        serverCheck.data.expiresAt,
+      );
+      deviceExpiryData = serverCheck.data;
+      return { verified: true, data: serverCheck.data };
+    } else {
+      fs.unlinkSync(VERIFIED_FILE);
+      return {
+        verified: false,
+        reason: serverCheck.message || "Server rejected",
+      };
+    }
+  } catch (error) {
+    console.error("Check verified file error:", error);
+    try {
+      if (fs.existsSync(VERIFIED_FILE)) {
+        const data = JSON.parse(fs.readFileSync(VERIFIED_FILE, "utf8"));
+        const expiryDate = new Date(data.expiryDate);
+        const now = new Date();
+
+        if (now <= expiryDate) {
+          deviceExpiryData = data;
+          return { verified: true, data: data, localOnly: true };
+        } else {
+          fs.unlinkSync(VERIFIED_FILE);
+        }
+      }
+    } catch (e) {
+      console.error("Local check error:", e);
+    }
+    return { verified: false, reason: error.message };
+  }
+}
+
+function saveVerifiedStatus(deviceId, daysLeft, plan, expiresAt) {
+  try {
+    const data = {
+      deviceId: deviceId,
+      daysLeft: daysLeft,
+      plan: plan,
+      expiresAt: expiresAt,
+      verifiedAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(VERIFIED_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error("Save verified error:", error);
+  }
+}
+
+async function checkDeviceStatus(deviceId) {
+  try {
+    const url = `${API_URL}/api/device/check`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId }),
+    });
+
+    if (!response.ok) {
+      return { verified: false, message: `Server error: ${response.status}` };
+    }
 
     const data = await response.json();
-    console.log("📊 Check result:", data);
 
     if (data.success) {
-      isDeviceVerified = true;
+      deviceExpiryData = data.data;
       return { verified: true, data: data.data };
     } else {
-      isDeviceVerified = false;
       return { verified: false, message: data.message };
     }
   } catch (error) {
     console.error("Check device error:", error);
-    isDeviceVerified = false;
     return { verified: false, message: "Không thể kết nối server" };
   }
 }
 
-// ===== ⭐ HIỂN THỊ POPUP YÊU CẦU XÁC THỰC =====
-function showActivationRequired() {
-  const deviceId = getDeviceId();
+function createAuthWindow() {
+  authWindow = new BrowserWindow({
+    width: 460,
+    height: 480,
+    resizable: false,
+    frame: true,
+    transparent: false,
+    backgroundColor: "#0a0e1a",
+    title: "Kích hoạt thiết bị",
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
 
-  dialog
-    .showMessageBox(mainWindow, {
-      type: "warning",
-      title: "Yêu cầu kích hoạt",
-      message: "Device chưa được xác thực. Vui lòng kích hoạt để sử dụng!",
-      detail:
-        "Device ID: " +
-        deviceId +
-        "\n\nHướng dẫn:\n1. Copy Device ID\n2. Truy cập website TRONGBUI_\n3. Nhập Device ID và xác thực",
-      buttons: ["Copy Device ID", "Mở website", "Thoát"],
-      defaultId: 0,
-      cancelId: 2,
-    })
-    .then((result) => {
-      if (result.response === 0) {
-        clipboard.writeText(deviceId);
-        dialog.showMessageBox(mainWindow, {
-          type: "info",
-          title: "Đã sao chép",
-          message:
-            "Device ID đã được sao chép vào clipboard!\n\nTruy cập website để xác thực.",
-          buttons: ["OK"],
-        });
-      } else if (result.response === 1) {
-        shell.openExternal("https://hab-creative-portfolio.vercel.app");
-      } else {
+  authWindow.loadFile(path.join(__dirname, "device-auth.html"));
+
+  authWindow.on("closed", () => {
+    authWindow = null;
+  });
+
+  authWindow.on("close", (event) => {
+    if (!isDeviceVerified) {
+      const choice = dialog.showMessageBoxSync(authWindow, {
+        type: "question",
+        title: "Xác nhận thoát",
+        message: "Bạn có chắc muốn thoát ứng dụng?",
+        detail: "Bạn cần kích hoạt thiết bị để sử dụng.",
+        buttons: ["Thoát", "Ở lại"],
+        defaultId: 1,
+        cancelId: 1,
+      });
+
+      if (choice === 0) {
         app.quit();
+      } else {
+        event.preventDefault();
       }
-    });
+    }
+  });
 }
 
-// ===== ⭐ TẠO MENU =====
-function createMenu() {
-  const deviceId = getDeviceId();
-  const shortId = deviceId.substring(0, 16) + "...";
-
-  const menu = Menu.buildFromTemplate([
-    {
-      label: "HAB Creative",
-      submenu: [
-        {
-          label: `Device ID: ${shortId}`,
-          click: () => {
-            clipboard.writeText(deviceId);
-            dialog.showMessageBox(mainWindow, {
-              type: "info",
-              title: "Đã sao chép",
-              message: "Device ID đã được sao chép vào clipboard!",
-              buttons: ["OK"],
-            });
-          },
-        },
-        { type: "separator" },
-        {
-          label: "Copy Device ID",
-          accelerator: "CmdOrCtrl+I",
-          click: () => {
-            clipboard.writeText(deviceId);
-            dialog.showMessageBox(mainWindow, {
-              type: "info",
-              title: "Đã sao chép",
-              message: "Device ID đã được sao chép vào clipboard!",
-              buttons: ["OK"],
-            });
-          },
-        },
-        { type: "separator" },
-        {
-          label: "Kiểm tra kích hoạt",
-          click: async () => {
-            const result = await checkDeviceStatus();
-            if (result.verified) {
-              dialog.showMessageBox(mainWindow, {
-                type: "info",
-                title: "Đã kích hoạt",
-                message: `Device đã được kích hoạt!\nCòn ${result.data.daysLeft} ngày sử dụng.`,
-                buttons: ["OK"],
-              });
-            } else {
-              showActivationRequired();
-            }
-          },
-        },
-        {
-          label: "Mở website kích hoạt",
-          click: () => {
-            shell.openExternal("https://hab-creative-portfolio.vercel.app");
-          },
-        },
-        { type: "separator" },
-        {
-          label: "Quit",
-          accelerator: "CmdOrCtrl+Q",
-          click: () => {
-            app.quit();
-          },
-        },
-      ],
-    },
-    {
-      label: "View",
-      submenu: [
-        { role: "reload" },
-        { role: "forceReload" },
-        { role: "toggleDevTools" },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-      ],
-    },
-  ]);
-
-  Menu.setApplicationMenu(menu);
-}
-
-// ===== LOADING WINDOW =====
 function showAppLoadingWindow() {
   if (loadingWindow) {
     loadingWindow.show();
@@ -318,12 +307,19 @@ function hideAppLoadingWindow() {
   }
 }
 
-// ===== LOGIN LOADING =====
 function showLoginLoading() {
+  if (isLoginLoadingShowing) {
+    console.log("Login loading already showing, skipping...");
+    return;
+  }
+
   if (loginLoadingWindow) {
     loginLoadingWindow.show();
     return;
   }
+
+  isLoginLoadingShowing = true;
+  console.log("Showing login loading...");
 
   loginLoadingWindow = new BrowserWindow({
     width: 1400,
@@ -339,6 +335,12 @@ function showLoginLoading() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+  });
+
+  loginLoadingWindow.on("closed", () => {
+    loginLoadingWindow = null;
+    isLoginLoadingShowing = false;
+    console.log("Login loading closed");
   });
 
   const loginLoadingHTML = `
@@ -481,10 +483,10 @@ function showLoginLoading() {
         const statusDetail = document.getElementById('statusDetail');
         
         const messages = [
-          { status: 'Đang kết nối Google', detail: 'Chuyển hướng đến Google...' },
-          { status: 'Đang xác thực tài khoản', detail: 'Kiểm tra thông tin...' },
-          { status: 'Đang đăng nhập', detail: 'Xác nhận quyền truy cập...' },
-          { status: 'Hoàn tất', detail: 'Đang mở ứng dụng...' }
+          { status: 'Đang kết nối Google....' },
+          { status: 'Đang xác thực...' },
+          { status: 'Đang xác nhận...'},
+          { status: 'Đang tải...' }
         ];
         
         let currentIndex = 0;
@@ -493,7 +495,6 @@ function showLoginLoading() {
           if (currentIndex >= messages.length) return;
           const msg = messages[currentIndex];
           statusText.textContent = msg.status;
-          statusDetail.textContent = msg.detail;
           currentIndex++;
           if (currentIndex < messages.length) {
             const delay = Math.random() * 500 + 500;
@@ -525,6 +526,14 @@ function showLoginLoading() {
 }
 
 function hideLoginLoading() {
+  if (!isLoginLoadingShowing) {
+    console.log("Login loading not showing, skipping...");
+    return;
+  }
+
+  console.log("Hiding login loading...");
+  isLoginLoadingShowing = false;
+
   if (loginLoadingWindow) {
     loginLoadingWindow.webContents
       .executeJavaScript(
@@ -550,7 +559,6 @@ function hideLoginLoading() {
   }
 }
 
-// ===== MAIN WINDOW =====
 function createMainWindow() {
   const mainSession = session.fromPartition("persist:main");
 
@@ -582,15 +590,22 @@ function createMainWindow() {
     extraHeaders: "x-desktop-app: true\n",
   });
 
+  let isLoadingShown = false;
+
   mainWindow.webContents.on("will-navigate", (event, url) => {
     if (url.includes("accounts.google.com") || url.includes("google.com")) {
-      showLoginLoading();
+      if (!isLoadingShown) {
+        isLoadingShown = true;
+        showLoginLoading();
+      }
     }
   });
 
-  // ⭐ KHI LOAD XONG - KIỂM TRA XÁC THỰC
-  mainWindow.webContents.on("did-finish-load", async () => {
-    hideLoginLoading();
+  mainWindow.webContents.on("did-finish-load", () => {
+    if (isLoadingShown) {
+      isLoadingShown = false;
+      hideLoginLoading();
+    }
 
     if (!isAppReady) {
       isAppReady = true;
@@ -601,42 +616,22 @@ function createMainWindow() {
       }, 300);
     }
 
-    // ⭐ KIỂM TRA XÁC THỰC DEVICE
-    const result = await checkDeviceStatus();
-
-    if (!result.verified) {
-      // Chưa xác thực → Hiển thị popup yêu cầu
-      setTimeout(() => {
-        showActivationRequired();
-      }, 1000);
-    } else {
-      // Đã xác thực → Hiển thị thông báo
-      console.log("Device verified:", result.data);
-      dialog.showMessageBox(mainWindow, {
-        type: "info",
-        title: "Đã kích hoạt",
-        message: `Device đã được kích hoạt thành công!`,
-        detail: `Còn ${result.data.daysLeft} ngày sử dụng.\nPlan: ${result.data.plan}`,
-        buttons: ["OK"],
-      });
-    }
-
     mainWindow.webContents
       .executeJavaScript(
         `
       document.documentElement.style.scrollBehavior = 'smooth';
       document.documentElement.style.transform = 'translateZ(0)';
-      document.querySelectorAll('img').forEach(img => {
-        img.loading = 'lazy';
-        img.decoding = 'async';
-      });
     `,
       )
       .catch(() => {});
   });
 
   mainWindow.webContents.on("did-fail-load", () => {
-    hideLoginLoading();
+    if (isLoadingShown) {
+      isLoadingShown = false;
+      hideLoginLoading();
+    }
+
     if (!isAppReady) {
       isAppReady = true;
       hideAppLoadingWindow();
@@ -648,51 +643,335 @@ function createMainWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.includes("accounts.google.com") || url.includes("google.com")) {
+      mainWindow.loadURL(url);
+      return { action: "deny" };
+    }
+
     shell.openExternal(url);
     return { action: "deny" };
   });
 
-  createMenu();
+  mainWindow.webContents.session.cookies.on(
+    "changed",
+    (event, cookie, cause, removed) => {
+      if (cookie.name === "auth_token" && !removed) {
+        mainWindow.loadURL(
+          "https://hab-creative-portfolio.vercel.app/admin/dashboard",
+        );
+      }
+    },
+  );
+
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    mainWindow.webContents.executeJavaScript(`
+    if (document.cookie.includes('auth_token')) {
+      window.location.href = '/admin/dashboard';
+    }
+  `);
+  });
 
   mainWindow.on("closed", () => {
     mainWindow = null;
-    hideLoginLoading();
+    if (isLoginLoadingShowing) {
+      hideLoginLoading();
+    }
   });
 }
 
-// ===== IPC =====
+function startMenuUpdater() {
+  if (menuUpdateInterval) {
+    clearInterval(menuUpdateInterval);
+    menuUpdateInterval = null;
+  }
+  createMenu();
+
+  menuUpdateInterval = setInterval(() => {
+    if (mainWindow || authWindow) {
+      createMenu();
+    }
+  }, 1000);
+}
+
+function stopMenuUpdater() {
+  if (menuUpdateInterval) {
+    clearInterval(menuUpdateInterval);
+    menuUpdateInterval = null;
+  }
+}
+function createMenu() {
+  let expiryText = "Chưa kích hoạt";
+
+  if (deviceExpiryData && deviceExpiryData.expiresAt) {
+    const now = new Date();
+    const expiresAt = new Date(deviceExpiryData.expiresAt);
+    const diffTime = expiresAt - now;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(
+      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+    const diffSeconds = Math.floor((diffTime % (1000 * 60)) / 1000);
+
+    if (diffTime <= 0) {
+      expiryText = "Đã hết hạn";
+    } else if (diffDays > 0) {
+      expiryText = `${diffDays} ngày ${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+    } else if (diffHours > 0) {
+      expiryText = `${diffHours}h ${diffMinutes}m ${diffSeconds}s`;
+    } else if (diffMinutes > 0) {
+      expiryText = `${diffMinutes}m ${diffSeconds}s`;
+    } else {
+      expiryText = `${diffSeconds}s`;
+    }
+  }
+
+  const deviceId = getDeviceId();
+  const shortId = deviceId.substring(0, 16) + "...";
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: "HAB Creative",
+      submenu: [
+        {
+          label: `Device ID: ${shortId}`,
+          click: () => {
+            clipboard.writeText(deviceId);
+            dialog.showMessageBox(mainWindow || authWindow, {
+              type: "info",
+              title: "Đã sao chép",
+              message: "Device ID đã được sao chép vào clipboard!",
+              buttons: ["OK"],
+            });
+          },
+        },
+        {
+          label: `Hạn sử dụng: ${expiryText}`,
+          enabled: false,
+        },
+        { type: "separator" },
+        {
+          label: "Copy Device ID",
+          accelerator: "CmdOrCtrl+I",
+          click: () => {
+            clipboard.writeText(deviceId);
+            dialog.showMessageBox(mainWindow || authWindow, {
+              type: "info",
+              title: "Đã sao chép",
+              message: "Device ID đã được sao chép vào clipboard!",
+              buttons: ["OK"],
+            });
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Mở website kích hoạt",
+          click: () => {
+            shell.openExternal("https://trongbui-swe.vercel.app");
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Quit",
+          accelerator: "CmdOrCtrl+Q",
+          click: () => {
+            app.quit();
+          },
+        },
+      ],
+    },
+    {
+      label: "View",
+      submenu: [
+        { role: "reload" },
+        { role: "forceReload" },
+        { role: "toggleDevTools" },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+  ]);
+
+  Menu.setApplicationMenu(menu);
+}
+
+function updateMenu() {
+  createMenu();
+}
+
 ipcMain.handle("get-device-id", () => {
   return getDeviceId();
 });
 
-ipcMain.on("loading-ready", () => {
-  if (!mainWindow) {
-    createMainWindow();
+ipcMain.on("quit-app", () => {
+  app.quit();
+});
+
+ipcMain.handle("check-device", async (event, deviceId) => {
+  const result = await checkDeviceStatus(deviceId);
+  if (result.verified) {
+    deviceExpiryData = result.data;
+    saveVerifiedStatus(
+      deviceId,
+      result.data.daysLeft,
+      result.data.plan,
+      result.data.expiresAt,
+    );
+    updateMenu();
+  }
+  return result;
+});
+
+ipcMain.on("device-verified", () => {
+  isDeviceVerified = true;
+  if (authWindow) {
+    authWindow.close();
+    authWindow = null;
+  }
+  showAppLoadingWindow();
+  setTimeout(() => {
+    if (!mainWindow) {
+      createMainWindow();
+    }
+  }, 500);
+});
+
+ipcMain.on("device-verified", () => {
+  isDeviceVerified = true;
+  if (authWindow) {
+    authWindow.close();
+    authWindow = null;
+  }
+
+  showAppLoadingWindow();
+});
+
+ipcMain.on("loading-ready", async () => {
+  try {
+    const deviceId = getDeviceId();
+    const serverCheck = await checkDeviceStatus(deviceId);
+
+    if (serverCheck.verified) {
+      deviceExpiryData = serverCheck.data;
+      saveVerifiedStatus(
+        deviceId,
+        serverCheck.data.daysLeft,
+        serverCheck.data.plan,
+        serverCheck.data.expiresAt,
+      );
+      updateMenu();
+
+      if (!mainWindow) {
+        createMainWindow();
+      }
+    } else {
+      if (fs.existsSync(VERIFIED_FILE)) {
+        fs.unlinkSync(VERIFIED_FILE);
+      }
+      isDeviceVerified = false;
+
+      if (loadingWindow) {
+        loadingWindow.close();
+        loadingWindow = null;
+      }
+
+      createAuthWindow();
+      dialog.showMessageBox({
+        type: "warning",
+        title: "Thông báo",
+        message: "Thiết bị không còn hiệu lực",
+        detail: serverCheck.message || "Vui lòng kích hoạt lại thiết bị",
+        buttons: ["OK"],
+      });
+    }
+  } catch (error) {
+    console.error("Loading ready check error:", error);
+    if (!mainWindow) {
+      createMainWindow();
+    }
   }
 });
 
-// ===== APP LIFECYCLE =====
-app.whenReady().then(() => {
-  showAppLoadingWindow();
+ipcMain.handle("copy-to-clipboard", (event, text) => {
+  try {
+    console.log("[Main] copy-to-clipboard called:", text);
+    clipboard.writeText(text);
 
-  setTimeout(() => {
-    if (!mainWindow) {
-      // Tạo main window ẩn
+    console.log("[Main] Copied successfully");
+    return true;
+  } catch (error) {
+    console.error("[Main] Copy failed:", error);
+    return false;
+  }
+});
+
+app.whenReady().then(async () => {
+  const result = await checkVerifiedFromFile();
+
+  if (result.verified) {
+    isDeviceVerified = true;
+    if (result.data) {
+      deviceExpiryData = result.data;
     }
-  }, 500);
+
+    showAppLoadingWindow();
+  } else {
+    isDeviceVerified = false;
+    createAuthWindow();
+  }
+
+  createMenu();
+
+  startMenuUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      isAppReady = false;
-      showAppLoadingWindow();
-      setTimeout(() => {
-        if (!mainWindow) {
-          createMainWindow();
-        }
-      }, 500);
+      if (!isDeviceVerified) {
+        createAuthWindow();
+      } else {
+        showAppLoadingWindow();
+      }
     }
   });
+
+  app.on("before-quit", () => {
+    stopMenuUpdater();
+    console.log("App quitting");
+  });
 });
+
+setInterval(
+  async () => {
+    if (isDeviceVerified && mainWindow) {
+      try {
+        const deviceId = getDeviceId();
+        const serverCheck = await checkDeviceStatus(deviceId);
+
+        if (!serverCheck.verified) {
+          dialog
+            .showMessageBox(mainWindow, {
+              type: "warning",
+              title: "Thông báo",
+              message: "Thiết bị đã hết hạn hoặc bị khóa",
+              detail:
+                serverCheck.message || "Vui lòng liên hệ Admin để gia hạn",
+              buttons: ["OK"],
+            })
+            .then(() => {
+              app.quit();
+            });
+        }
+      } catch (error) {
+        console.error("Periodic check error:", error);
+      }
+    }
+  },
+  2 * 60 * 1000,
+);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
@@ -702,6 +981,8 @@ app.on("window-all-closed", () => {
 
 process.on("uncaughtException", (error) => {
   console.error("Error:", error);
-  hideLoginLoading();
+  if (isLoginLoadingShowing) {
+    hideLoginLoading();
+  }
   hideAppLoadingWindow();
 });
