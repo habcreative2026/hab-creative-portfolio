@@ -1,8 +1,8 @@
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
-import { LanguageProvider } from "./i18n/LanguageContext";
-import { LinkProvider } from "./context/LinkContext";
-import MaintenanceGuard from "./components/MaintenanceGuard";
+import { LanguageProvider } from "@/app/i18n/LanguageContext";
+import { LinkProvider } from "@/app/context/LinkContext";
+import MaintenanceGuard from "@/app/components/MaintenanceGuard";
 
 export const metadata = {
   title: "HAB Creative",

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import Cursor from "./app/components/Cursor";
-import Navbar from "./app/components/Navbar";
-import Footer from "./app/components/Footer";
+import Cursor from "@/app/components/Cursor";
+import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 import IntroVideo from "./IntroVideo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
