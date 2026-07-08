@@ -1,33 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import Cursor from "@/app/components/Cursor";
-import Navbar from "@/app/components/Navbar";
-import Footer from "@/app/components/Footer";
+import { usePathname } from "next/navigation";
+import Cursor from "./app/components/Cursor";
+import Navbar from "./app/components/Navbar";
+import Footer from "./app/components/Footer";
 import IntroVideo from "./IntroVideo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function ClientLayout({
-children,
+  children,
 }: {
-children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-const pathname = usePathname();
-const searchParams = useSearchParams();
+  const pathname = usePathname();
 
-const [isReady, setIsReady] = useState(true);
-const [showIntro, setShowIntro] = useState(false);
-const [videoUrl, setVideoUrl] = useState("/video.mp4");
+  const [isReady, setIsReady] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("/video.mp4");
 
-const isAdminRoute = pathname?.startsWith("/admin") ?? false;
-const isHomePage = pathname === "/";
-const introDisabled = searchParams?.get("intro") === "off";
+  const isAdminRoute = pathname?.startsWith("/admin") ?? false;
+  const isHomePage = pathname === "/";
 
-// Fetch video
-useEffect(() => {
-if (isAdminRoute) return;
+  // Nếu website đang chạy trong iframe (Admin Preview)
+  const isIframe = typeof window !== "undefined" && window.self !== window.top;
+
+  // Chỉ Home mới cần fetch video
+  useEffect(() => {
+    if (isAdminRoute || !isHomePage || isIframe) return;
 
     const fetchIntroVideo = async () => {
       try {
@@ -46,16 +47,15 @@ if (isAdminRoute) return;
     };
 
     fetchIntroVideo();
+  }, [isAdminRoute, isHomePage, isIframe]);
 
-}, [isAdminRoute]);
-
-// Điều khiển Intro theo route
-useEffect(() => {
-if (isAdminRoute || introDisabled) {
-setShowIntro(false);
-setIsReady(true);
-return;
-}
+  // Điều khiển Intro
+  useEffect(() => {
+    if (isAdminRoute || isIframe) {
+      setShowIntro(false);
+      setIsReady(true);
+      return;
+    }
 
     if (isHomePage) {
       setShowIntro(true);
@@ -64,29 +64,23 @@ return;
       setShowIntro(false);
       setIsReady(true);
     }
+  }, [pathname, isAdminRoute, isHomePage, isIframe]);
 
-}, [pathname, isAdminRoute, isHomePage, introDisabled]);
+  const handleIntroFinish = () => {
+    setShowIntro(false);
+    setIsReady(true);
+  };
 
-const handleIntroFinish = () => {
-setShowIntro(false);
-setIsReady(true);
-};
+  // Admin không render layout
+  if (isAdminRoute) {
+    return <>{children}</>;
+  }
 
-// Admin không render layout
-if (isAdminRoute) {
-return <>{children}</>;
-}
+  return (
+    <>
+      <Cursor />
 
-return (
-<>
-<Cursor />
-
-      {showIntro && (
-        <IntroVideo
-          src={videoUrl}
-          onFinish={handleIntroFinish}
-        />
-      )}
+      {showIntro && <IntroVideo src={videoUrl} onFinish={handleIntroFinish} />}
 
       <div
         className={`
@@ -99,6 +93,5 @@ return (
         <Footer />
       </div>
     </>
-
-);
+  );
 }

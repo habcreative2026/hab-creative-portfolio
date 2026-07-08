@@ -118,7 +118,7 @@ export default function DashboardPage() {
   // ⭐ Luôn tắt intro trong iframe
   const getIframeUrl = () => {
     if (!PREVIEW_URL) return "#";
-    return `${PREVIEW_URL}?intro=off`;
+    return PREVIEW_URL;
   };
 
   const toggleMenu = (menuId: string) => {
@@ -160,7 +160,10 @@ export default function DashboardPage() {
         document.cookie.split(";").forEach((c) => {
           document.cookie = c
             .replace(/^ +/, "")
-            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            .replace(
+              /=.*/,
+              "=;expires=" + new Date().toUTCString() + ";path=/",
+            );
         });
         window.location.href = `/admin/login?status=logged_out`;
       }
@@ -392,10 +395,12 @@ export default function DashboardPage() {
         `}
       >
         {/* User info - mở rộng */}
-        <div className={`
+        <div
+          className={`
           bg-white p-3 border-b border-gray-200 flex items-center gap-2
           ${isSidebarOpen ? "flex" : "hidden md:hidden"}
-        `}>
+        `}
+        >
           {user?.avatar ? (
             <img
               src={user.avatar}
@@ -418,10 +423,12 @@ export default function DashboardPage() {
         </div>
 
         {/* User avatar - thu gọn */}
-        <div className={`
+        <div
+          className={`
           ${isSidebarOpen ? "hidden" : "hidden md:flex"}
           items-center justify-center p-3 border-b border-gray-200
-        `}>
+        `}
+        >
           {user?.avatar ? (
             <img
               src={user.avatar}
@@ -436,10 +443,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Navigation */}
-        <nav className={`
+        <nav
+          className={`
           flex-1 overflow-y-auto py-3 px-2 space-y-1
           ${isSidebarOpen ? "px-3" : "px-2"}
-        `}>
+        `}
+        >
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasChildren = item.children && item.children.length > 0;
@@ -474,7 +483,9 @@ export default function DashboardPage() {
                 >
                   <Icon
                     size={18}
-                    className={isActive ? "text-indigo-600" : "text-gray-400 shrink-0"}
+                    className={
+                      isActive ? "text-indigo-600" : "text-gray-400 shrink-0"
+                    }
                   />
                   {isSidebarOpen && (
                     <>
@@ -560,10 +571,12 @@ export default function DashboardPage() {
         </nav>
 
         {/* Footer actions */}
-        <div className={`
+        <div
+          className={`
           p-3 border-t border-gray-100 bg-gray-50/60 space-y-2 shrink-0
           ${isSidebarOpen ? "p-4" : "p-2"}
-        `}>
+        `}
+        >
           <TwoFactorAuthModal
             has2FA={!!user?.has2FA}
             onActivationSuccess={handle2FASuccess}
@@ -586,10 +599,12 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main content */}
-      <main className={`
+      <main
+        className={`
         flex-1 flex flex-col min-h-screen overflow-hidden w-full p-2 bg-gray-100
         transition-all duration-300
-      `}>
+      `}
+      >
         {renderContent()}
       </main>
 
