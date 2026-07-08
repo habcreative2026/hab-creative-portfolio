@@ -22,6 +22,7 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Home,
 } from "lucide-react";
 import TwoFactorAuthModal from "../TwoFactorAuthModal";
 import LanguageDashboard from "../languages/page";
@@ -36,6 +37,7 @@ import ContactAdminPage from "../contact/page";
 import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
+import LogoAdminPage from "../logo/page";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API || "";
@@ -71,7 +73,8 @@ type TabType =
   | "about"
   | "contact"
   | "superadmin"
-  | "license";
+  | "license"
+  | "logo";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -235,13 +238,13 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-  //       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-  //     </div>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   const menuItems: MenuItem[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -255,6 +258,7 @@ export default function DashboardPage() {
         { id: "audio", label: "Music", icon: AudioWaveform },
         { id: "video", label: "Video", icon: Film },
         { id: "marquee", label: "Marquee", icon: Images },
+        { id: "logo", label: "Logo", icon: Home },
       ],
     },
     {
@@ -308,6 +312,8 @@ export default function DashboardPage() {
         return <SuperAdminPage />;
       case "license":
         return <LicenseManagement />;
+      case "logo":
+        return <LogoAdminPage />;
 
       case "dashboard":
       default:
@@ -382,7 +388,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-row text-gray-800 antialiased">
+    <div className="min-h-screen bg-gray-50 flex flex-row text-gray-800 antialiased scroll-none">
       {/* Sidebar - thu gọn/mở rộng */}
       <aside
         className={`

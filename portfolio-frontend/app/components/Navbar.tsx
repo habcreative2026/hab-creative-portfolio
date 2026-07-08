@@ -42,6 +42,19 @@ export default function NavbarPage() {
     setOpenLang(false);
     setOpenMobileLang(false);
   };
+  const [logoData, setLogoData] = useState<{
+    logo_image: string;
+    logo_alt: string;
+    logo_link: string;
+    logo_width: number;
+    logo_height: number;
+  }>({
+    logo_image: "/logo_bhq.png",
+    logo_alt: "Logo",
+    logo_link: "/",
+    logo_width: 120,
+    logo_height: 32,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -196,6 +209,28 @@ export default function NavbarPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/logo`);
+        const data = await res.json();
+        if (data.success && data.data) {
+          setLogoData({
+            logo_image: data.data.logo_image || "/logo_bhq.png",
+            logo_alt: data.data.logo_alt || "Logo",
+            logo_link: data.data.logo_link || "/",
+            logo_width: data.data.logo_width || 120,
+            logo_height: data.data.logo_height || 32,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching logo:", error);
+      }
+    };
+
+    fetchLogo();
+  }, []);
+
   return (
     <header className="fixed top-0 left-0 w-full bg-white font-sans py-2 z-50">
       <style
@@ -215,10 +250,10 @@ export default function NavbarPage() {
 
       <div className="mx-auto flex flex-row items-start justify-between text-[12px] font-medium leading-none tracking-tight px-4 gap-4 lg:gap-30 xl:gap-20">
         <Link
-          href={getLink("nav_home").url}
+          href={logoData.logo_link || "/"}
           className="flex items-center justify-between z-30 bg-white"
         >
-          <h1
+          <div
             onMouseEnter={() =>
               window.dispatchEvent(
                 new CustomEvent("cursor-change", { detail: "home" }),
@@ -229,16 +264,20 @@ export default function NavbarPage() {
                 new CustomEvent("cursor-change", { detail: "default" }),
               )
             }
-            className="text-[22px] font-bold leading-none tracking-tighter uppercase cursor-none"
+            className="cursor-none"
           >
             <img
-              src="/logo_bhq.png"
-              alt="logo"
-              className="w-full h-8 mt-0.5 object-cover"
+              src={logoData.logo_image || "/logo_bhq.png"}
+              alt={logoData.logo_alt || "Logo"}
+              style={{
+                width: logoData.logo_width || 120,
+                height: logoData.logo_height || 32,
+                objectFit: "contain",
+              }}
+              className="object-cover"
             />
-          </h1>
+          </div>
         </Link>
-
         <div
           className={`flex flex-1 min-w-0 items-start transition-opacity duration-300 ${hasMounted ? "opacity-100" : "opacity-0"}`}
         >

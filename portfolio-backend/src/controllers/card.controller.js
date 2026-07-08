@@ -1,3 +1,5 @@
+// backend/controllers/card.controller.js
+
 const CardProject = require("../models/Card");
 const Translation = require("../models/Translation");
 
@@ -139,10 +141,11 @@ exports.updateCard = async (req, res) => {
     } = req.body;
 
     const card = await CardProject.findById(id);
-    if (!card)
+    if (!card) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy dự án" });
+    }
 
     const isHome = showOnHome === "true" || showOnHome === true;
     const isProjects = showOnProjects === "true" || showOnProjects === true;
@@ -153,6 +156,7 @@ exports.updateCard = async (req, res) => {
       order: order ? Number(order) : card.order,
     };
 
+    // Xử lý ảnh
     if (req.files?.homeImage?.[0]) {
       updateData.homeImage = req.files.homeImage[0].path;
     } else if (homeImageUrl !== undefined) {
@@ -168,23 +172,25 @@ exports.updateCard = async (req, res) => {
     let currentTitleKey = card.title;
     let currentClientKey = card.client || `card_${card.slug}_client`;
 
+    // Nếu đổi slug
     if (slug && slug !== card.slug) {
       updateData.slug = slug;
       const newTitleKey = `card_${slug}_title`;
       const newClientKey = `card_${slug}_client`;
 
+      // Xóa translations cũ
       await Translation.deleteMany({
         key: { $in: [card.title, card.client].filter(Boolean) },
       });
 
       currentTitleKey = newTitleKey;
-      currentLocationKey = newLocationKey;
       currentClientKey = newClientKey;
 
       updateData.title = newTitleKey;
       updateData.client = newClientKey;
     }
 
+    // Cập nhật translations
     await Translation.bulkWrite([
       {
         updateOne: {
@@ -221,8 +227,10 @@ exports.updateCard = async (req, res) => {
       { $set: updateData },
       { new: true },
     );
+
     return res.status(200).json({ success: true, data: updatedCard });
   } catch (error) {
+    console.error("Update card error:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -230,10 +238,11 @@ exports.updateCard = async (req, res) => {
 exports.deleteCard = async (req, res) => {
   try {
     const card = await CardProject.findById(req.params.id);
-    if (!card)
+    if (!card) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy dự án" });
+    }
 
     await Translation.deleteMany({
       key: { $in: [card.title, card.client].filter(Boolean) },

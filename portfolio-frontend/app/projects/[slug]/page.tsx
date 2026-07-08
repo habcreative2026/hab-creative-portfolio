@@ -388,30 +388,66 @@ export default function ProjectDetailDisplay() {
                 )}
 
                 {block.type === "image" && (
-                  <div className="relative w-full h-auto">
+                  <div
+                    className="relative w-full h-full"
+                    style={{
+                      paddingBottom: `${(block.height_px / ((block.width_percent / 100) * 1200)) * 100}%`,
+                    }}
+                  >
                     <img
                       src={block.src}
-                      loading="lazy"
-                      className="w-full h-auto object-cover"
-                      alt="Project visual"
+                      alt="Project image"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
-
-                    {block.has_text_overlay && (
+                    {block.overlay?.src && (
                       <div
-                        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-pre-line max-w-[70%] z-10 w-full px-2"
+                        className="absolute"
+                        style={{
+                          left: `${block.overlay.x || 50}%`,
+                          top: `${block.overlay.y || 50}%`,
+                          width: `${block.overlay.width || 30}%`,
+                          height: `${block.overlay.height || 30}%`,
+                          transform: `translate(-50%, -50%) rotate(${block.overlay.rotation || 0}deg)`,
+                          opacity: block.overlay.opacity || 1,
+                        }}
+                      >
+                        {block.overlay.type === "video" ? (
+                          <video
+                            src={block.overlay.src}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <img
+                            src={block.overlay.src}
+                            alt="Overlay"
+                            className="w-full h-full object-contain"
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Text overlay giữ nguyên */}
+                    {block.has_text_overlay && block.text_content?.vi && (
+                      <div
+                        className="absolute whitespace-pre-line max-w-[85%]"
                         style={{
                           left: `${block.text_x ?? 50}%`,
                           top: `${block.text_y ?? 50}%`,
+                          transform: "translate(-50%, -50%)",
+                          width: "90%",
                           fontFamily: block.text_font || "Inter",
+                          fontSize: `${block.text_size || 24}px`,
                           fontWeight: block.text_weight || "400",
                           color: block.text_color || "#ffffff",
-                          textAlign: (block.text_align || "center") as any,
+                          textAlign: block.text_align || "center",
                           letterSpacing: `${block.text_letter_spacing || 0}px`,
-                          lineHeight: "1.3",
-                          fontSize: `clamp(10px, 4vw, ${block.text_size || 24}px)`,
                         }}
                       >
-                        {trans(block.text_content)}
+                        {block.text_content?.vi}
                       </div>
                     )}
                   </div>
@@ -427,7 +463,7 @@ export default function ProjectDetailDisplay() {
                       muted
                       loop
                       playsInline
-                      controls
+                      // controls
                       className="w-full h-auto object-cover"
                     />
                   )}

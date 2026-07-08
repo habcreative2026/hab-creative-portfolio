@@ -131,7 +131,7 @@ const SortableBlockItem = ({
         <div
           {...attributes}
           {...listeners}
-          className="flex justify-between items-center p-3 border-b border-slate-800 text-[10px] uppercase font-black text-slate-400 bg-black/40 cursor-grab active:cursor-grabbing hover:bg-black/60 transition-colors"
+          className="flex justify-between items-center p-3 border-b border-slate-800 text-[10px] uppercase font-black text-slate-400 bg-black/40 cursor-grab active:cursor-grabbing hover:bg-black/60 transition-colors relative"
         >
           <span className="flex items-center gap-1.5">
             <span className="text-slate-500 text-xs">⠿</span>
@@ -140,6 +140,7 @@ const SortableBlockItem = ({
             {hPx}px)
           </span>
 
+          {/* ⭐ NÚT XÓA - TĂNG VÙNG CLICK + PADDING */}
           <button
             type="button"
             onClick={(e) => {
@@ -149,7 +150,7 @@ const SortableBlockItem = ({
               setMediaBlocks(copy.map((b, i) => ({ ...b, sort_order: i })));
               setSelectedTarget("metadata");
             }}
-            className="text-red-400 hover:text-red-500 lowercase normal-case font-bold transition z-10 px-2 py-1 hover:bg-red-500/10 rounded"
+            className="text-red-400 hover:text-red-500 lowercase normal-case border border-red-900/50 font-bold transition z-30 px-3 py-1.5 hover:bg-red-500/10 rounded opacity-0 group-hover:opacity-100 min-w-[50px] text-center relative"
           >
             Xóa
           </button>
@@ -160,10 +161,14 @@ const SortableBlockItem = ({
                 Thay {block.type === "image" ? "hình ảnh" : "video"}
                 <input
                   type="file"
-                  accept={block.type === "image" ? "image/*" : "video/*"}
-                  onChange={(e) =>
-                    handleCloudinaryUpload(e, index, block.type === "video")
+                  accept={
+                    block.type === "image"
+                      ? "image/*,.jpg,.jpeg,.png,.webp,.svg,.gif"
+                      : "video/*,.mp4,.mov,.mkv,.avi,.webm"
                   }
+                  onChange={(e) => {
+                    handleCloudinaryUpload(e, index, block.type === "video");
+                  }}
                   className="hidden"
                 />
               </label>
@@ -177,7 +182,7 @@ const SortableBlockItem = ({
             maxHeight: "1000px",
             overflow: "hidden",
           }}
-          className="w-full flex flex-col justify-center relative overflow-hidden bg-black transition-all duration-200"
+          className="w-full flex flex-col justify-center relative overflow-hidden transition-all duration-200"
         >
           {block.type === "text_block" && (
             <div
@@ -205,7 +210,7 @@ const SortableBlockItem = ({
             </div>
           )}
 
-          {block.type === "image" && (
+          {/* {block.type === "image" && (
             <div className="relative w-full h-full flex items-center justify-center bg-zinc-950 group/img">
               {block.src ? (
                 <div className="relative w-full h-full">
@@ -249,6 +254,80 @@ const SortableBlockItem = ({
                 </div>
               )}
             </div>
+          )} */}
+
+          {block.type === "image" && (
+            <div
+              className="relative w-full"
+              style={{
+                paddingBottom: `${(block.height_px / ((block.width_percent / 100) * 1200)) * 100}%`,
+              }}
+            >
+              {block.src && (
+                <img
+                  src={block.src}
+                  alt="Project image"
+                  className="absolute inset-0 w-full h-full object-contain"
+                />
+              )}
+              {!block.src && (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-800 text-slate-400 text-xs">
+                  Chưa có ảnh
+                </div>
+              )}
+
+              {block.overlay?.src && (
+                <div
+                  className="absolute"
+                  style={{
+                    left: `${block.overlay.x || 50}%`,
+                    top: `${block.overlay.y || 50}%`,
+                    width: `${block.overlay.width || 30}%`,
+                    height: `${block.overlay.height || 30}%`,
+                    transform: `translate(-50%, -50%) rotate(${block.overlay.rotation || 0}deg)`,
+                    opacity: block.overlay.opacity || 1,
+                  }}
+                >
+                  {block.overlay.type === "video" ? (
+                    <video
+                      src={block.overlay.src}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={block.overlay.src}
+                      alt="Overlay"
+                      className="w-full h-full object-contain"
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Text overlay - chỉ render khi có text và has_text_overlay */}
+              {block.has_text_overlay && block.text_content?.vi && (
+                <div
+                  className="absolute whitespace-pre-line max-w-[85%]"
+                  style={{
+                    left: `${block.text_x ?? 50}%`,
+                    top: `${block.text_y ?? 50}%`,
+                    transform: "translate(-50%, -50%)",
+                    width: "90%",
+                    fontFamily: block.text_font || "Inter",
+                    fontSize: `${block.text_size || 24}px`,
+                    fontWeight: block.text_weight || "400",
+                    color: block.text_color || "#ffffff",
+                    textAlign: block.text_align || "center",
+                    letterSpacing: `${block.text_letter_spacing || 0}px`,
+                  }}
+                >
+                  {block.text_content?.vi}
+                </div>
+              )}
+            </div>
           )}
 
           {block.type === "video" && (
@@ -259,7 +338,7 @@ const SortableBlockItem = ({
                   controls
                   muted
                   loop
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   style={{
                     objectFit: hPx > 1000 ? "contain" : "cover",
                   }}
@@ -273,7 +352,7 @@ const SortableBlockItem = ({
                     Upload Video
                     <input
                       type="file"
-                      accept="video/mp4"
+                      accept="video/*,.mp4,.mov,.mkv,.avi,.webm"
                       onChange={(e) => handleCloudinaryUpload(e, index, true)}
                       className="hidden"
                     />
@@ -344,6 +423,7 @@ export default function FramerStudioAdmin() {
   const [liveLabelVi, setLiveLabelVi] = useState("");
   const [liveLabelEn, setLiveLabelEn] = useState("");
   const [liveLabelDe, setLiveLabelDe] = useState("");
+  const [overlayType, setOverlayType] = useState<"image" | "video">("image");
 
   const [styleTitle, setStyleTitle] = useState<any>({
     font: "Inter",
@@ -482,28 +562,108 @@ export default function FramerStudioAdmin() {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // ⭐ KIỂM TRA LOẠI FILE
+    const fileType = file.type;
+    const fileName = file.name.toLowerCase();
+
+    const isVideoFile =
+      isVideo ||
+      fileType.startsWith("video/") ||
+      [".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v", ".3gp"].some((ext) =>
+        fileName.endsWith(ext),
+      );
+
+    const mimeType = isVideoFile ? "video" : "image";
+
+    console.log(`📤 Uploading: ${file.name}`);
+    console.log(`📦 MIME: ${mimeType}`);
+
     const formData = new FormData();
     formData.append("file", file);
+
     try {
       setLoading(true);
-      const res = await fetch(
-        `${API_BASE}/upload-media?mime=${isVideo ? "video" : "image"}`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+      const res = await fetch(`${API_BASE}/upload-media?mime=${mimeType}`, {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
+
       if (data.success && data.url) {
         const updated = [...mediaBlocks];
         updated[index].src = data.url;
+        if (isVideoFile) {
+          updated[index].type = "video";
+        }
         setMediaBlocks(updated);
+        toast.success(`Upload ${isVideoFile ? "video" : "ảnh"} thành công!`);
       } else {
-        toast.error("Upload thất bại: " + data.message);
+        toast.error(
+          "Upload thất bại: " + (data.message || "Lỗi không xác định"),
+        );
       }
     } catch (err) {
       console.error("Lỗi upload:", err);
-      toast.error("Đã xảy ra lỗi trong quá trình upload lên Cloudinary!");
+      toast.error("Đã xảy ra lỗi trong quá trình upload!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOverlayUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    isVideo: boolean = false, // ⭐ THÊM PARAM
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // ⭐ GỬI CẢ MIME VÀ overlay=true
+    const mimeType = isVideo ? "video" : "image";
+    const url = `${API_BASE}/upload-media?mime=${mimeType}&overlay=true`;
+
+    try {
+      setLoading(true);
+      const res = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.success && data.url) {
+        const u = [...mediaBlocks];
+        const targetIdx = selectedTarget as number;
+
+        if (!u[targetIdx].overlay) {
+          u[targetIdx].overlay = {
+            src: "",
+            type: "image",
+            x: 50,
+            y: 50,
+            width: 30,
+            height: 30,
+            opacity: 1,
+            rotation: 0,
+          };
+        }
+
+        u[targetIdx].overlay.src = data.url;
+        u[targetIdx].overlay.type = isVideo ? "video" : "image"; // ⭐ LƯU TYPE
+        setMediaBlocks(u);
+        toast.success(
+          `Upload ${isVideo ? "video" : "ảnh"} overlay thành công!`,
+        );
+      } else {
+        toast.error(
+          "Upload thất bại: " + (data.message || "Lỗi không xác định"),
+        );
+      }
+    } catch (err) {
+      console.error("Lỗi upload overlay:", err);
+      toast.error("Đã xảy ra lỗi khi upload overlay!");
     } finally {
       setLoading(false);
     }
@@ -511,28 +671,39 @@ export default function FramerStudioAdmin() {
 
   const addBlock = (type: "image" | "video" | "iframe" | "text_block") => {
     const newIdx = mediaBlocks.length;
-    setMediaBlocks([
-      ...mediaBlocks,
-      {
-        id: "b_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
-        type,
-        src: "",
-        text_content: { vi: "", en: "", de: "" },
-        text_font: "Inter",
-        text_size: 24,
-        text_weight: "400",
-        text_color: "#ffffff",
-        text_align: "center",
-        text_letter_spacing: 0,
-        text_x: 50,
-        text_y: 50,
-        width_percent: 100,
-        height_px: 450,
-        align_block: "center",
-        sort_order: newIdx,
-        has_text_overlay: false,
-      },
-    ]);
+    const newBlock: any = {
+      id: "b_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+      type,
+      src: "",
+      text_content: { vi: "", en: "", de: "" },
+      text_font: "Inter",
+      text_size: 24,
+      text_weight: "400",
+      text_color: "#ffffff",
+      text_align: "center",
+      text_letter_spacing: 0,
+      text_x: 50,
+      text_y: 50,
+      width_percent: 100,
+      height_px: 450,
+      align_block: "center",
+      sort_order: newIdx,
+      has_text_overlay: false,
+      // ⭐ THÊM image_overlay CHO IMAGE BLOCK
+      ...(type === "image" && {
+        overlay: {
+          src: "",
+          x: 50,
+          y: 50,
+          width: 30,
+          height: 30,
+          opacity: 1,
+          rotation: 0,
+        },
+      }),
+    };
+
+    setMediaBlocks([...mediaBlocks, newBlock]);
     setSelectedTarget(newIdx);
   };
 
@@ -2290,6 +2461,296 @@ export default function FramerStudioAdmin() {
                                 placeholder="Chọn font..."
                               />
                             </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ⭐ OVERLAY SETTINGS (HỖ TRỢ CẢ ẢNH VÀ VIDEO) */}
+                    {mediaBlocks[selectedTarget]?.type === "image" && (
+                      <div className="bg-purple-950/30 p-3 rounded-lg border border-purple-800/40 space-y-3">
+                        <h4 className="font-bold text-[11px] text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                          Overlay (Ảnh/Video đè)
+                          <span className="text-[8px] text-slate-500 font-normal ml-auto">
+                            {overlayType === "video" ? "Video" : "Ảnh"}
+                          </span>
+                        </h4>
+
+                        {/* ⭐ NÚT CHỌN LOẠI OVERLAY */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setOverlayType("image")}
+                            className={`flex-1 text-[10px] font-bold py-1.5 rounded transition ${
+                              overlayType === "image"
+                                ? "bg-blue-600 text-white"
+                                : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                            }`}
+                          >
+                            Ảnh
+                          </button>
+                          <button
+                            onClick={() => setOverlayType("video")}
+                            className={`flex-1 text-[10px] font-bold py-1.5 rounded transition ${
+                              overlayType === "video"
+                                ? "bg-purple-600 text-white"
+                                : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                            }`}
+                          >
+                            Video
+                          </button>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] text-slate-400 mb-1">
+                            URL {overlayType === "video" ? "video" : "ảnh"}{" "}
+                            overlay
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={
+                                mediaBlocks[selectedTarget]?.overlay?.src || ""
+                              }
+                              onChange={(e) => {
+                                const u = [...mediaBlocks];
+                                if (!u[selectedTarget].overlay) {
+                                  u[selectedTarget].overlay = {
+                                    src: "",
+                                    type: "image",
+                                    x: 50,
+                                    y: 50,
+                                    width: 30,
+                                    height: 30,
+                                    opacity: 1,
+                                    rotation: 0,
+                                  };
+                                }
+                                u[selectedTarget].overlay.src = e.target.value;
+                                setMediaBlocks(u);
+                              }}
+                              placeholder={`Dán link ${overlayType === "video" ? "video" : "ảnh"} overlay...`}
+                              className="flex-1 bg-[#1F2937] border border-slate-700 p-2 rounded text-white text-xs focus:border-purple-500 focus:outline-none"
+                            />
+                            <label className="cursor-pointer bg-purple-600 hover:bg-purple-500 text-white text-[10px] px-3 py-2 rounded transition flex items-center gap-1 whitespace-nowrap">
+                              Upload
+                              <input
+                                type="file"
+                                accept={
+                                  overlayType === "video"
+                                    ? "video/*,.mp4,.mov,.mkv,.avi,.webm"
+                                    : "image/*,.jpg,.jpeg,.png,.webp,.svg,.gif"
+                                }
+                                onChange={(e) =>
+                                  handleOverlayUpload(
+                                    e,
+                                    overlayType === "video",
+                                  )
+                                }
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* ⭐ PREVIEW OVERLAY */}
+                        {mediaBlocks[selectedTarget]?.overlay?.src && (
+                          <div className="bg-black/50 rounded-lg p-2">
+                            {mediaBlocks[selectedTarget].overlay.type ===
+                            "video" ? (
+                              <video
+                                src={mediaBlocks[selectedTarget].overlay.src}
+                                muted
+                                loop
+                                autoPlay
+                                className="w-full rounded max-h-[150px] object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={mediaBlocks[selectedTarget].overlay.src}
+                                alt="Overlay preview"
+                                className="w-full rounded max-h-[150px] object-contain"
+                              />
+                            )}
+                            <p className="text-[8px] text-slate-500 text-center mt-1">
+                              {mediaBlocks[selectedTarget].overlay.type ===
+                              "video"
+                                ? "Video"
+                                : "Ảnh"}{" "}
+                              overlay
+                            </p>
+                          </div>
+                        )}
+
+                        {/* ⭐ ĐIỀU KHIỂN VỊ TRÍ */}
+                        {mediaBlocks[selectedTarget]?.overlay?.src && (
+                          <div className="space-y-2 pt-2 border-t border-purple-800/30">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-1">
+                                Vị trí X:{" "}
+                                {mediaBlocks[selectedTarget].overlay?.x || 50}%
+                              </label>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={
+                                  mediaBlocks[selectedTarget].overlay?.x || 50
+                                }
+                                onChange={(e) => {
+                                  const u = [...mediaBlocks];
+                                  u[selectedTarget].overlay.x = Number(
+                                    e.target.value,
+                                  );
+                                  setMediaBlocks(u);
+                                }}
+                                className="w-full accent-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-1">
+                                Vị trí Y:{" "}
+                                {mediaBlocks[selectedTarget].overlay?.y || 50}%
+                              </label>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={
+                                  mediaBlocks[selectedTarget].overlay?.y || 50
+                                }
+                                onChange={(e) => {
+                                  const u = [...mediaBlocks];
+                                  u[selectedTarget].overlay.y = Number(
+                                    e.target.value,
+                                  );
+                                  setMediaBlocks(u);
+                                }}
+                                className="w-full accent-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-1">
+                                Chiều rộng:{" "}
+                                {mediaBlocks[selectedTarget].overlay?.width ||
+                                  30}
+                                %
+                              </label>
+                              <input
+                                type="range"
+                                min="5"
+                                max="80"
+                                value={
+                                  mediaBlocks[selectedTarget].overlay?.width ||
+                                  30
+                                }
+                                onChange={(e) => {
+                                  const u = [...mediaBlocks];
+                                  u[selectedTarget].overlay.width = Number(
+                                    e.target.value,
+                                  );
+                                  setMediaBlocks(u);
+                                }}
+                                className="w-full accent-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-1">
+                                Chiều cao:{" "}
+                                {mediaBlocks[selectedTarget].overlay?.height ||
+                                  30}
+                                %
+                              </label>
+                              <input
+                                type="range"
+                                min="5"
+                                max="80"
+                                value={
+                                  mediaBlocks[selectedTarget].overlay?.height ||
+                                  30
+                                }
+                                onChange={(e) => {
+                                  const u = [...mediaBlocks];
+                                  u[selectedTarget].overlay.height = Number(
+                                    e.target.value,
+                                  );
+                                  setMediaBlocks(u);
+                                }}
+                                className="w-full accent-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-1">
+                                Độ trong suốt:{" "}
+                                {Math.round(
+                                  (mediaBlocks[selectedTarget].overlay
+                                    ?.opacity || 1) * 100,
+                                )}
+                                %
+                              </label>
+                              <input
+                                type="range"
+                                min="0.1"
+                                max="1"
+                                step="0.05"
+                                value={
+                                  mediaBlocks[selectedTarget].overlay
+                                    ?.opacity || 1
+                                }
+                                onChange={(e) => {
+                                  const u = [...mediaBlocks];
+                                  u[selectedTarget].overlay.opacity = Number(
+                                    e.target.value,
+                                  );
+                                  setMediaBlocks(u);
+                                }}
+                                className="w-full accent-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-1">
+                                Xoay:{" "}
+                                {mediaBlocks[selectedTarget].overlay
+                                  ?.rotation || 0}
+                                °
+                              </label>
+                              <input
+                                type="range"
+                                min="-180"
+                                max="180"
+                                value={
+                                  mediaBlocks[selectedTarget].overlay
+                                    ?.rotation || 0
+                                }
+                                onChange={(e) => {
+                                  const u = [...mediaBlocks];
+                                  u[selectedTarget].overlay.rotation = Number(
+                                    e.target.value,
+                                  );
+                                  setMediaBlocks(u);
+                                }}
+                                className="w-full accent-purple-500"
+                              />
+                            </div>
+                            <button
+                              onClick={() => {
+                                const u = [...mediaBlocks];
+                                u[selectedTarget].overlay = {
+                                  src: "",
+                                  type: "image",
+                                  x: 50,
+                                  y: 50,
+                                  width: 30,
+                                  height: 30,
+                                  opacity: 1,
+                                  rotation: 0,
+                                };
+                                setMediaBlocks(u);
+                                toast.success("Đã xóa overlay");
+                              }}
+                              className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 text-[10px] font-bold py-1.5 rounded transition"
+                            >
+                              Xóa overlay
+                            </button>
                           </div>
                         )}
                       </div>

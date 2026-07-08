@@ -21,6 +21,20 @@ const MultiLangSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const OverlaySchema = new mongoose.Schema(
+  {
+    src: { type: String, default: "" },
+    type: { type: String, enum: ["image", "video"], default: "image" }, // ⭐ THÊM type
+    x: { type: Number, default: 50 },
+    y: { type: Number, default: 50 },
+    width: { type: Number, default: 30 },
+    height: { type: Number, default: 30 },
+    opacity: { type: Number, default: 1 },
+    rotation: { type: Number, default: 0 },
+  },
+  { _id: false },
+);
+
 const MediaBlockSchema = new mongoose.Schema({
   id: { type: String, required: true },
   type: {
@@ -56,6 +70,18 @@ const MediaBlockSchema = new mongoose.Schema({
   },
   sort_order: { type: Number, required: true },
   has_text_overlay: { type: Boolean, default: false },
+  overlay: {
+    type: OverlaySchema,
+    default: () => ({
+      src: "",
+      x: 50,
+      y: 50,
+      width: 30,
+      height: 30,
+      opacity: 1,
+      rotation: 0,
+    }),
+  },
 });
 
 const ProjectSchema = new mongoose.Schema(

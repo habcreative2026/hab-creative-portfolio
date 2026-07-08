@@ -296,7 +296,7 @@ export default function ProjectPreview({ project }: { project: any }) {
                   </div>
                 )}
 
-                {/* 2. IMAGE BLOCK */}
+                {/* 2. IMAGE BLOCK - HỖ TRỢ VIDEO OVERLAY */}
                 {block.type === "image" && (
                   <div className="relative w-full h-auto">
                     <img
@@ -306,9 +306,43 @@ export default function ProjectPreview({ project }: { project: any }) {
                       alt="Project visual"
                     />
 
+                    {/* ⭐ VIDEO/IMAGE OVERLAY */}
+                    {block.overlay?.src && (
+                      <div
+                        className="absolute"
+                        style={{
+                          left: `${block.overlay.x || 50}%`,
+                          top: `${block.overlay.y || 50}%`,
+                          width: `${block.overlay.width || 30}%`,
+                          height: `${block.overlay.height || 30}%`,
+                          transform: `translate(-50%, -50%) rotate(${block.overlay.rotation || 0}deg)`,
+                          opacity: block.overlay.opacity || 1,
+                          zIndex: 10,
+                        }}
+                      >
+                        {block.overlay.type === "video" ? (
+                          <video
+                            src={block.overlay.src}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <img
+                            src={block.overlay.src}
+                            alt="Overlay"
+                            className="w-full h-full object-contain"
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* TEXT OVERLAY (giữ nguyên) */}
                     {block.has_text_overlay && (
                       <div
-                        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-pre-line max-w-[70%] z-10 w-full px-2"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-pre-line max-w-[70%] z-20 w-full px-2"
                         style={{
                           left: `${block.text_x ?? 50}%`,
                           top: `${block.text_y ?? 50}%`,

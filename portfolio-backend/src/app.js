@@ -14,7 +14,7 @@ require("./config/passport");
 const app = express();
 
 // ⭐ 1. TRUST PROXY
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 // ⭐ 2. CORS
 const allowedOrigins = [
@@ -51,7 +51,7 @@ app.use(
     ],
     exposedHeaders: ["Set-Cookie"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
+  }),
 );
 
 // ⭐ 3. RATE LIMIT - ĐƠN GIẢN HÓA (FIX IPv6 ERROR)
@@ -93,7 +93,7 @@ app.use(
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "unsafe-none" },
     contentSecurityPolicy: false,
-  })
+  }),
 );
 
 app.use(morgan("dev"));
@@ -136,6 +136,7 @@ app.use("/api/contact", require("./routes/contact.route"));
 app.use("/api/settings", require("./routes/settings.routes"));
 app.use("/api/license", licenseRoutes);
 app.use("/api/upload", require("./routes/upload.routes"));
+app.use("/api/logo", require("./routes/logo.route"));
 
 // ⭐ 8. ERROR HANDLER
 app.use((err, req, res, next) => {

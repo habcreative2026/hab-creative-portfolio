@@ -8,6 +8,7 @@ import Footer from "@/app/components/Footer";
 import IntroVideo from "./IntroVideo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+let isHardReloadOrFirstLoad = true;
 
 export default function ClientLayout({
   children,
@@ -15,63 +16,76 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
-  const [isReady, setIsReady] = useState(true);
-  const [showIntro, setShowIntro] = useState(false);
-  const [videoUrl, setVideoUrl] = useState("/video.mp4");
-
   const isAdminRoute = pathname?.startsWith("/admin") ?? false;
   const isHomePage = pathname === "/";
-
-  // Nếu website đang chạy trong iframe (Admin Preview)
   const isIframe = typeof window !== "undefined" && window.self !== window.top;
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined" || isAdminRoute || isIframe) return false;
 
-  // Chỉ Home mới cần fetch video
+    if (isHardReloadOrFirstLoad && isHomePage) {
+      return true;
+    }
+
+    const hasPlayedSession = sessionStorage.getItem("intro_session_played");
+    return isHomePage && !hasPlayedSession;
+  });
+
+  const [videoUrl, setVideoUrl] = useState("/video.mp4");
   useEffect(() => {
     if (isAdminRoute || !isHomePage || isIframe) return;
 
     const fetchIntroVideo = async () => {
       try {
         const res = await fetch(`${API_URL}/api/video/public`);
-
         if (!res.ok) throw new Error("Failed to fetch video");
 
         const json = await res.json();
-
         if (json.success && json.data?.url) {
           setVideoUrl(json.data.url);
         }
-      } catch (err) {
-        console.error("Lỗi lấy intro video:", err);
+      } catch (error) {
+        console.error("Lỗi lấy intro video:", error);
       }
     };
 
     fetchIntroVideo();
   }, [isAdminRoute, isHomePage, isIframe]);
-
-  // Điều khiển Intro
   useEffect(() => {
     if (isAdminRoute || isIframe) {
       setShowIntro(false);
-      setIsReady(true);
       return;
     }
 
-    if (isHomePage) {
-      setShowIntro(true);
-      setIsReady(false);
-    } else {
+    if (isHardReloadOrFirstLoad) {
+      isHardReloadOrFirstLoad = false;
+
+      if (isHomePage) {
+        sessionStorage.removeItem("intro_session_played");
+        setShowIntro(true);
+      } else {
+        sessionStorage.setItem("intro_session_played", "true");
+        setShowIntro(false);
+      }
+      return;
+    }
+
+    if (!isHomePage) {
       setShowIntro(false);
-      setIsReady(true);
+    } else {
+      const hasPlayedSession = sessionStorage.getItem("intro_session_played");
+      if (hasPlayedSession) {
+        setShowIntro(false);
+      } else {
+        setShowIntro(true);
+      }
     }
   }, [pathname, isAdminRoute, isHomePage, isIframe]);
 
   const handleIntroFinish = () => {
+    sessionStorage.setItem("intro_session_played", "true");
     setShowIntro(false);
-    setIsReady(true);
   };
 
-  // Admin không render layout
   if (isAdminRoute) {
     return <>{children}</>;
   }
@@ -79,19 +93,15 @@ export default function ClientLayout({
   return (
     <>
       <Cursor />
-
-      {showIntro && <IntroVideo src={videoUrl} onFinish={handleIntroFinish} />}
-
-      <div
-        className={`
-          transition-opacity duration-700 ease-in-out
-          ${isReady ? "opacity-100" : "opacity-0"}
-        `}
-      >
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-      </div>
+      {showIntro ? (
+        <IntroVideo src={videoUrl} onFinish={handleIntroFinish} />
+      ) : (
+        <>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </>
+      )}
     </>
   );
 }
