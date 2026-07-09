@@ -120,7 +120,7 @@ export default function ProjectPreview({ project }: { project: any }) {
           </p>
         </div>
         <div className="flex flex-col gap-4 md:gap-2">
-          <div className="flex flex-col sm:flex-row sm:gap-20 md:gap-40 gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
             {/* Company */}
             <div style={{ textAlign: project.style_company?.align as any }}>
               <p
