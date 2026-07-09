@@ -7,8 +7,8 @@ directories:
 files:
   - main.js
   - preload.js
-  - inject.js
-  - package.json
+  - loading.html
+  - device-auth.html
   - assets/**
 
 win:
