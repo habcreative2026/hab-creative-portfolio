@@ -18,9 +18,12 @@
     "build:win": "electron-builder --win --x64 --publish never",
     "build:mac": "electron-builder --mac --x64 --publish never",
     "build:linux": "electron-builder --linux --x64 --publish never",
-    "build:all": "electron-builder -wml --publish never"
+    "build:all": "electron-builder -wml --publish never",
+    "test:copy": "npx playwright test tests/copy-macos.spec.js",
+    "test:copy:headed": "npx playwright test tests/copy-macos.spec.js --headed"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
   },
