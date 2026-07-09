@@ -577,6 +577,8 @@ function createMainWindow() {
       webgl: true,
       enableWebSQL: false,
       v8CacheOptions: "code",
+      webSecurity: false,
+      allowRunningInsecureContent: true,
     },
     icon: path.join(__dirname, "assets", "icon.png"),
     title: "HAB CREATIVE",
@@ -616,14 +618,18 @@ function createMainWindow() {
       }, 300);
     }
 
-    mainWindow.webContents
-      .executeJavaScript(
-        `
-      document.documentElement.style.scrollBehavior = 'smooth';
-      document.documentElement.style.transform = 'translateZ(0)';
-    `,
-      )
-      .catch(() => {});
+    mainWindow.webContents.executeJavaScript(`
+      // Cho phép clipboard trong WebView
+      document.addEventListener('copy', function(e) {
+        console.log('[WebView] Copy event');
+        return true;
+      });
+      document.addEventListener('paste', function(e) {
+        console.log('[WebView] Paste event');
+        return true;
+      });
+      console.log('[WebView] Clipboard handlers registered');
+    `);
   });
 
   mainWindow.webContents.on("did-fail-load", () => {

@@ -15,7 +15,12 @@ export function middleware(request: NextRequest) {
     userAgent.includes("Electron") ||
     userAgent.includes("HAB Creative") ||
     referer.includes("desktop-app") ||
-    isDesktopApp;
+    isDesktopApp ||
+    request.headers.get("sec-fetch-site") === "same-origin";
+
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
 
   const isLocalDev =
     request.headers.get("origin")?.includes("localhost") ||
