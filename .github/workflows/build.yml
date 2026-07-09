@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    timeout-minutes: 30 # 👈 THÊM DÒNG NÀY
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
@@ -36,7 +37,7 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: desktop-app/package-lock.json # 👈 THÊM DÒNG NÀY
+          cache-dependency-path: desktop-app/package-lock.json
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -53,21 +54,23 @@ jobs:
             libx11-xcb1 \
             libxcb-dri3-0 \
             libxtst-dev \
-            libxss1
+            libxss1 \
+            libnotify-dev  # 👈 THÊM THÊM
 
       - name: Install dependencies
         run: npm install
-        working-directory: desktop-app # 👈 THÊM DÒNG NÀY
+        working-directory: desktop-app
 
       - name: Build
         run: npm run ${{ matrix.build-command }}
-        working-directory: desktop-app # 👈 THÊM DÒNG NÀY
+        working-directory: desktop-app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true # 👈 THÊM DÒNG NÀY
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
-          path: desktop-app/${{ matrix.artifact-path }} # 👈 SỬA PATH
+          path: desktop-app/${{ matrix.artifact-path }}
           retention-days: 7
