@@ -322,55 +322,87 @@
           return;
         }
 
-        console.log("Copying device ID on platform:", navigator.platform);
-        const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+        console.log("Copying on platform:", navigator.platform);
 
-        if (isMacOS) {
-          try {
-            const textArea = document.createElement("textarea");
-            textArea.value = deviceId;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-9999px";
-            textArea.style.top = "-9999px";
-            textArea.style.width = "1px";
-            textArea.style.height = "1px";
-            textArea.style.opacity = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = deviceId;
+          textArea.style.position = "fixed";
+          textArea.style.left = "0";
+          textArea.style.top = "0";
+          textArea.style.width = "0";
+          textArea.style.height = "0";
+          textArea.style.opacity = "0";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
 
-            const success = document.execCommand("copy");
-            textArea.remove();
+          const success = document.execCommand("copy");
+          textArea.remove();
 
-            if (success) {
-              showCopySuccess();
-              setStatus("Đã copy!", "success");
-              return;
-            }
-          } catch (err) {
-            console.log("MacOS execCommand failed:", err);
+          if (success) {
+            showCopySuccess();
+            setStatus("Đã copy!", "success");
+            return;
           }
+        } catch (err) {
+          console.log("execCommand failed:", err);
+        }
 
-          fallbackCopy();
-        } else {
-          if (api && api.copyToClipboard) {
-            api
-              .copyToClipboard(deviceId)
-              .then((result) => {
-                if (result) {
-                  showCopySuccess();
-                } else {
-                  setStatus("Copy thất bại", "error");
-                }
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(deviceId)
+              .then(() => {
+                showCopySuccess();
+                setStatus("Đã copy!", "success");
               })
               .catch((err) => {
-                console.error("Copy error:", err);
-                setStatus("Lỗi copy: " + err.message, "error");
+                console.error("Clipboard API failed:", err);
+                fallbackCopyManual();
               });
-          } else {
-            setStatus("API không khả dụng", "error");
+            return;
           }
+        } catch (err) {
+          console.error("Clipboard API error:", err);
         }
+
+        if (api && api.copyToClipboard) {
+          api
+            .copyToClipboard(deviceId)
+            .then((result) => {
+              if (result) {
+                showCopySuccess();
+                setStatus("Đã copy!", "success");
+              } else {
+                fallbackCopyManual();
+              }
+            })
+            .catch(() => {
+              fallbackCopyManual();
+            });
+        } else {
+          fallbackCopyManual();
+        }
+      }
+
+      function fallbackCopyManual() {
+        const range = document.createRange();
+        range.selectNodeContents(deviceIdDisplay);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+
+        setStatus("Test: Nhấn Command+C để copy (đã chọn sẵn text)", "warning");
+
+        // Thêm listener cho Command+C
+        document.addEventListener("keydown", function onCopy(e) {
+          if (e.metaKey && e.key === "c") {
+            document.removeEventListener("keydown", onCopy);
+            // Đã copy thủ công
+            setStatus("Đã copy! (thủ công)", "success");
+          }
+        });
       }
 
       function showCopySuccess() {

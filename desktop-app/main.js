@@ -898,33 +898,34 @@ ipcMain.on("loading-ready", async () => {
 
 ipcMain.handle("copy-to-clipboard", (event, text) => {
   try {
-    console.log(
-      "[Main] copy-to-clipboard called on platform:",
-      process.platform,
-    );
-    console.log("[Main] Text:", text);
+    console.log("[Main] Copy on platform:", process.platform);
 
-    // MacOS cần focus window trước
-    if (process.platform === "darwin") {
-      const win = BrowserWindow.getFocusedWindow();
-      if (win) {
-        win.focus();
-        console.log("[Main] Focused window for MacOS");
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.focus();
+      console.log("[Main] Window focused");
+    }
+
+    for (let i = 0; i < 3; i++) {
+      clipboard.writeText(text);
+      const written = clipboard.readText();
+
+      if (written === text) {
+        console.log(`[Main] Copy success on attempt ${i + 1}`);
+        return true;
+      }
+
+      console.log(`[Main] Attempt ${i + 1} failed, retrying...`);
+      if (i < 2) {
+        const start = Date.now();
+        while (Date.now() - start < 100) {}
       }
     }
 
-    clipboard.writeText(text);
-
-    const written = clipboard.readText();
-    if (written === text) {
-      console.log("[Main] Copied successfully");
-      return true;
-    } else {
-      console.error("[Main] Copy verification failed");
-      return false;
-    }
+    console.error("[Main] Copy failed after 3 attempts");
+    return false;
   } catch (error) {
-    console.error("[Main] Copy failed:", error);
+    console.error("[Main] Copy error:", error);
     return false;
   }
 });
