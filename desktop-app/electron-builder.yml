@@ -29,6 +29,12 @@ mac:
     - zip
   icon: assets/icon.icns
   category: public.app-category.productivity
+  entitlements: entitlements.mac.plist # 👈 THÊM DÒNG NÀY
+  entitlementsInherit: entitlements.mac.plist # 👈 THÊM DÒNG NÀY
+  extendInfo: # 👈 THÊM PHẦN NÀY
+    NSMicrophoneUsageDescription: "Ứng dụng cần quyền truy cập microphone"
+    NSCameraUsageDescription: "Ứng dụng cần quyền truy cập camera"
+    NSClipboardUsageDescription: "Ứng dụng cần quyền truy cập clipboard"
 
 linux:
   target:

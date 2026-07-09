@@ -16,11 +16,18 @@
     "start": "electron .",
     "build": "electron-builder",
     "build:win": "electron-builder --win --x64 --publish never",
-    "build:mac": "electron-builder --mac --x64 --publish never",
+    "build:mac": "electron-builder --mac --x64 --arm64 --publish never",
+    "build:mac:arm64": "electron-builder --mac --arm64 --publish never",
+    "build:mac:x64": "electron-builder --mac --x64 --publish never",
     "build:linux": "electron-builder --linux --x64 --publish never",
+    "build:linux:arm64": "electron-builder --linux --arm64 --publish never",
     "build:all": "electron-builder -wml --publish never",
+    "build:all:arm64": "electron-builder -wml --arm64 --publish never",
     "test:copy": "npx playwright test tests/copy-macos.spec.js",
-    "test:copy:headed": "npx playwright test tests/copy-macos.spec.js --headed"
+    "test:copy:headed": "npx playwright test tests/copy-macos.spec.js --headed",
+    "test:all": "npm run test:copy",
+    "clean": "rm -rf dist/",
+    "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

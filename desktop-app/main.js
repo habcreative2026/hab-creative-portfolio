@@ -898,11 +898,31 @@ ipcMain.on("loading-ready", async () => {
 
 ipcMain.handle("copy-to-clipboard", (event, text) => {
   try {
-    console.log("[Main] copy-to-clipboard called:", text);
+    console.log(
+      "[Main] copy-to-clipboard called on platform:",
+      process.platform,
+    );
+    console.log("[Main] Text:", text);
+
+    // MacOS cần focus window trước
+    if (process.platform === "darwin") {
+      const win = BrowserWindow.getFocusedWindow();
+      if (win) {
+        win.focus();
+        console.log("[Main] Focused window for MacOS");
+      }
+    }
+
     clipboard.writeText(text);
 
-    console.log("[Main] Copied successfully");
-    return true;
+    const written = clipboard.readText();
+    if (written === text) {
+      console.log("[Main] Copied successfully");
+      return true;
+    } else {
+      console.error("[Main] Copy verification failed");
+      return false;
+    }
   } catch (error) {
     console.error("[Main] Copy failed:", error);
     return false;

@@ -15,12 +15,15 @@ jobs:
           - os: windows-latest
             build-command: build:win
             artifact-name: windows-build
+            artifact-path: dist/*.exe
           - os: macos-latest
             build-command: build:mac
             artifact-name: macos-build
+            artifact-path: dist/*.dmg
           - os: ubuntu-latest
             build-command: build:linux
             artifact-name: linux-build
+            artifact-path: dist/*.AppImage
 
     runs-on: ${{ matrix.os }}
 
@@ -32,6 +35,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: "npm"
+          cache-dependency-path: desktop-app/package-lock.json # 👈 THÊM DÒNG NÀY
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -46,13 +51,17 @@ jobs:
             libasound2-dev \
             libgtk-3-0 \
             libx11-xcb1 \
-            libxcb-dri3-0
+            libxcb-dri3-0 \
+            libxtst-dev \
+            libxss1
 
       - name: Install dependencies
         run: npm install
+        working-directory: desktop-app # 👈 THÊM DÒNG NÀY
 
       - name: Build
         run: npm run ${{ matrix.build-command }}
+        working-directory: desktop-app # 👈 THÊM DÒNG NÀY
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -60,5 +69,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
-          path: dist/
+          path: desktop-app/${{ matrix.artifact-path }} # 👈 SỬA PATH
           retention-days: 7

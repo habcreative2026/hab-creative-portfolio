@@ -322,25 +322,54 @@
           return;
         }
 
-        console.log("Copying device ID:", deviceId);
+        console.log("Copying device ID on platform:", navigator.platform);
+        const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
-        if (api && api.copyToClipboard) {
-          api
-            .copyToClipboard(deviceId)
-            .then((result) => {
-              console.log("Copy result:", result);
-              if (result) {
-                showCopySuccess();
-              } else {
-                setStatus("Copy thất bại", "error");
-              }
-            })
-            .catch((err) => {
-              console.error("Copy error:", err);
-              setStatus("Lỗi copy: " + err.message, "error");
-            });
+        if (isMacOS) {
+          try {
+            const textArea = document.createElement("textarea");
+            textArea.value = deviceId;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "-9999px";
+            textArea.style.width = "1px";
+            textArea.style.height = "1px";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            const success = document.execCommand("copy");
+            textArea.remove();
+
+            if (success) {
+              showCopySuccess();
+              setStatus("Đã copy!", "success");
+              return;
+            }
+          } catch (err) {
+            console.log("MacOS execCommand failed:", err);
+          }
+
+          fallbackCopy();
         } else {
-          setStatus("API không khả dụng", "error");
+          if (api && api.copyToClipboard) {
+            api
+              .copyToClipboard(deviceId)
+              .then((result) => {
+                if (result) {
+                  showCopySuccess();
+                } else {
+                  setStatus("Copy thất bại", "error");
+                }
+              })
+              .catch((err) => {
+                console.error("Copy error:", err);
+                setStatus("Lỗi copy: " + err.message, "error");
+              });
+          } else {
+            setStatus("API không khả dụng", "error");
+          }
         }
       }
 
@@ -354,6 +383,33 @@
           deviceIdDisplay.classList.remove("copied");
         }, 2000);
       }
+
+      function manualCopyGuide() {
+        deviceIdDisplay.style.backgroundColor = "rgba(96, 165, 250, 0.2)";
+        deviceIdDisplay.style.borderColor = "rgba(96, 165, 250, 0.5)";
+        deviceIdDisplay.style.userSelect = "text";
+        deviceIdDisplay.style.cursor = "text";
+
+        const range = document.createRange();
+        range.selectNodeContents(deviceIdDisplay);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+
+        setStatus(
+          "Nhấn ⌘+C (Mac) hoặc Ctrl+C (Win) để copy (đã chọn sẵn)",
+          "warning",
+        );
+
+        setTimeout(() => {
+          deviceIdDisplay.style.backgroundColor = "";
+          deviceIdDisplay.style.borderColor = "";
+          deviceIdDisplay.style.userSelect = "all";
+          deviceIdDisplay.style.cursor = "pointer";
+          setStatus("Vui lòng copy Device ID và đăng ký trên website", "info");
+        }, 5000);
+      }
+
       function fallbackCopy() {
         try {
           const textArea = document.createElement("textarea");
