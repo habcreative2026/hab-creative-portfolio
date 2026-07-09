@@ -149,7 +149,7 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 md:pt-40">
+    <div className="min-h-screen pt-24 md:pt-40 px-4">
       <section className="relative pt-10 md:pt-20">
         <div className="sticky top-0 min-h-screen md:h-screen grid grid-cols-1 md:grid-cols-2 items-start gap-10 md:gap-0">
           <div className="relative z-20 flex flex-col justify-between h-auto md:h-[450px] px-4 md:px-0">

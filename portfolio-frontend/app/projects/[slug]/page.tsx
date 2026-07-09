@@ -216,7 +216,7 @@ export default function ProjectDetailDisplay() {
           </p>
         </div>
         <div className="flex flex-col gap-4 md:gap-2">
-          <div className="flex flex-col sm:flex-row sm:gap-20 md:gap-40 gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
             <div style={{ textAlign: project.style_company?.align as any }}>
               <p
                 style={{
@@ -326,7 +326,7 @@ export default function ProjectDetailDisplay() {
         </div>
       </div>
       <Link
-        href={"/projects#top"}
+        href={"/projects"}
         className="group text-sm text-black flex items-center gap-1 cursor-pointer px-0 md:px-4 mt-8"
       >
         <span className="text-lg">‹</span>
@@ -513,7 +513,7 @@ export default function ProjectDetailDisplay() {
             {latestProjects.map((project) => (
               <Link
                 key={project._id}
-                href={`/projects/${project.slug}#top`}
+                href={`/projects/${project.slug}`}
                 className="relative overflow-hidden h-[240px] sm:h-[280px] md:h-[320px]"
               >
                 <img

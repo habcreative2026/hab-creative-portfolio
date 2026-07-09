@@ -59,7 +59,7 @@ export default function FooterPage() {
       whileInView="show"
       viewport={{ once: true, margin: "-100px" }}
       variants={container}
-      className="text-black pt-16 pb-4 px-4 md:px-4 lg:px-4"
+      className="text-black pt-16 pb-4 px-8 md:px-8 lg:px-8"
     >
       <motion.div variants={item} className="border-t border-gray-300 mb-10" />
 
