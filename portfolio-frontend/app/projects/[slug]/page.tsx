@@ -297,48 +297,40 @@ export default function ProjectDetailDisplay() {
                 {t("v13")}
               </p>
 
-              {project.live.enabled !== false ? (
-                <a
-                  href={project.live.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative inline-block cursor-pointer break-all"
-                  style={{
-                    ...getTextStyle(project.style_live_value),
-                    fontSize: project.style_live_value?.size
-                      ? `${project.style_live_value.size}px`
-                      : "16px",
-                  }}
-                >
-                  {project.live?.label?.[lang] ||
-                    project.live?.label?.vi ||
-                    project.live?.text ||
-                    "Visit Project"}
-                  <span
-                    className="
-            absolute left-0 bottom-0 h-[1px] w-full bg-black
-            scale-x-0 origin-right
-            transition-transform duration-300
-            group-hover:scale-x-100 group-hover:origin-left
-          "
-                  ></span>
-                </a>
-              ) : (
+              <a
+                href={project.live.enabled !== false ? project.live.url : "#"}
+                target={project.live.enabled !== false ? "_blank" : undefined}
+                rel={
+                  project.live.enabled !== false
+                    ? "noopener noreferrer"
+                    : undefined
+                }
+                onClick={(e) => {
+                  if (project.live.enabled === false) {
+                    e.preventDefault();
+                  }
+                }}
+                className="relative inline-block cursor-pointer break-all"
+                style={{
+                  ...getTextStyle(project.style_live_value),
+                  fontSize: project.style_live_value?.size
+                    ? `${project.style_live_value.size}px`
+                    : "16px",
+                }}
+              >
+                {project.live?.label?.[lang] ||
+                  project.live?.label?.vi ||
+                  project.live?.text ||
+                  "Visit Project"}
                 <span
-                  className="relative inline-block cursor-default opacity-60"
-                  style={{
-                    ...getTextStyle(project.style_live_value),
-                    fontSize: project.style_live_value?.size
-                      ? `${project.style_live_value.size}px`
-                      : "16px",
-                  }}
-                >
-                  {project.live?.label?.[lang] ||
-                    project.live?.label?.vi ||
-                    project.live?.text ||
-                    "Visit Project"}
-                </span>
-              )}
+                  className="
+          absolute left-0 bottom-0 h-[1px] w-full bg-black
+          scale-x-0 origin-right
+          transition-transform duration-300
+          group-hover:scale-x-100 group-hover:origin-left
+        "
+                ></span>
+              </a>
             </div>
           )}
         </div>
