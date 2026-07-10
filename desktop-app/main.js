@@ -619,17 +619,50 @@ function createMainWindow() {
     }
 
     mainWindow.webContents.executeJavaScript(`
-      // Cho phép clipboard trong WebView
+    (function() {
+      console.log('[Fix] Applying clipboard fix for MacOS');
+      
       document.addEventListener('copy', function(e) {
-        console.log('[WebView] Copy event');
+        console.log('[Fix] Copy event intercepted');
         return true;
-      });
+      }, true);
+      
       document.addEventListener('paste', function(e) {
-        console.log('[WebView] Paste event');
+        console.log('[Fix] Paste event intercepted');
         return true;
-      });
-      console.log('[WebView] Clipboard handlers registered');
-    `);
+      }, true);
+      
+      if (navigator.clipboard) {
+        const originalWrite = navigator.clipboard.writeText;
+        const originalRead = navigator.clipboard.readText;
+        
+        navigator.clipboard.writeText = async function(text) {
+          console.log('[Fix] Clipboard write:', text);
+          try {
+            if (window.electronAPI && window.electronAPI.copyToClipboard) {
+              await window.electronAPI.copyToClipboard(text);
+            }
+            return await originalWrite.call(this, text);
+          } catch (err) {
+            console.error('[Fix] Write error:', err);
+            return Promise.resolve();
+          }
+        };
+        
+        navigator.clipboard.readText = async function() {
+          console.log('[Fix] Clipboard read');
+          try {
+            return await originalRead.call(this);
+          } catch (err) {
+            console.error('[Fix] Read error:', err);
+            return '';
+          }
+        };
+      }
+      
+      console.log('[Fix] Clipboard fix applied');
+    })();
+  `);
   });
 
   mainWindow.webContents.on("did-fail-load", () => {
@@ -705,6 +738,7 @@ function stopMenuUpdater() {
     menuUpdateInterval = null;
   }
 }
+
 function createMenu() {
   let expiryText = "Chưa kích hoạt";
 
@@ -784,6 +818,18 @@ function createMenu() {
             app.quit();
           },
         },
+      ],
+    },
+    {
+      label: "Edit",
+      submenu: [
+        { role: "undo", accelerator: "CmdOrCtrl+Z" },
+        { role: "redo", accelerator: "CmdOrCtrl+Shift+Z" },
+        { type: "separator" },
+        { role: "cut", accelerator: "CmdOrCtrl+X" },
+        { role: "copy", accelerator: "CmdOrCtrl+C" },
+        { role: "paste", accelerator: "CmdOrCtrl+V" },
+        { role: "selectAll", accelerator: "CmdOrCtrl+A" },
       ],
     },
     {
@@ -933,6 +979,17 @@ ipcMain.handle("copy-to-clipboard", (event, text) => {
   } catch (error) {
     console.error("[Main] Copy error:", error);
     return false;
+  }
+});
+
+ipcMain.handle("read-from-clipboard", (event) => {
+  try {
+    const text = clipboard.readText();
+    console.log("[Main] Read from clipboard:", text);
+    return text;
+  } catch (error) {
+    console.error("[Main] Read error:", error);
+    return "";
   }
 });
 

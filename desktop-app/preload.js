@@ -15,4 +15,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     console.log("[Preload] copyToClipboard called:", text);
     return ipcRenderer.invoke("copy-to-clipboard", text);
   },
+
+  readFromClipboard: () => {
+    console.log("[Preload] readFromClipboard called");
+    return ipcRenderer.invoke("read-from-clipboard");
+  },
 });
