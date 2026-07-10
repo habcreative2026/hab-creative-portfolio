@@ -204,31 +204,42 @@ export default function ProjectPreview({ project }: { project: any }) {
               >
                 Live
               </p>
-              <a
-                href={project.live.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative inline-block cursor-pointer break-all"
-                style={{
-                  ...getTextStyle(project.style_live_value),
-                  fontSize: project.style_live_value?.size
-                    ? `${project.style_live_value.size}px`
-                    : "16px",
-                }}
-              >
-                {project.live?.label?.[lang] ||
-                  project.live?.label?.vi ||
-                  project.live?.text ||
-                  "Visit Project"}
+
+              {project.live.enabled !== false ? (
+                <a
+                  href={project.live.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative inline-block cursor-pointer break-all"
+                  style={{
+                    ...getTextStyle(project.style_live_value),
+                    fontSize: project.style_live_value?.size
+                      ? `${project.style_live_value.size}px`
+                      : "16px",
+                  }}
+                >
+                  {project.live?.label?.[lang] ||
+                    project.live?.label?.vi ||
+                    project.live?.text ||
+                    "Visit Project"}
+                  <span className="absolute left-0 bottom-0 h-[1px] w-full bg-black scale-x-0 origin-right transition-transform duration-300 group-hover:scale-x-100 group-hover:origin-left"></span>
+                </a>
+              ) : (
                 <span
-                  className="
-                  absolute left-0 bottom-0 h-[1px] w-full bg-black
-                  scale-x-0 origin-right
-                  transition-transform duration-300
-                  group-hover:scale-x-100 group-hover:origin-left
-                "
-                ></span>
-              </a>
+                  className="relative inline-block cursor-default opacity-60"
+                  style={{
+                    ...getTextStyle(project.style_live_value),
+                    fontSize: project.style_live_value?.size
+                      ? `${project.style_live_value.size}px`
+                      : "16px",
+                  }}
+                >
+                  {project.live?.label?.[lang] ||
+                    project.live?.label?.vi ||
+                    project.live?.text ||
+                    "Visit Project"}
+                </span>
+              )}
             </div>
           )}
         </div>

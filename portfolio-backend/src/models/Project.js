@@ -187,6 +187,7 @@ const ProjectSchema = new mongoose.Schema(
     live: {
       text: { type: String, default: "" },
       url: { type: String, default: "" },
+      enabled: { type: Boolean, default: true },
       label: {
         vi: { type: String, default: "" },
         en: { type: String, default: "" },

@@ -424,6 +424,7 @@ export default function FramerStudioAdmin() {
   const [liveLabelEn, setLiveLabelEn] = useState("");
   const [liveLabelDe, setLiveLabelDe] = useState("");
   const [overlayType, setOverlayType] = useState<"image" | "video">("image");
+  const [liveEnabled, setLiveEnabled] = useState(true);
 
   const [styleTitle, setStyleTitle] = useState<any>({
     font: "Inter",
@@ -733,6 +734,7 @@ export default function FramerStudioAdmin() {
     setStyleYearValue(p.style_year_value || styleYearValue);
     setStyleCategoryValue(p.style_category_value || styleCategoryValue);
     setStyleLiveValue(p.style_live_value || styleLiveValue);
+    setLiveEnabled(p.live?.enabled !== undefined ? p.live.enabled : true);
     const normBlocks = (p.media_blocks || []).map((b: any) => ({
       ...b,
       width_percent: b.width_percent !== undefined ? b.width_percent : 100,
@@ -765,6 +767,7 @@ export default function FramerStudioAdmin() {
           de: liveLabelDe,
         },
         url: liveUrl,
+        enabled: liveEnabled,
       },
       style_title: styleTitle,
       style_company: styleCompany,
@@ -1133,6 +1136,24 @@ export default function FramerStudioAdmin() {
                       <h4 className="text-white font-bold text-[11px] uppercase tracking-wide text-indigo-400">
                         Cấu hình Live Project
                       </h4>
+                      <div className="flex items-center gap-3 bg-[#1a2236] p-2 rounded-lg border border-slate-700">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={liveEnabled}
+                            onChange={(e) => setLiveEnabled(e.target.checked)}
+                            className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                          />
+                          <span className="text-xs font-medium text-slate-300">
+                            {liveEnabled ? "On" : "Off"}
+                          </span>
+                        </label>
+                        <span className="text-[10px] text-slate-500">
+                          {liveEnabled
+                            ? "Click vào link sẽ mở tab mới"
+                            : "Link sẽ không hoạt động"}
+                        </span>
+                      </div>
 
                       <div>
                         <label className="block mb-1 text-slate-400 text-[10px] font-medium">
@@ -1187,7 +1208,12 @@ export default function FramerStudioAdmin() {
                           value={liveUrl}
                           onChange={(e) => setLiveUrl(e.target.value)}
                           placeholder="https://example.com"
-                          className="w-full bg-[#111827] border border-slate-700 p-2 rounded text-blue-400 font-mono text-xs focus:border-blue-500 focus:outline-none transition"
+                          className={`w-full bg-[#111827] border p-2 rounded font-mono text-xs focus:outline-none transition ${
+                            liveEnabled
+                              ? "border-slate-700 text-blue-400 focus:border-blue-500"
+                              : "border-slate-700/50 text-slate-500 focus:border-slate-600"
+                          }`}
+                          disabled={!liveEnabled}
                         />
                       </div>
                     </div>
