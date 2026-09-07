@@ -1,0 +1,119 @@
+{
+  "name": "hab-creative-desktop",
+  "version": "1.0.0",
+  "description": "HAB CREATIVE Desktop Application",
+  "main": "main.js",
+  "author": {
+    "name": "Bui Hai Trong",
+    "email": "buihaitrong.dev@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/habcreative2026/hab-creative-portfolio.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:mac": "electron-builder --mac --x64 --arm64 --publish never",
+    "build:mac:arm64": "electron-builder --mac --arm64 --publish never",
+    "build:mac:x64": "electron-builder --mac --x64 --publish never",
+    "build:linux": "electron-builder --linux --x64 --publish never",
+    "build:linux:arm64": "electron-builder --linux --arm64 --publish never",
+    "build:all": "electron-builder -wml --publish never",
+    "build:all:arm64": "electron-builder -wml --arm64 --publish never",
+    "test:copy": "npx playwright test tests/copy-macos.spec.js",
+    "test:copy:headed": "npx playwright test tests/copy-macos.spec.js --headed",
+    "test:all": "npm run test:copy",
+    "clean": "rm -rf dist/",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.habcreative.desktop",
+    "productName": "HAB Creative",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "loading.html",
+      "device-auth.html",
+      "assets/**/*"
+    ],
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "maintainer": "Bui Hai Trong <buihaitrong.dev@gmail.com>"
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  }
+}

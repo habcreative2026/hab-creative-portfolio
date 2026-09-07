@@ -1,0 +1,47 @@
+appId: com.habcreative.desktop
+productName: "HAB Creative"
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - main.js
+  - preload.js
+  - loading.html
+  - device-auth.html
+  - assets/**
+
+win:
+  target:
+    - nsis
+    - portable
+  icon: assets/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+mac:
+  target:
+    - dmg
+    - zip
+  icon: assets/icon.icns
+  category: public.app-category.productivity
+  entitlements: entitlements.mac.plist # 👈 THÊM DÒNG NÀY
+  entitlementsInherit: entitlements.mac.plist # 👈 THÊM DÒNG NÀY
+  extendInfo: # 👈 THÊM PHẦN NÀY
+    NSMicrophoneUsageDescription: "Ứng dụng cần quyền truy cập microphone"
+    NSCameraUsageDescription: "Ứng dụng cần quyền truy cập camera"
+    NSClipboardUsageDescription: "Ứng dụng cần quyền truy cập clipboard"
+
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: assets/icon.png
+
+publish:
+  - provider: github
+    releaseType: release

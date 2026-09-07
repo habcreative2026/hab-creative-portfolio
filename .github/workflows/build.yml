@@ -1,0 +1,76 @@
+name: Build Electron App
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    timeout-minutes: 30 # 👈 THÊM DÒNG NÀY
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            build-command: build:win
+            artifact-name: windows-build
+            artifact-path: dist/*.exe
+          - os: macos-latest
+            build-command: build:mac
+            artifact-name: macos-build
+            artifact-path: dist/*.dmg
+          - os: ubuntu-latest
+            build-command: build:linux
+            artifact-name: linux-build
+            artifact-path: dist/*.AppImage
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: desktop-app/package-lock.json
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libatk-bridge2.0-0 \
+            libdrm-dev \
+            libxkbcommon-dev \
+            libgbm-dev \
+            libasound2-dev \
+            libgtk-3-0 \
+            libx11-xcb1 \
+            libxcb-dri3-0 \
+            libxtst-dev \
+            libxss1 \
+            libnotify-dev  # 👈 THÊM THÊM
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: desktop-app
+
+      - name: Build
+        run: npm run ${{ matrix.build-command }}
+        working-directory: desktop-app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true # 👈 THÊM DÒNG NÀY
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: desktop-app/${{ matrix.artifact-path }}
+          retention-days: 7
