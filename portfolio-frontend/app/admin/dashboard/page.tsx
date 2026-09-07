@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Home,
+  FilePlus2,
 } from "lucide-react";
 import TwoFactorAuthModal from "../TwoFactorAuthModal";
 import LanguageDashboard from "../languages/page";
@@ -38,6 +39,7 @@ import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
 import LicenseManagement from "../licenses/page";
 import LogoAdminPage from "../logo/page";
+import GenerateLinkPage from "../generate-link/page";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API || "";
@@ -74,7 +76,8 @@ type TabType =
   | "contact"
   | "superadmin"
   | "license"
-  | "logo";
+  | "logo"
+  | "generate-link";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -258,6 +261,7 @@ export default function DashboardPage() {
         { id: "video", label: "Video", icon: Film },
         { id: "marquee", label: "Marquee", icon: Images },
         { id: "logo", label: "Logo", icon: Home },
+        { id: "generate-link", label: "Generate Link", icon: FilePlus2 },
       ],
     },
     {
@@ -313,6 +317,8 @@ export default function DashboardPage() {
         return <LicenseManagement />;
       case "logo":
         return <LogoAdminPage />;
+      case "generate-link":
+        return <GenerateLinkPage />;
 
       case "dashboard":
       default:

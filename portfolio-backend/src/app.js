@@ -140,6 +140,7 @@ app.use("/api/settings", require("./routes/settings.routes"));
 app.use("/api/license", licenseRoutes);
 app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/logo", require("./routes/logo.route"));
+app.use("/api/generated-links", require("./routes/generatedLink.routes"));
 
 // ⭐ 8. ERROR HANDLER
 app.use((err, req, res, next) => {

@@ -373,9 +373,6 @@ function LoginContent() {
               HAB CREATIVE
             </h1>
           </div>
-          <p className="text-xs text-gray-500 tracking-[0.3em] uppercase mt-2 font-light">
-            Studio
-          </p>
         </div>
 
         {/* ===== CARD ===== */}
@@ -399,9 +396,6 @@ function LoginContent() {
                 <h2 className="text-lg font-semibold text-white/90">
                   Chào mừng trở lại
                 </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  Đăng nhập để tiếp tục quản lý
-                </p>
               </div>
 
               <button
@@ -467,19 +461,11 @@ function LoginContent() {
 
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-px bg-white/5" />
-                <span className="text-xs text-gray-500 font-light">hoặc</span>
+                <span className="text-xs text-gray-500 font-light">
+                  TrongBui_
+                </span>
                 <div className="flex-1 h-px bg-white/5" />
               </div>
-
-              <button
-                onClick={() => {
-                  setOverrideStep(1);
-                  setError("");
-                }}
-                className="w-full text-center text-sm text-gray-500 hover:text-white/70 transition-colors duration-200"
-              >
-                Quay lại trang đăng nhập
-              </button>
             </div>
           )}
 

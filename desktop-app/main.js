@@ -310,9 +310,9 @@ function createMenu() {
       label: "Trợ giúp",
       submenu: [
         {
-          label: "Website",
+          label: "Website hỗ trợ",
           click: () => {
-            shell.openExternal("https://hab-creative.com");
+            shell.openExternal("https://bhtdev.work");
           },
         },
         { type: "separator" },
@@ -397,6 +397,12 @@ ipcMain.on("loading-ready", () => {
 ipcMain.on("update-loading", (event, type) => {
   console.log("[Main] Update loading to type:", type);
   createLoadingWindow(type);
+});
+
+// 👉 ĐÓNG LOADING LOGIN (THÊM MỚI)
+ipcMain.on("close-login-loading", () => {
+  console.log("[Main] Closing login loading");
+  hideLoading();
 });
 
 // ===================== APP LIFECYCLE =====================

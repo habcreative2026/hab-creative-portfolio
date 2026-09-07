@@ -438,49 +438,6 @@
   </head>
 
   <body>
-    <!-- ===== NAVBAR ===== -->
-    <nav class="navbar">
-      <div class="navbar-brand">
-        <div class="navbar-dot"></div>
-        <span class="navbar-title">HAB <span>Creative</span></span>
-      </div>
-      <div class="navbar-actions">
-        <button class="navbar-btn" title="Thu nhỏ" onclick="window.minimize()">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M2 7H12"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-        <button class="navbar-btn" title="Phóng to" onclick="window.maximize()">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M2 2H12V12H2V2Z"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-          </svg>
-        </button>
-        <button
-          class="navbar-btn navbar-btn-close"
-          title="Thoát"
-          onclick="window.close()"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M2 2L12 12M12 2L2 12"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-      </div>
-    </nav>
-
     <!-- ===== BACKGROUND ===== -->
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
@@ -496,7 +453,6 @@
     <!-- ===== MAIN CONTENT ===== -->
     <div class="container" id="mainContainer">
       <div class="logo">HAB CREATIVE</div>
-      <div class="logo-sub" id="subText">Studio</div>
 
       <div class="spinner-wrapper">
         <div class="spinner-ring"></div>
@@ -516,7 +472,7 @@
     <!-- ===== FOOTER ===== -->
     <div class="footer">
       <div class="footer-copyright">
-        <span>© 2024</span>
+        <span>© 2026</span>
         <span class="footer-divider"></span>
         <span>
           Bản Quyền Thuộc Về
@@ -541,7 +497,6 @@
       // Định nghĩa nội dung theo type
       const configs = {
         init: {
-          sub: "Studio",
           messages: [
             {
               progress: 10,
@@ -586,7 +541,6 @@
           },
         },
         login: {
-          sub: "Đăng nhập",
           messages: [
             {
               progress: 10,
@@ -620,8 +574,7 @@
             },
           ],
           onComplete: () => {
-            // Khi login loading xong, main window đã load xong
-            // Chỉ cần đóng loading
+            // Khi login loading xong, gọi closeLoginLoading để đóng
             if (window.electronAPI && window.electronAPI.closeLoginLoading) {
               window.electronAPI.closeLoginLoading();
             }
@@ -655,7 +608,7 @@
         },
       };
 
-      const config = configs[currentType] || configs.init;
+      let config = configs[currentType] || configs.init;
 
       // Cập nhật sub text
       const subText = document.getElementById("subText");
