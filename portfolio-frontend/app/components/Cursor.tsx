@@ -66,16 +66,18 @@ useEffect(() => {
   }, [pathname]);
 
   const variants = {
-  default: {
+    default: {
       width: 16,
       height: 16,
-      backgroundColor: "transparent",
+      backgroundColor: "#C0C0C0",
+      border: "1px solid rgba(255,255,255,0.2)",
     },
 
     userdefault: {
       width: 22,
       height: 22,
       backgroundColor: "transparent",
+      border: "1px solid #AAAAAA",
     },
 
     home: {
