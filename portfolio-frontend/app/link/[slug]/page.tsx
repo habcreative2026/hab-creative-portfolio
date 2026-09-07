@@ -27,12 +27,13 @@ export default async function GeneratedLinkPage({
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#DDDDDD] px-10">
+    <div className="min-h-screen w-full bg-black overflow-hidden">
+      {/* CHỈ HÌNH ẢNH - KHÔNG CÓ NAVBAR, KHÔNG CÓ FOOTER */}
       <div className="w-full h-screen">
         <img
           src={link.imageUrl}
           alt={link.title || "Generated Link"}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-contain sm:object-cover object-center"
         />
       </div>
     </div>

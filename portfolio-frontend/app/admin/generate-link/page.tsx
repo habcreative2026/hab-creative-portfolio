@@ -147,7 +147,8 @@ export default function GenerateLinkPage() {
   };
 
   const handleCopy = (slug: string) => {
-    const url = `${window.location.origin}/${slug}`;
+    // 👈 SỬA: thêm /link/
+    const url = `${window.location.origin}/link/${slug}`;
     navigator.clipboard.writeText(url);
     toast.success("Đã copy link!");
   };
@@ -364,8 +365,9 @@ export default function GenerateLinkPage() {
                       <p className="text-sm font-semibold text-gray-900 truncate">
                         {link.title || "Không có tiêu đề"}
                       </p>
+                      {/* 👈 SỬA: thêm /link/ */}
                       <p className="text-xs text-indigo-600 font-mono truncate">
-                        /{link.slug}
+                        /link/{link.slug}
                       </p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <Clock className="w-3 h-3 text-gray-400" />
@@ -384,8 +386,9 @@ export default function GenerateLinkPage() {
                       >
                         <Copy className="w-4 h-4" />
                       </button>
+                      {/* 👈 SỬA: thêm /link/ */}
                       <a
-                        href={`/${link.slug}`}
+                        href={`/link/${link.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"

@@ -1,0 +1,7 @@
+export default function LinkLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>; // Không có navbar/footer
+}
