@@ -21,6 +21,8 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   "https://hab-creative-portfolio.vercel.app",
   "https://hab-creative-portfolio.onrender.com",
+  "https://hab-creative.com",
+  "https://api.hab-creative.com",
   "http://localhost:3000",
   "http://localhost:5000",
 ];

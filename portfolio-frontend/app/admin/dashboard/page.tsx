@@ -118,7 +118,6 @@ export default function DashboardPage() {
     }
   };
 
-  // ⭐ Luôn tắt intro trong iframe
   const getIframeUrl = () => {
     if (!PREVIEW_URL) return "#";
     return PREVIEW_URL;

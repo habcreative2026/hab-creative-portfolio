@@ -588,7 +588,7 @@ function createMainWindow() {
     transparent: false,
   });
 
-  mainWindow.loadURL("https://hab-creative-portfolio.vercel.app/admin/login", {
+  mainWindow.loadURL("https://hab-creative.com/admin/login", {
     extraHeaders: "x-desktop-app: true\n",
   });
 
@@ -695,9 +695,7 @@ function createMainWindow() {
     "changed",
     (event, cookie, cause, removed) => {
       if (cookie.name === "auth_token" && !removed) {
-        mainWindow.loadURL(
-          "https://hab-creative-portfolio.vercel.app/admin/dashboard",
-        );
+        mainWindow.loadURL("https://hab-creative.com/admin/dashboard");
       }
     },
   );
