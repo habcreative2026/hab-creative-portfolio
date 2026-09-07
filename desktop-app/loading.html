@@ -1,9 +1,9 @@
 <!doctype html>
-<html>
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Loading...</title>
+    <title>HAB CREATIVE</title>
     <style>
       * {
         margin: 0;
@@ -12,8 +12,9 @@
       }
 
       body {
-        background: #0a0e1a;
+        background: #0a0a0f;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         height: 100vh;
@@ -23,53 +24,248 @@
         user-select: none;
       }
 
+      /* ===== NAVBAR ===== */
+      .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        background: rgba(10, 10, 15, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        z-index: 100;
+      }
+
+      .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .navbar-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e94560, #ff6b6b);
+        box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        animation: pulse-dot 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 0.6;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2);
+        }
+      }
+
+      .navbar-title {
+        color: #e2e8f0;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .navbar-title span {
+        color: #64748b;
+        font-weight: 400;
+      }
+
+      .navbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .navbar-btn {
+        background: transparent;
+        border: none;
+        color: #64748b;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .navbar-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #e2e8f0;
+      }
+
+      .navbar-btn-close:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+      }
+
+      /* ===== BACKGROUND ===== */
+      .bg-glow {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(120px);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .bg-glow-1 {
+        width: 500px;
+        height: 500px;
+        top: -200px;
+        left: -150px;
+        background: rgba(233, 69, 96, 0.08);
+      }
+
+      .bg-glow-2 {
+        width: 400px;
+        height: 400px;
+        bottom: -150px;
+        right: -100px;
+        background: rgba(255, 107, 107, 0.06);
+      }
+
+      .bg-glow-3 {
+        width: 300px;
+        height: 300px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(233, 69, 96, 0.03);
+      }
+
+      /* ===== PARTICLES ===== */
+      .particle {
+        position: fixed;
+        border-radius: 50%;
+        background: rgba(233, 69, 96, 0.04);
+        pointer-events: none;
+        animation: float 20s infinite linear;
+        z-index: 0;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0) rotate(0deg) scale(1);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-110vh) rotate(720deg) scale(0.3);
+          opacity: 0;
+        }
+      }
+
+      .particle:nth-child(1) {
+        width: 80px;
+        height: 80px;
+        left: 5%;
+        bottom: -80px;
+        animation-duration: 25s;
+      }
+      .particle:nth-child(2) {
+        width: 40px;
+        height: 40px;
+        left: 20%;
+        bottom: -40px;
+        animation-duration: 18s;
+        animation-delay: 2s;
+      }
+      .particle:nth-child(3) {
+        width: 60px;
+        height: 60px;
+        left: 45%;
+        bottom: -60px;
+        animation-duration: 22s;
+        animation-delay: 4s;
+      }
+      .particle:nth-child(4) {
+        width: 30px;
+        height: 30px;
+        left: 70%;
+        bottom: -30px;
+        animation-duration: 20s;
+        animation-delay: 1s;
+      }
+      .particle:nth-child(5) {
+        width: 50px;
+        height: 50px;
+        left: 88%;
+        bottom: -50px;
+        animation-duration: 28s;
+        animation-delay: 3s;
+      }
+
+      /* ===== MAIN CONTENT ===== */
       .container {
+        position: relative;
+        z-index: 1;
         text-align: center;
         padding: 20px;
-        animation: fadeIn 0.6s ease;
+        animation: fadeIn 0.8s ease;
+        margin-top: 10px;
       }
 
       @keyframes fadeIn {
         from {
           opacity: 0;
-          transform: scale(0.95);
+          transform: scale(0.95) translateY(20px);
         }
         to {
           opacity: 1;
-          transform: scale(1);
+          transform: scale(1) translateY(0);
         }
       }
 
       .logo {
         font-size: 52px;
         font-weight: 800;
-        letter-spacing: 3px;
+        letter-spacing: 4px;
         background: linear-gradient(135deg, #e94560, #ff6b6b, #ff8e8e);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 6px;
-        text-shadow: 0 0 60px rgba(233, 69, 96, 0.2);
-      }
-
-      .logo-dot {
-        color: #e94560;
-        -webkit-text-fill-color: #e94560;
+        text-shadow: 0 0 80px rgba(233, 69, 96, 0.15);
       }
 
       .logo-sub {
         color: #475569;
         font-size: 12px;
-        letter-spacing: 6px;
+        letter-spacing: 8px;
         text-transform: uppercase;
         font-weight: 300;
-        margin-bottom: 44px;
+        margin-bottom: 48px;
       }
 
       .spinner-wrapper {
-        margin: 0 auto 28px;
+        margin: 0 auto 32px;
         position: relative;
-        width: 60px;
-        height: 60px;
+        width: 72px;
+        height: 72px;
+      }
+
+      .spinner-ring {
+        position: absolute;
+        inset: -10px;
+        border-radius: 50%;
+        border: 1px solid rgba(233, 69, 96, 0.08);
+        animation: ringPulse 2.5s ease-in-out infinite;
       }
 
       @keyframes ringPulse {
@@ -79,22 +275,22 @@
           opacity: 0.3;
         }
         50% {
-          transform: scale(1.1);
+          transform: scale(1.15);
           opacity: 0.8;
         }
       }
 
       .spinner {
-        width: 60px;
-        height: 60px;
+        width: 72px;
+        height: 72px;
         border: 3px solid rgba(255, 255, 255, 0.04);
         border-top-color: #e94560;
         border-right-color: #ff6b6b;
         border-radius: 50%;
         animation: spin 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         box-shadow:
-          0 0 40px rgba(233, 69, 96, 0.12),
-          inset 0 0 40px rgba(233, 69, 96, 0.04);
+          0 0 60px rgba(233, 69, 96, 0.08),
+          inset 0 0 60px rgba(233, 69, 96, 0.02);
         position: relative;
         z-index: 1;
       }
@@ -105,16 +301,17 @@
         }
       }
 
+      /* ===== PROGRESS BAR ===== */
       .progress-container {
-        width: 300px;
-        max-width: 80%;
-        margin: 0 auto 22px;
+        width: 320px;
+        max-width: 85%;
+        margin: 0 auto 24px;
         background: rgba(255, 255, 255, 0.03);
         border-radius: 100px;
-        height: 4px;
+        height: 3px;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.03);
-        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
       }
 
       .progress-bar {
@@ -122,17 +319,17 @@
         width: 0%;
         background: linear-gradient(90deg, #e94560, #ff6b6b, #ff8e8e);
         border-radius: 100px;
-        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 0 30px rgba(233, 69, 96, 0.25);
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 40px rgba(233, 69, 96, 0.2);
       }
 
       .status {
         color: #94a3b8;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 400;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
-        min-height: 24px;
+        min-height: 26px;
       }
 
       .status-dots::after {
@@ -157,27 +354,32 @@
 
       .status-detail {
         color: #475569;
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 0.5px;
         min-height: 20px;
         font-weight: 300;
+        transition: all 0.3s ease;
       }
+
       .footer {
         position: fixed;
-        bottom: 28px;
+        bottom: 32px;
         left: 0;
         right: 0;
         text-align: center;
         color: #334155;
         font-size: 11px;
         letter-spacing: 0.5px;
+        z-index: 1;
       }
 
-      .footer-version {
-        color: #334155;
-        font-size: 10px;
-        letter-spacing: 2px;
-        margin-bottom: 4px;
+      .footer-divider {
+        display: inline-block;
+        width: 1px;
+        height: 10px;
+        background: #2d3748;
+        margin: 0 8px;
+        vertical-align: middle;
       }
 
       .footer-copyright {
@@ -195,130 +397,106 @@
 
       .footer-copyright a:hover {
         color: #e94560;
-        text-decoration: underline;
       }
 
-      .footer-divider {
-        display: inline-block;
-        width: 1px;
-        height: 10px;
-        background: #2d3748;
-        margin: 0 8px;
-        vertical-align: middle;
-      }
-
-      .particle {
-        position: fixed;
-        border-radius: 50%;
-        background: rgba(233, 69, 96, 0.06);
-        pointer-events: none;
-        animation: float 20s infinite linear;
-      }
-
-      @keyframes float {
-        0% {
-          transform: translateY(0) rotate(0deg) scale(1);
-          opacity: 0;
+      @media (max-width: 480px) {
+        .navbar {
+          padding: 0 16px;
+          height: 48px;
         }
-        10% {
-          opacity: 1;
+        .navbar-title {
+          font-size: 12px;
         }
-        90% {
-          opacity: 1;
+        .logo {
+          font-size: 36px;
+          letter-spacing: 2px;
         }
-        100% {
-          transform: translateY(-100vh) rotate(720deg) scale(0.5);
-          opacity: 0;
+        .logo-sub {
+          font-size: 10px;
+          letter-spacing: 5px;
+          margin-bottom: 32px;
         }
-      }
-
-      .glow-dot {
-        position: fixed;
-        border-radius: 50%;
-        filter: blur(80px);
-        pointer-events: none;
+        .spinner-wrapper {
+          width: 56px;
+          height: 56px;
+        }
+        .spinner {
+          width: 56px;
+          height: 56px;
+        }
+        .progress-container {
+          width: 240px;
+        }
+        .status {
+          font-size: 13px;
+        }
+        .footer {
+          bottom: 20px;
+        }
       }
     </style>
   </head>
+
   <body>
-    <div
-      class="glow-dot"
-      style="
-        width: 400px;
-        height: 400px;
-        left: -100px;
-        top: -100px;
-        background: rgba(233, 69, 96, 0.05);
-      "
-    ></div>
-    <div
-      class="glow-dot"
-      style="
-        width: 300px;
-        height: 300px;
-        right: -80px;
-        bottom: -80px;
-        background: rgba(255, 107, 107, 0.04);
-      "
-    ></div>
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <div class="navbar-dot"></div>
+        <span class="navbar-title">HAB <span>Creative</span></span>
+      </div>
+      <div class="navbar-actions">
+        <button class="navbar-btn" title="Thu nhỏ" onclick="window.minimize()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M2 7H12"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <button class="navbar-btn" title="Phóng to" onclick="window.maximize()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M2 2H12V12H2V2Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+          </svg>
+        </button>
+        <button
+          class="navbar-btn navbar-btn-close"
+          title="Thoát"
+          onclick="window.close()"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M2 2L12 12M12 2L2 12"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+    </nav>
 
-    <div
-      class="particle"
-      style="
-        width: 80px;
-        height: 80px;
-        left: 10%;
-        bottom: -80px;
-        animation-duration: 25s;
-      "
-    ></div>
-    <div
-      class="particle"
-      style="
-        width: 40px;
-        height: 40px;
-        left: 30%;
-        bottom: -40px;
-        animation-duration: 18s;
-        animation-delay: 2s;
-      "
-    ></div>
-    <div
-      class="particle"
-      style="
-        width: 60px;
-        height: 60px;
-        left: 55%;
-        bottom: -60px;
-        animation-duration: 22s;
-        animation-delay: 4s;
-      "
-    ></div>
-    <div
-      class="particle"
-      style="
-        width: 30px;
-        height: 30px;
-        left: 75%;
-        bottom: -30px;
-        animation-duration: 20s;
-        animation-delay: 1s;
-      "
-    ></div>
-    <div
-      class="particle"
-      style="
-        width: 50px;
-        height: 50px;
-        left: 90%;
-        bottom: -50px;
-        animation-duration: 28s;
-        animation-delay: 3s;
-      "
-    ></div>
+    <!-- ===== BACKGROUND ===== -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
 
-    <div class="container">
+    <!-- ===== PARTICLES ===== -->
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="container" id="mainContainer">
       <div class="logo">HAB CREATIVE</div>
+      <div class="logo-sub" id="subText">Studio</div>
 
       <div class="spinner-wrapper">
         <div class="spinner-ring"></div>
@@ -335,104 +513,226 @@
       <div class="status-detail" id="statusDetail">Khởi tạo hệ thống...</div>
     </div>
 
+    <!-- ===== FOOTER ===== -->
     <div class="footer">
-      <div class="footer-version">v1.0.0</div>
       <div class="footer-copyright">
         <span>© 2024</span>
         <span class="footer-divider"></span>
-        <span
-          >Bản Quyền Thuộc Về
-          <a href="https://bhtdev.work" target="_blank">TrongBui_</a></span
-        >
+        <span>
+          Bản Quyền Thuộc Về
+          <a href="https://bhtdev.work" target="_blank">TrongBui_</a>
+        </span>
       </div>
     </div>
 
     <script>
+      // ===== CẤU HÌNH THEO TYPE =====
+      // Có thể gọi từ ngoài qua URL param hoặc biến global
+      // Type: 'init' | 'login' | 'logout' | 'loading'
+      let currentType = "init";
+
+      // Lấy type từ URL query string (nếu có)
+      const urlParams = new URLSearchParams(window.location.search);
+      const typeParam = urlParams.get("type");
+      if (typeParam) {
+        currentType = typeParam;
+      }
+
+      // Định nghĩa nội dung theo type
+      const configs = {
+        init: {
+          sub: "Studio",
+          messages: [
+            {
+              progress: 10,
+              status: "Đang khởi động",
+              detail: "Kiểm tra hệ thống...",
+            },
+            {
+              progress: 25,
+              status: "Đang tải cấu hình",
+              detail: "Khởi tạo môi trường...",
+            },
+            {
+              progress: 40,
+              status: "Kết nối máy chủ",
+              detail: "Đang kết nối server...",
+            },
+            {
+              progress: 55,
+              status: "Đang kiểm tra thiết bị",
+              detail: "Xác thực thông tin...",
+            },
+            {
+              progress: 70,
+              status: "Đang tối ưu hệ thống",
+              detail: "Cấu hình hiệu suất...",
+            },
+            {
+              progress: 85,
+              status: "Hoàn tất",
+              detail: "Chuẩn bị mở ứng dụng...",
+            },
+            {
+              progress: 100,
+              status: "Hoàn tất",
+              detail: "Đang mở ứng dụng...",
+            },
+          ],
+          onComplete: () => {
+            if (window.electronAPI && window.electronAPI.ready) {
+              window.electronAPI.ready();
+            }
+          },
+        },
+        login: {
+          sub: "Đăng nhập",
+          messages: [
+            {
+              progress: 10,
+              status: "Đang kết nối Google",
+              detail: "Đang chuyển hướng...",
+            },
+            {
+              progress: 30,
+              status: "Đang xác thực",
+              detail: "Kết nối đến máy chủ Google...",
+            },
+            {
+              progress: 50,
+              status: "Đang xác nhận thông tin",
+              detail: "Kiểm tra tài khoản...",
+            },
+            {
+              progress: 70,
+              status: "Đang tải dữ liệu",
+              detail: "Đồng bộ thông tin...",
+            },
+            {
+              progress: 90,
+              status: "Hoàn tất",
+              detail: "Đang chuyển đến Dashboard...",
+            },
+            {
+              progress: 100,
+              status: "Hoàn tất",
+              detail: "Đang mở Dashboard...",
+            },
+          ],
+          onComplete: () => {
+            // Khi login loading xong, main window đã load xong
+            // Chỉ cần đóng loading
+            if (window.electronAPI && window.electronAPI.closeLoginLoading) {
+              window.electronAPI.closeLoginLoading();
+            }
+          },
+        },
+        logout: {
+          sub: "Đăng xuất",
+          messages: [
+            {
+              progress: 20,
+              status: "Đang đăng xuất",
+              detail: "Đóng phiên làm việc...",
+            },
+            {
+              progress: 50,
+              status: "Đang xóa dữ liệu",
+              detail: "Xóa cache và cookie...",
+            },
+            {
+              progress: 80,
+              status: "Đang chuyển hướng",
+              detail: "Quay lại trang đăng nhập...",
+            },
+            { progress: 100, status: "Hoàn tất", detail: "Đã đăng xuất..." },
+          ],
+          onComplete: () => {
+            if (window.electronAPI && window.electronAPI.closeLoginLoading) {
+              window.electronAPI.closeLoginLoading();
+            }
+          },
+        },
+      };
+
+      const config = configs[currentType] || configs.init;
+
+      // Cập nhật sub text
+      const subText = document.getElementById("subText");
+      if (subText) {
+        subText.textContent = config.sub;
+      }
+
       const progressBar = document.getElementById("progressBar");
       const statusText = document.getElementById("status");
       const statusDetail = document.getElementById("statusDetail");
 
-      const messages = [
-        {
-          progress: 10,
-          status: "Đang khởi động",
-          detail: "Kiểm tra hệ thống...",
-        },
-        {
-          progress: 25,
-          status: "Đang tải cấu hình",
-          detail: "Khởi tạo môi trường...",
-        },
-        {
-          progress: 40,
-          status: "Kết nối máy chủ",
-          detail: "Đang kết nối server...",
-        },
-        {
-          progress: 55,
-          status: "Đang kiểm tra thiết bị",
-          detail: "Xác thực thông tin...",
-        },
-        {
-          progress: 70,
-          status: "Đang tối ưu hệ thống",
-          detail: "Cấu hình hiệu suất...",
-        },
-        { progress: 85, status: "Hoàn tất", detail: "Chuẩn bị mở ứng dụng..." },
-        { progress: 100, status: "Hoàn tất", detail: "Đang mở ứng dụng..." },
-      ];
-
       let currentIndex = 0;
 
-      async function checkBeforeLoading() {
-        try {
-          if (window.electronAPI && window.electronAPI.checkDeviceStatus) {
-            const result = await window.electronAPI.checkDeviceStatus();
-
-            if (!result.verified) {
-              statusText.textContent = "Thiết bị không hợp lệ";
-              statusDetail.textContent =
-                result.message || "Vui lòng kích hoạt lại";
-
-              setTimeout(() => {
-                window.electronAPI.quitApp();
-              }, 2000);
-              return false;
-            }
+      function updateProgress() {
+        if (currentIndex >= config.messages.length) {
+          if (config.onComplete) {
+            setTimeout(config.onComplete, 300);
           }
-          return true;
-        } catch (error) {
-          console.error("Check before loading error:", error);
-          return true;
+          return;
         }
-      }
 
-      async function updateProgress() {
-        if (currentIndex >= messages.length) return;
-
-        const msg = messages[currentIndex];
+        const msg = config.messages[currentIndex];
         progressBar.style.width = msg.progress + "%";
         statusText.textContent = msg.status;
         statusDetail.textContent = msg.detail;
-
         currentIndex++;
 
-        if (currentIndex < messages.length) {
-          const delay = Math.random() * 400 + 400;
+        if (currentIndex < config.messages.length) {
+          const delay = Math.random() * 300 + 400;
           setTimeout(updateProgress, delay);
         } else {
-          setTimeout(() => {
-            if (window.electronAPI && window.electronAPI.ready) {
-              window.electronAPI.ready();
-            }
-          }, 500);
+          if (config.onComplete) {
+            setTimeout(config.onComplete, 300);
+          }
         }
       }
-      checkBeforeLoading().then((ok) => {
-        if (ok) {
-          setTimeout(updateProgress, 300);
+
+      // Bắt đầu chạy progress sau 300ms
+      setTimeout(updateProgress, 300);
+
+      // ===== WINDOW CONTROLS =====
+      window.minimize = function () {
+        if (window.electronAPI && window.electronAPI.minimizeWindow) {
+          window.electronAPI.minimizeWindow();
         }
-      });
+      };
+
+      window.maximize = function () {
+        if (window.electronAPI && window.electronAPI.maximizeWindow) {
+          window.electronAPI.maximizeWindow();
+        }
+      };
+
+      window.close = function () {
+        if (window.electronAPI && window.electronAPI.quitApp) {
+          window.electronAPI.quitApp();
+        }
+      };
+
+      if (window.electronAPI && window.electronAPI.onUpdateLoading) {
+        window.electronAPI.onUpdateLoading((type) => {
+          console.log("[Loading] Received update type:", type);
+          const newConfig = configs[type] || configs.init;
+
+          // Cập nhật sub text
+          const subText = document.getElementById("subText");
+          if (subText) subText.textContent = newConfig.sub;
+
+          // Reset progress bar
+          currentIndex = 0;
+          progressBar.style.width = "0%";
+
+          // Cập nhật config mới và chạy lại progress
+          config = newConfig;
+          setTimeout(updateProgress, 300);
+        });
+      }
     </script>
   </body>
 </html>
