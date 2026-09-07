@@ -1,6 +1,5 @@
 // backend/src/controllers/generatedLink.controller.js
 const GeneratedLink = require("../models/GeneratedLink");
-const cloudinary = require("../config/cloudinary");
 
 // Tạo slug tự động từ title hoặc timestamp
 const generateSlug = (title) => {
@@ -20,21 +19,11 @@ exports.createGeneratedLink = async (req, res) => {
   try {
     const { title, customSlug } = req.body;
 
-    // Upload ảnh lên Cloudinary (dùng memory storage)
+    // uploadImage middleware đã upload lên Cloudinary
+    // req.file.path chứa secure_url (từ CloudinaryStorage)
     let imageUrl = "";
     if (req.file) {
-      // Đọc buffer từ memory storage
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "generated_links", resource_type: "image" },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          },
-        );
-        stream.end(req.file.buffer);
-      });
-      imageUrl = result.secure_url;
+      imageUrl = req.file.path; // CloudinaryStorage trả về secure_url trong path
     }
 
     if (!imageUrl) {

@@ -27,7 +27,7 @@ export default async function GeneratedLinkPage({
   }
 
   return (
-    <div className="min-h-screen w-full bg-black">
+    <div className="min-h-screen w-full bg-[#DDDDDD] px-10">
       <div className="w-full h-screen">
         <img
           src={link.imageUrl}
