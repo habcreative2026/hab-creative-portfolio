@@ -147,7 +147,10 @@ export default function GenerateLinkPage() {
   };
 
   const handleCopy = (slug: string) => {
-    // 👈 SỬA: thêm /link/
+    if (!slug) {
+      toast.error("Slug không hợp lệ!");
+      return;
+    }
     const url = `${window.location.origin}/link/${slug}`;
     navigator.clipboard.writeText(url);
     toast.success("Đã copy link!");

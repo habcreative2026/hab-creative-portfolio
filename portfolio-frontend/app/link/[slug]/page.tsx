@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 async function getGeneratedLink(slug: string) {
+  if (!slug) return null;
   try {
     const res = await fetch(`${API_URL}/api/generated-links/${slug}`, {
       cache: "no-store",
@@ -18,9 +19,11 @@ async function getGeneratedLink(slug: string) {
 export default async function GeneratedLinkPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const link = await getGeneratedLink(params.slug);
+  const { slug } = await params;
+
+  const link = await getGeneratedLink(slug);
 
   if (!link) {
     notFound();
@@ -28,7 +31,6 @@ export default async function GeneratedLinkPage({
 
   return (
     <div className="min-h-screen w-full bg-black overflow-hidden">
-      {/* CHỈ HÌNH ẢNH - KHÔNG CÓ NAVBAR, KHÔNG CÓ FOOTER */}
       <div className="w-full h-screen">
         <img
           src={link.imageUrl}
