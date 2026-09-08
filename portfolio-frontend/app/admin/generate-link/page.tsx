@@ -151,7 +151,7 @@ export default function GenerateLinkPage() {
       toast.error("Slug không hợp lệ!");
       return;
     }
-    const url = `${window.location.origin}/link/${slug}`;
+    const url = `${window.location.origin}/g/${slug}`;
     navigator.clipboard.writeText(url);
     toast.success("Đã copy link!");
   };
