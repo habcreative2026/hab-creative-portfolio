@@ -30,12 +30,12 @@ export default async function GeneratedLinkPage({
   }
 
   return (
-    <div className="min-h-screen w-full bg-black overflow-hidden">
+    <div className="min-h-screen w-full bg-[#DDDDDD] overflow-hidden px-20">
       <div className="w-full h-screen">
         <img
           src={link.imageUrl}
           alt={link.title || "Generated Link"}
-          className="w-full h-full object-contain sm:object-cover object-center"
+          className="w-full h-full object-cover sm:object-cover object-center"
         />
       </div>
     </div>

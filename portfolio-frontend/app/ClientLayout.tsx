@@ -17,10 +17,17 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin") ?? false;
+  const isLinkRoute = pathname?.startsWith("/link") ?? false;
   const isHomePage = pathname === "/";
   const isIframe = typeof window !== "undefined" && window.self !== window.top;
   const [showIntro, setShowIntro] = useState(() => {
-    if (typeof window === "undefined" || isAdminRoute || isIframe) return false;
+    if (
+      typeof window === "undefined" ||
+      isAdminRoute ||
+      isLinkRoute ||
+      isIframe
+    )
+      return false;
 
     if (isHardReloadOrFirstLoad && isHomePage) {
       return true;
@@ -32,7 +39,7 @@ export default function ClientLayout({
 
   const [videoUrl, setVideoUrl] = useState("/video.mp4");
   useEffect(() => {
-    if (isAdminRoute || !isHomePage || isIframe) return;
+    if (isAdminRoute || isLinkRoute || !isHomePage || isIframe) return;
 
     const fetchIntroVideo = async () => {
       try {
@@ -49,9 +56,9 @@ export default function ClientLayout({
     };
 
     fetchIntroVideo();
-  }, [isAdminRoute, isHomePage, isIframe]);
+  }, [isAdminRoute, isLinkRoute, isHomePage, isIframe]);
   useEffect(() => {
-    if (isAdminRoute || isIframe) {
+    if (isAdminRoute || isLinkRoute || isIframe) {
       setShowIntro(false);
       return;
     }
@@ -79,14 +86,14 @@ export default function ClientLayout({
         setShowIntro(true);
       }
     }
-  }, [pathname, isAdminRoute, isHomePage, isIframe]);
+  }, [pathname, isAdminRoute, isLinkRoute, isHomePage, isIframe]);
 
   const handleIntroFinish = () => {
     sessionStorage.setItem("intro_session_played", "true");
     setShowIntro(false);
   };
 
-  if (isAdminRoute) {
+  if (isAdminRoute || isLinkRoute) {
     return <>{children}</>;
   }
 
