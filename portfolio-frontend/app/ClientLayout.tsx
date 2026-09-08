@@ -17,7 +17,7 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin") ?? false;
-  const isLinkRoute = pathname?.startsWith("/link") ?? false;
+  const isLinkRoute = pathname?.startsWith("/g") ?? false;
   const isHomePage = pathname === "/";
   const isIframe = typeof window !== "undefined" && window.self !== window.top;
   const [showIntro, setShowIntro] = useState(() => {
