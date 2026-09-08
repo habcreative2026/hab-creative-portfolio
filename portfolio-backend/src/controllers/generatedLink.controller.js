@@ -3,7 +3,7 @@ const GeneratedLink = require("../models/GeneratedLink");
 
 // Tạo slug tự động từ title hoặc timestamp
 const generateSlug = (title) => {
-  if (!title) return `link-${Date.now().toString(36)}`;
+  if (!title) return Date.now().toString(36);
   return title
     .toLowerCase()
     .normalize("NFD")
