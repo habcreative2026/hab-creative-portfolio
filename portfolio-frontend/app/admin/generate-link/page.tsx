@@ -177,9 +177,6 @@ export default function GenerateLinkPage() {
                 </span>
                 Generate Link
               </h1>
-              <p className="text-sm text-gray-500 mt-2">
-                Tạo trang hiển thị hình ảnh full width/height với link tùy chỉnh
-              </p>
             </div>
             <button
               onClick={fetchLinks}
