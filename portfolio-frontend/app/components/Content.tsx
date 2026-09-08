@@ -274,7 +274,7 @@ font-bold leading-none tracking-tighter min-[320px]:mt-4 min-[320px]:pt-4 min-[7
 
             <motion.div variants={number} className="flex flex-col items-end">
               <h2 className="text-[64px] sm:text-[100px] md:text-[160px] font-bold leading-none mt-4 sm:mt-10 pt-4 sm:pt-10">
-                32+
+                {t("numberclient")}
               </h2>
               <span className="text-[28px] sm:text-[42px] md:text-[64px] text-gray-400 -mt-2 sm:-mt-6">
                 {t("v4")}

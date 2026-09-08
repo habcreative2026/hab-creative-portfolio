@@ -347,7 +347,7 @@ export default function FooterPage() {
 
         <motion.div variants={item} className="text-center md:text-right">
           <p className="cursor-pointer hover:text-gray-300">
-            ©2026 HAB Creative.
+            ©2025 HAB Creative.
           </p>
         </motion.div>
       </motion.div>
