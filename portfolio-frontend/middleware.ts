@@ -43,6 +43,7 @@ export function middleware(request: NextRequest) {
     console.log(
       `[Middleware] Cho phép truy cập: ${pathname} từ ${isElectron ? "Electron App" : "Local Dev"}`,
     );
+    console.log("🔥 MIDDLEWARE RUNNING:", request.nextUrl.pathname);
 
     const response = NextResponse.next();
     response.headers.set("x-app-source", "desktop-app");

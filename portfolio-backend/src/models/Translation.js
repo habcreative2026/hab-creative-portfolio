@@ -12,6 +12,15 @@ const TranslationSchema = new mongoose.Schema(
     en: { type: String, default: "" },
     de: { type: String, default: "" },
     category: { type: String, default: "Bùi Hải Trọng" },
+
+    // 🆕 Text Style cho key này
+    style: {
+      fontFamily: { type: String, default: "" }, // empty = không override
+      fontWeight: { type: Number, default: 0 }, // 0 = không override
+      fontSize: { type: Number, default: 0 }, // 0 = không override
+      letterSpacing: { type: Number, default: 0 }, // 0 = không override
+      color: { type: String, default: "" }, // empty = không override
+    },
   },
   { timestamps: true },
 );

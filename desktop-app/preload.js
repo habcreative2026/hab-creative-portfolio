@@ -1,53 +1,73 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-console.log("Preload loaded");
+console.log("[Preload] Loaded");
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  copyToClipboard: (text) => {
-    console.log("[Preload] copyToClipboard called:", text);
-    return ipcRenderer.invoke("copy-to-clipboard", text);
-  },
+  // ===================== CLIPBOARD =====================
+  copyToClipboard: (text) => ipcRenderer.invoke("copy-to-clipboard", text),
+  readFromClipboard: () => ipcRenderer.invoke("read-from-clipboard"),
 
-  readFromClipboard: () => {
-    console.log("[Preload] readFromClipboard called");
-    return ipcRenderer.invoke("read-from-clipboard");
-  },
-
-  // 👉 LẮNG NGHE SỰ KIỆN UPDATE TỪ MAIN
+  // ===================== LOADING =====================
   onUpdateLoading: (callback) => {
     ipcRenderer.on("update-loading", (event, type) => callback(type));
   },
+  updateLoading: (type) => ipcRenderer.send("update-loading", type),
+  ready: () => ipcRenderer.send("loading-ready"),
+  closeLoginLoading: () => ipcRenderer.send("close-login-loading"),
 
-  // 👉 GỬI UPDATE LÊN MAIN
-  updateLoading: (type) => {
-    console.log(`[Preload] updateLoading called with type: ${type}`);
-    ipcRenderer.send("update-loading", type);
-  },
+  // ===================== WINDOW CONTROLS =====================
+  minimizeWindow: () => ipcRenderer.send("minimize-window"),
+  maximizeWindow: () => ipcRenderer.send("maximize-window"),
+  quitApp: () => ipcRenderer.send("quit-app"),
 
-  // 👉 GỬI TÍN HIỆU READY (KHỞI TẠO MAIN WINDOW)
-  ready: () => {
-    console.log("[Preload] Ready called, sending loading-ready");
-    ipcRenderer.send("loading-ready");
-  },
+  // ===================== FACE ID API =====================
+  faceAuth: {
+    // ===== Save =====
+    // 🆕 Hỗ trợ cả 2 dạng:
+    //   saveDescriptor(descriptorArray)  → legacy, mặc định noMask
+    //   saveDescriptor({ faceType, descriptor })  → mới
+    saveDescriptor: (payload) =>
+      ipcRenderer.invoke("face:save-descriptor", payload),
 
-  // 👉 ĐÓNG LOADING LOGIN (THÊM MỚI)
-  closeLoginLoading: () => {
-    console.log("[Preload] closeLoginLoading called");
-    ipcRenderer.send("close-login-loading");
-  },
+    // ===== Load =====
+    // 🆕 Trả về { success, profiles: {noMask: [...], withMask: [...]}, types: [...] }
+    loadDescriptor: () => ipcRenderer.invoke("face:load-descriptor"),
 
-  minimizeWindow: () => {
-    console.log("[Preload] minimizeWindow called");
-    ipcRenderer.send("minimize-window");
-  },
+    // ===== Check =====
+    hasDescriptor: () => ipcRenderer.invoke("face:has-descriptor"),
+    hasType: (faceType) => ipcRenderer.invoke("face:has-type", faceType),
+    listTypes: () => ipcRenderer.invoke("face:list-types"),
+    getTypesInfo: () => ipcRenderer.invoke("face:get-types-info"),
 
-  maximizeWindow: () => {
-    console.log("[Preload] maximizeWindow called");
-    ipcRenderer.send("maximize-window");
-  },
+    // ===== Delete =====
+    deleteDescriptor: () => ipcRenderer.invoke("face:delete-descriptor"),
+    deleteType: (faceType) => ipcRenderer.invoke("face:delete-type", faceType),
 
-  quitApp: () => {
-    console.log("[Preload] quitApp called");
-    ipcRenderer.send("quit-app");
+    // ===== Metadata =====
+    getMetadata: () => ipcRenderer.invoke("face:get-metadata"),
+
+    // ===== Callbacks =====
+    onRegistrationComplete: (callback) => {
+      ipcRenderer.on("face:registration-complete", () => callback());
+    },
+    onUnlockSuccess: (callback) => {
+      ipcRenderer.on("face:unlock-success", () => callback());
+    },
+
+    // ===== Window control =====
+    closeFaceWindow: () => ipcRenderer.send("face:close-window"),
+
+    unlockSuccess: () => {
+      console.log("[Preload] faceAuth.unlockSuccess called");
+      ipcRenderer.send("face:unlock-success-ack");
+    },
+
+    fallbackToLogin: () => {
+      console.log("[Preload] faceAuth.fallbackToLogin called");
+      ipcRenderer.send("face:fallback-login");
+    },
+
+    getAttempts: () => ipcRenderer.invoke("face:get-attempts"),
+    resetAttempts: () => ipcRenderer.invoke("face:reset-attempts"),
   },
 });

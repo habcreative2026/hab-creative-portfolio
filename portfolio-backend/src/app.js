@@ -1,5 +1,3 @@
-// backend/app.js
-
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -12,11 +10,8 @@ const licenseRoutes = require("./routes/license.routes");
 require("./config/passport");
 
 const app = express();
-
-// ⭐ 1. TRUST PROXY
 app.set("trust proxy", 1);
 
-// ⭐ 2. CORS
 const allowedOrigins = [
   process.env.CLIENT_URL,
   "https://hab-creative-portfolio.vercel.app",
@@ -38,7 +33,7 @@ app.use(
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        console.log(`🚫 Blocked CORS request from: ${origin}`);
+        console.log(`Blocked CORS request from: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
@@ -56,8 +51,6 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
-
-// ⭐ 3. RATE LIMIT - ĐƠN GIẢN HÓA (FIX IPv6 ERROR)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 500 : 9999,
@@ -65,16 +58,12 @@ const limiter = rateLimit({
     success: false,
     message: "Too many requests, please try again later.",
   },
-  // ⭐ THÊM: standard headers để tương thích
   standardHeaders: true,
   legacyHeaders: false,
-  // ⭐ BỎ: keyGenerator, skip, validate
 });
 
-// Áp dụng rate limit cho tất cả API routes
 app.use("/api/", limiter);
 
-// ⭐ Rate limit riêng cho auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 100 : 9999,
@@ -86,8 +75,6 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use("/api/auth/", authLimiter);
-
-// ⭐ 4. HELMET
 app.use(
   helmet({
     frameguard: {
@@ -105,7 +92,6 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-// ⭐ 5. HEALTH CHECK
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
@@ -115,7 +101,6 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ⭐ 6. DEBUG COOKIES
 app.get("/api/debug/cookies", (req, res) => {
   res.json({
     cookies: req.cookies,
@@ -124,7 +109,6 @@ app.get("/api/debug/cookies", (req, res) => {
   });
 });
 
-// ⭐ 7. ROUTES
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/admin", require("./routes/admin.routes"));
 app.use("/api/translations", require("./routes/translation.routes"));
@@ -142,7 +126,6 @@ app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/logo", require("./routes/logo.route"));
 app.use("/api/generated-links", require("./routes/generatedLink.routes"));
 
-// ⭐ 8. ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err);
   res.status(500).json({

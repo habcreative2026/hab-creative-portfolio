@@ -28,12 +28,10 @@ export default function IntroVideo({ src, onFinish }: IntroVideoProps) {
           }, 350);
         }}
       />
-
-      {/* Hiệu ứng chia đôi màn hình */}
-      <AnimatePresence>
+      {/**Hiệu ứng chia video 50/50 */}
+      {/* <AnimatePresence>
         {split && (
           <>
-            {/* Nửa trái */}
             <motion.div
               initial={{ x: 0 }}
               animate={{ x: "-100%" }}
@@ -44,7 +42,6 @@ export default function IntroVideo({ src, onFinish }: IntroVideoProps) {
               className="absolute top-0 left-0 w-1/2 h-full bg-black z-40"
             />
 
-            {/* Nửa phải */}
             <motion.div
               initial={{ x: 0 }}
               animate={{ x: "100%" }}
@@ -56,7 +53,7 @@ export default function IntroVideo({ src, onFinish }: IntroVideoProps) {
             />
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 }

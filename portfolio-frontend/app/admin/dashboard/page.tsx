@@ -25,7 +25,7 @@ import {
   Home,
   FilePlus2,
 } from "lucide-react";
-import TwoFactorAuthModal from "../TwoFactorAuthModal";
+// import TwoFactorAuthModal from "../TwoFactorAuthModal";
 import LanguageDashboard from "../languages/page";
 import LinkAdminDashboard from "../links/page";
 import AudioAdminDashboard from "../audio/page";
@@ -50,7 +50,7 @@ interface User {
   id: string;
   name: string;
   avatar: string;
-  has2FA: boolean;
+  // has2FA: boolean;
 }
 
 interface MenuItem {
@@ -92,34 +92,34 @@ export default function DashboardPage() {
   const isOwner = user?.email === "buihaitrong.dev@gmail.com";
 
   // Refresh token
-  const refreshAuthToken = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/refresh-token`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error("Refresh token error:", error);
-      return false;
-    }
-  };
+  // const refreshAuthToken = async () => {
+  //   try {
+  //     const res = await fetch(`${API_URL}/api/auth/refresh-token`, {
+  //       method: "POST",
+  //       credentials: "include",
+  //     });
+  //     if (res.ok) {
+  //       const data = await res.json();
+  //       if (data.success) {
+  //         return true;
+  //       }
+  //     }
+  //     return false;
+  //   } catch (error) {
+  //     console.error("Refresh token error:", error);
+  //     return false;
+  //   }
+  // };
 
   const handleRefresh = () => {
     setIframeKey((prev) => prev + 1);
   };
 
-  const handle2FASuccess = () => {
-    if (user) {
-      setUser({ ...user, has2FA: true });
-    }
-  };
+  // const handle2FASuccess = () => {
+  //   if (user) {
+  //     setUser({ ...user, has2FA: true });
+  //   }
+  // };
 
   const getIframeUrl = () => {
     if (!PREVIEW_URL) return "#";
@@ -186,22 +186,7 @@ export default function DashboardPage() {
         });
 
         if (res.status === 401) {
-          console.log("Token expired, attempting refresh...");
-          const refreshed = await refreshAuthToken();
-          if (refreshed) {
-            const retryRes = await fetch(`${API_URL}/api/admin/me`, {
-              credentials: "include",
-              cache: "no-store",
-            });
-            if (retryRes.ok) {
-              const data = await retryRes.json();
-              if (isMounted) {
-                setUser(data.user);
-                setLoading(false);
-              }
-              return;
-            }
-          }
+          // Token hết hạn (quá 7 ngày) → về login
           if (isMounted) {
             router.push("/admin/login?status=session_expired");
           }
@@ -225,18 +210,10 @@ export default function DashboardPage() {
 
     fetchUser();
 
-    const refreshInterval = setInterval(
-      async () => {
-        if (isMounted) {
-          await refreshAuthToken();
-        }
-      },
-      5 * 60 * 1000,
-    );
+    // ✅ ĐÃ XÓA setInterval refresh token 5 phút
 
     return () => {
       isMounted = false;
-      clearInterval(refreshInterval);
     };
   }, [router]);
 
@@ -588,11 +565,11 @@ export default function DashboardPage() {
           ${isSidebarOpen ? "p-4" : "p-2"}
         `}
         >
-          <TwoFactorAuthModal
+          {/* <TwoFactorAuthModal
             has2FA={!!user?.has2FA}
             onActivationSuccess={handle2FASuccess}
             isSidebarOpen={isSidebarOpen}
-          />
+          /> */}
 
           <button
             onClick={handleLogout}

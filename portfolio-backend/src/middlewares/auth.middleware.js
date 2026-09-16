@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 
 const OWNER_EMAIL = "buihaitrong.dev@gmail.com";
 
-// ⭐ SỬA: Thêm refresh token check
 const authMiddleware = (req, res, next) => {
   try {
     const token = req.cookies.auth_token;
@@ -66,12 +65,13 @@ authMiddleware.isSuperAdmin = (req, res, next) => {
   next();
 };
 
-// ⭐ THÊM: isAdmin - Cho phép cả admin và super_admin
+// ⭐ isAdmin - Cho phép cả admin và super_admin
 authMiddleware.isAdmin = (req, res, next) => {
   if (req.user.role !== "admin" && req.user.role !== "super_admin") {
     return res.status(403).json({
       success: false,
-      message: "Bạn không có quyền thực hiện hành động này. Chỉ Admin mới được phép.",
+      message:
+        "Bạn không có quyền thực hiện hành động này. Chỉ Admin mới được phép.",
     });
   }
   next();
@@ -91,16 +91,6 @@ authMiddleware.isOwner = (req, res, next) => {
   next();
 };
 
-// ⭐ is2FAVerified - Kiểm tra 2FA
-authMiddleware.is2FAVerified = (req, res, next) => {
-  if (req.user.isPending2FA) {
-    return res.status(403).json({
-      success: false,
-      message: "Vui lòng hoàn thành xác thực 2FA trước khi tiếp tục.",
-      code: "2FA_REQUIRED",
-    });
-  }
-  next();
-};
+// ❌ ĐÃ XÓA is2FAVerified
 
 module.exports = authMiddleware;

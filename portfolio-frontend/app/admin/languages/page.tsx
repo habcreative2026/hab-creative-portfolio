@@ -8,7 +8,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Languages,
+  Pencil,
 } from "lucide-react";
+
+import TextStyleModal, { type StyleData } from "./components/TextStyleModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,6 +22,7 @@ interface TranslationItem {
   en: string;
   de: string;
   category: string;
+  style?: StyleData;
 }
 
 export default function LanguageCMSPage() {
@@ -38,6 +42,10 @@ export default function LanguageCMSPage() {
     message: string;
   } | null>(null);
 
+  // 🆕 Edit modal state
+  const [editingItem, setEditingItem] = useState<TranslationItem | null>(null);
+
+  // ===================== FETCH =====================
   const fetchTranslations = async () => {
     setLoading(true);
     try {
@@ -63,6 +71,7 @@ export default function LanguageCMSPage() {
     fetchTranslations();
   }, []);
 
+  // ===================== FILTER =====================
   useEffect(() => {
     let result = [...originalTranslations];
 
@@ -89,6 +98,7 @@ export default function LanguageCMSPage() {
     setFilteredItems(merged);
   }, [searchQuery, selectedCategory, translations, originalTranslations]);
 
+  // ===================== EDIT =====================
   const handleInputChange = (
     key: string,
     lang: "vi" | "en" | "de",
@@ -101,6 +111,7 @@ export default function LanguageCMSPage() {
     );
   };
 
+  // ===================== SAVE ALL =====================
   const handleSaveAll = async () => {
     setSaving(true);
     try {
@@ -126,16 +137,13 @@ export default function LanguageCMSPage() {
     }
   };
 
+  // ===================== ALERT =====================
   const showAlert = (type: "success" | "error", message: string) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 4000);
   };
 
-  // const categories = [
-  //   "all",
-  //   ...Array.from(new Set(translations.map((i) => i.category || "general"))),
-  // ];
-
+  // ===================== LOADING =====================
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -144,9 +152,10 @@ export default function LanguageCMSPage() {
     );
   }
 
+  // ===================== RENDER =====================
   return (
     <div className="p-6 w-full space-y-6 scroll-none">
-      {/* HEADER BAR */}
+      {/* ===================== HEADER ===================== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-5">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
@@ -157,7 +166,8 @@ export default function LanguageCMSPage() {
               Quản lý Ngôn ngữ
             </h1>
             <p className="text-xs text-gray-500">
-              Chỉnh sửa nội dung dịch động hiển thị trên hệ thống Portfolio.
+              Chỉnh sửa nội dung dịch và style động hiển thị trên hệ thống
+              Portfolio.
             </p>
           </div>
         </div>
@@ -181,9 +191,14 @@ export default function LanguageCMSPage() {
         </div>
       </div>
 
+      {/* ===================== ALERT ===================== */}
       {alert && (
         <div
-          className={`p-4 rounded-xl flex items-center gap-3 border ${alert.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800"}`}
+          className={`p-4 rounded-xl flex items-center gap-3 border ${
+            alert.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-rose-50 border-rose-200 text-rose-800"
+          }`}
         >
           {alert.type === "success" ? (
             <CheckCircle2 size={18} />
@@ -194,6 +209,7 @@ export default function LanguageCMSPage() {
         </div>
       )}
 
+      {/* ===================== SEARCH ===================== */}
       <div className="gap-3 bg-white p-4 border border-gray-200 rounded-2xl shadow-sm">
         <div className="relative col-span-2">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -205,35 +221,26 @@ export default function LanguageCMSPage() {
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           />
         </div>
-        {/* <div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 capitalize"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat === "all" ? "Tất cả danh mục" : cat}
-              </option>
-            ))}
-          </select>
-        </div> */}
       </div>
 
+      {/* ===================== TABLE ===================== */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="max-h-[64vh] overflow-auto">
           <table className="w-full border-collapse text-left text-sm">
             <thead className="sticky top-0 z-10 bg-gray-50">
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-700 font-semibold">
-                <th className="px-4 py-3 w-1/4">Từ khóa (Key ID)</th>
-                <th className="px-4 py-3 w-1/4 border-l border-gray-200">
+                <th className="px-4 py-3 w-[22%]">Từ khóa (Key ID)</th>
+                <th className="px-4 py-3 w-[24%] border-l border-gray-200">
                   Tiếng Việt (VI)
                 </th>
-                <th className="px-4 py-3 w-1/4 border-l border-gray-200">
+                <th className="px-4 py-3 w-[24%] border-l border-gray-200">
                   Tiếng Anh (EN)
                 </th>
-                <th className="px-4 py-3 w-1/4 border-l border-gray-200">
+                <th className="px-4 py-3 w-[24%] border-l border-gray-200">
                   Tiếng Đức (DE)
+                </th>
+                <th className="px-4 py-3 w-[6%] border-l border-gray-200 text-center">
+                  Style
                 </th>
               </tr>
             </thead>
@@ -242,7 +249,7 @@ export default function LanguageCMSPage() {
                 filteredItems.map((item) => (
                   <tr
                     key={item.key}
-                    className="hover:bg-gray-50/60 transition-colors"
+                    className="hover:bg-gray-50/60 transition-colors group"
                   >
                     {/* KEY CELL */}
                     <td className="px-4 py-3 font-mono text-xs text-indigo-600 font-semibold align-top break-all select-all">
@@ -259,8 +266,8 @@ export default function LanguageCMSPage() {
                     <td className="p-2 border-l border-gray-200">
                       <textarea
                         rows={4}
-                        defaultValue={item.vi}
-                        onBlur={(e) =>
+                        value={item.vi}
+                        onChange={(e) =>
                           handleInputChange(item.key, "vi", e.target.value)
                         }
                         className="w-full p-2 text-xs border border-transparent hover:border-gray-300 focus:border-indigo-500 rounded-lg focus:outline-none focus:bg-white resize-y transition-all"
@@ -271,8 +278,8 @@ export default function LanguageCMSPage() {
                     <td className="p-2 border-l border-gray-200">
                       <textarea
                         rows={4}
-                        defaultValue={item.en}
-                        onBlur={(e) =>
+                        value={item.en}
+                        onChange={(e) =>
                           handleInputChange(item.key, "en", e.target.value)
                         }
                         className="w-full p-2 text-xs border border-transparent hover:border-gray-300 focus:border-indigo-500 rounded-lg focus:outline-none focus:bg-white resize-y transition-all"
@@ -283,18 +290,37 @@ export default function LanguageCMSPage() {
                     <td className="p-2 border-l border-gray-200">
                       <textarea
                         rows={4}
-                        defaultValue={item.de}
-                        onBlur={(e) =>
+                        value={item.de}
+                        onChange={(e) =>
                           handleInputChange(item.key, "de", e.target.value)
                         }
                         className="w-full p-2 text-xs border border-transparent hover:border-gray-300 focus:border-indigo-500 rounded-lg focus:outline-none focus:bg-white resize-y transition-all"
                       />
                     </td>
+
+                    {/* 🆕 STYLE BUTTON */}
+                    <td className="p-2 border-l border-gray-200 text-center align-middle">
+                      <button
+                        onClick={() => setEditingItem(item)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          item.style?.fontFamily ||
+                          item.style?.fontWeight ||
+                          item.style?.fontSize ||
+                          item.style?.letterSpacing ||
+                          item.style?.color
+                            ? "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                            : "text-gray-400 hover:bg-indigo-50 hover:text-indigo-600"
+                        }`}
+                        title="Chỉnh sửa style"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="text-center py-10 text-gray-400">
+                  <td colSpan={5} className="text-center py-10 text-gray-400">
                     Không tìm thấy từ khóa ngôn ngữ nào khớp với bộ lọc.
                   </td>
                 </tr>
@@ -303,6 +329,22 @@ export default function LanguageCMSPage() {
           </table>
         </div>
       </div>
+
+      {/* ===================== 🆕 TEXT STYLE MODAL ===================== */}
+      {editingItem && (
+        <TextStyleModal
+          isOpen={!!editingItem}
+          onClose={() => setEditingItem(null)}
+          translationKey={editingItem.key}
+          translationData={{
+            vi: editingItem.vi,
+            en: editingItem.en,
+            de: editingItem.de,
+            style: editingItem.style,
+          }}
+          onSaveSuccess={fetchTranslations}
+        />
+      )}
     </div>
   );
 }

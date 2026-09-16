@@ -82,7 +82,7 @@ export default function CardFooter() {
   if (displayedCards.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+    <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 gap-3 mt-8">
       <AnimatePresence mode="popLayout">
         {displayedCards.map((item, index) => {
           const imageUrl =
