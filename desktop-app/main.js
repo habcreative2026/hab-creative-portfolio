@@ -31,8 +31,8 @@ const FACE_PROFILES_PATH = path.join(
   "face-profiles.enc",
 );
 const FACE_METADATA_PATH = path.join(app.getPath("userData"), "face-meta.json");
-const DASHBOARD_URL = "http://localhost:3000/admin/dashboard";
-const LOGIN_URL = "http://localhost:3000/admin/login";
+const DASHBOARD_URL = "https://hab-creative.com/admin/dashboard";
+const LOGIN_URL = "https://hab-creative.com/admin/login";
 const MAX_FACES = 3;
 
 app.commandLine.appendSwitch("enable-gpu-rasterization");
@@ -596,7 +596,7 @@ function createMenu() {
         { type: "separator" },
         {
           label: "Trang chủ",
-          click: () => shell.openExternal("http://localhost:3000"),
+          click: () => shell.openExternal("https://hab-creative.com"),
         },
         { type: "separator" },
         ...(isMac
