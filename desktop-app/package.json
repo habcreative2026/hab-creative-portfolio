@@ -1,6 +1,6 @@
 {
   "name": "hab-creative-desktop",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "HAB CREATIVE Desktop Application",
   "main": "main.js",
   "author": {
@@ -15,14 +15,14 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac --x64 --arm64",
-    "build:mac:arm64": "electron-builder --mac --arm64",
-    "build:mac:x64": "electron-builder --mac --x64",
-    "build:linux": "electron-builder --linux --x64",
-    "build:linux:arm64": "electron-builder --linux --arm64",
-    "build:all": "electron-builder -wml",
-    "build:all:arm64": "electron-builder -wml --arm64",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:mac": "electron-builder --mac --x64 --arm64 --publish never",
+    "build:mac:arm64": "electron-builder --mac --arm64 --publish never",
+    "build:mac:x64": "electron-builder --mac --x64 --publish never",
+    "build:linux": "electron-builder --linux --x64 --publish never",
+    "build:linux:arm64": "electron-builder --linux --arm64 --publish never",
+    "build:all": "electron-builder -wml --publish never",
+    "build:all:arm64": "electron-builder -wml --arm64 --publish never",
     "clean": "rm -rf dist/",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -67,14 +67,6 @@
         "to": "libs/face-api.min.js"
       }
     ],
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "habcreative2026",
-        "repo": "hab-creative-portfolio",
-        "releaseType": "release"
-      }
-    ],
     "win": {
       "target": [
         {
@@ -84,10 +76,7 @@
           ]
         }
       ],
-      "icon": "assets/icon.ico",
-      "publish": [
-        "github"
-      ]
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,

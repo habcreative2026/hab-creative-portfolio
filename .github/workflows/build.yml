@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     timeout-minutes: 60
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -77,8 +79,8 @@ jobs:
         with:
           path: dist-temp
 
-      - name: List downloaded files
-        run: find dist-temp -type f | head -50
+      - name: List downloaded files (debug)
+        run: find dist-temp -type f
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
