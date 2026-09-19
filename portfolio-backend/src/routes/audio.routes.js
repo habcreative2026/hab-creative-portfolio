@@ -13,5 +13,6 @@ router.post(
   audioController.uploadAndActivate,
 );
 router.put("/select", authMiddleware, audioController.selectFromLibrary);
+router.delete("/:id", authMiddleware, audioController.deleteFromLibrary);
 
 module.exports = router;

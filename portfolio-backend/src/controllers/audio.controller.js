@@ -159,3 +159,57 @@ exports.updateAudioConfig = async (req, res) => {
     });
   }
 };
+
+exports.deleteFromLibrary = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const resource = await AudioResource.findById(id);
+    if (!resource) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy file âm thanh." });
+    }
+
+    // Kiểm tra xem file này có đang được dùng làm nhạc nền không
+    const config = await AudioConfig.findOne({ key: "bg_music" });
+    const isActive =
+      config && String(config.activeResource) === String(resource._id);
+
+    // Xóa file trên Cloudinary
+    try {
+      if (resource.publicId) {
+        await cloudinary.uploader.destroy(resource.publicId, {
+          resource_type: "video",
+        });
+      }
+    } catch (cloudErr) {
+      console.error("Lỗi xóa Cloudinary:", cloudErr);
+      // Vẫn tiếp tục xóa khỏi DB dù Cloudinary lỗi
+    }
+
+    // Xóa khỏi MongoDB
+    await AudioResource.findByIdAndDelete(id);
+
+    // Nếu file đang active → reset về mặc định
+    if (isActive) {
+      await AudioConfig.findOneAndUpdate(
+        { key: "bg_music" },
+        { $unset: { activeResource: "" } },
+        { upsert: true },
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: isActive
+        ? "Đã xóa file và chuyển nhạc nền về mặc định."
+        : "Đã xóa file khỏi thư viện.",
+      wasActive: isActive,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Lỗi hệ thống", error: error.message });
+  }
+};

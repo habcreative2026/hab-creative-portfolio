@@ -119,6 +119,30 @@ router.get(
   systemController.getSystemInfo,
 );
 
+// ⭐ OWNER ONLY (Block/Unblock emails)
+router.get(
+  "/blocked-emails",
+  authMiddleware,
+  authMiddleware.isSuperAdmin,
+  adminController.getBlockedEmails,
+);
+
+router.post(
+  "/block-email",
+  authMiddleware,
+  authMiddleware.isSuperAdmin,
+  authMiddleware.isOwner,
+  adminController.blockEmail,
+);
+
+router.delete(
+  "/unblock-email/:email",
+  authMiddleware,
+  authMiddleware.isSuperAdmin,
+  authMiddleware.isOwner,
+  adminController.unblockEmail,
+);
+
 // ═══════════════════════════════════════════
 // 🟡 SUPER ADMIN (Dashboard stats)
 // ═══════════════════════════════════════════

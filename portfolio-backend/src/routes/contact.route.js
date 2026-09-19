@@ -12,7 +12,6 @@ router.post(
   uploadImage.single("avatar"),
   contactController.updateAvatar,
 );
-
-router.delete("/reset", contactController.resetContactInfo);
+router.post("/send", contactController.sendContactEmail);
 
 module.exports = router;

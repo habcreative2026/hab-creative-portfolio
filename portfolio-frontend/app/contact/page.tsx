@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
+import toast from "react-hot-toast";
 
 interface ContactData {
   header_text?: { vi: string; en: string; de: string };
@@ -19,6 +20,32 @@ interface ContactData {
     color: string;
     align: string;
   };
+  style_contact_info?: {
+    font: string;
+    size: number;
+    weight: string;
+    color: string;
+  };
+  style_button?: {
+    font: string;
+    size: number;
+    weight: string;
+    color: string;
+    bg_color: string;
+  };
+  style_placeholder?: {
+    font: string;
+    size: number;
+    weight: string;
+    color: string;
+  };
+  style_service?: {
+    font: string;
+    size: number;
+    weight: string;
+    color: string;
+    bg_color: string;
+  };
   placeholder_fullname?: { vi: string; en: string; de: string };
   placeholder_email?: { vi: string; en: string; de: string };
   placeholder_phone?: { vi: string; en: string; de: string };
@@ -34,6 +61,7 @@ export default function ContactPage() {
   const { lang } = useLanguage();
   const [contactData, setContactData] = useState<ContactData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // ⭐ THÊM
 
   const initialFormData = {
     name: "",
@@ -102,6 +130,51 @@ export default function ContactPage() {
     ];
   };
 
+  // ⭐ HÀM SUBMIT MỚI
+  const handleSubmit = async () => {
+    if (!isFormValid) {
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/contact/send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            company: formData.company,
+            service: selected,
+            message: formData.message,
+          }),
+        },
+      );
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("Gửi liên hệ thành công!");
+        setClicked(true);
+        setFormData(initialFormData);
+        setSelected("");
+
+        // Reset lại text button sau 3s (tuỳ chọn)
+        setTimeout(() => setClicked(false), 3000);
+      } else {
+        toast.error(data.message || "Gửi thất bại. Vui lòng thử lại!");
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.error("Đã xảy ra lỗi khi gửi liên hệ!");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center font-mono text-xs text-white">
@@ -111,6 +184,15 @@ export default function ContactPage() {
   }
 
   const services = getServices();
+
+  const placeholderStyle: React.CSSProperties = contactData?.style_placeholder
+    ? {
+        fontFamily: contactData.style_placeholder.font,
+        fontSize: `${contactData.style_placeholder.size}px`,
+        fontWeight: contactData.style_placeholder.weight,
+        color: contactData.style_placeholder.color,
+      }
+    : {};
 
   return (
     <div className="min-h-screen px-4 pt-28 md:pt-40">
@@ -131,7 +213,7 @@ export default function ContactPage() {
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-14 md:gap-20 mt-10">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
             <div>
               <input
@@ -144,6 +226,7 @@ export default function ContactPage() {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px] px-2"
+                style={placeholderStyle}
                 required
               />
             </div>
@@ -158,6 +241,7 @@ export default function ContactPage() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px] px-2"
+                style={placeholderStyle}
                 required
               />
             </div>
@@ -172,6 +256,7 @@ export default function ContactPage() {
                   setFormData({ ...formData, phone: e.target.value })
                 }
                 className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px] px-2"
+                style={placeholderStyle}
                 required
               />
             </div>
@@ -186,6 +271,7 @@ export default function ContactPage() {
                   setFormData({ ...formData, company: e.target.value })
                 }
                 className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-0.5 text-[16px] px-2"
+                style={placeholderStyle}
                 required
               />
             </div>
@@ -196,6 +282,14 @@ export default function ContactPage() {
               type="button"
               onClick={() => setOpen(!open)}
               className="w-full border border-gray-300 focus:border-gray-900 rounded-md px-2 py-2 text-left text-[14px] md:text-[18px] text-gray-600 bg-white flex justify-between items-center"
+              style={{
+                fontFamily: contactData?.style_service?.font,
+                fontSize: contactData?.style_service?.size
+                  ? `${contactData.style_service.size}px`
+                  : undefined,
+                fontWeight: contactData?.style_service?.weight,
+                color: contactData?.style_service?.color,
+              }}
             >
               <span>
                 {selected ||
@@ -208,7 +302,12 @@ export default function ContactPage() {
               />
             </button>
             {open && (
-              <div className="absolute left-0 mt-1 w-full rounded bg-[#ebebeb] overflow-hidden z-50 py-2">
+              <div
+                className="absolute left-0 mt-1 w-full rounded bg-[#ebebeb] overflow-hidden z-50 py-2 px-2"
+                style={{
+                  backgroundColor: contactData?.style_service?.bg_color,
+                }}
+              >
                 {services.map((service: string, index: number) => (
                   <button
                     key={index}
@@ -219,7 +318,17 @@ export default function ContactPage() {
                     }}
                     className="w-full px-2 py-2 text-left transition-colors duration-300 group"
                   >
-                    <span className="relative inline-block text-black">
+                    <span
+                      className="relative inline-block text-black"
+                      style={{
+                        fontFamily: contactData?.style_service?.font,
+                        fontSize: contactData?.style_service?.size
+                          ? `${contactData.style_service.size}px`
+                          : undefined,
+                        fontWeight: contactData?.style_service?.weight,
+                        color: contactData?.style_service?.color,
+                      }}
+                    >
                       {service}
                       <span
                         className="
@@ -228,6 +337,9 @@ export default function ContactPage() {
                           transition-transform duration-300
                           group-hover:scale-x-100 group-hover:origin-left
                         "
+                        style={{
+                          backgroundColor: contactData?.style_service?.color,
+                        }}
                       />
                     </span>
                   </button>
@@ -237,7 +349,7 @@ export default function ContactPage() {
           </div>
 
           <div className="px-4">
-            <label className="text-sm text-gray-500">
+            <label className="text-sm text-gray-500" style={placeholderStyle}>
               {getText(contactData?.placeholder_project_detail) ||
                 "Chi tiết dự án"}
             </label>
@@ -250,17 +362,13 @@ export default function ContactPage() {
                 setFormData({ ...formData, message: e.target.value })
               }
               className="w-full border-b border-gray-300 focus:border-gray-500 outline-none py-2 text-[16px] h-30"
+              style={placeholderStyle}
             />
           </div>
 
           <button
-            onClick={() => {
-              if (isFormValid) {
-                setClicked(true);
-                setFormData(initialFormData);
-                setSelected("");
-              }
-            }}
+            onClick={handleSubmit}
+            disabled={submitting}
             onMouseEnter={() =>
               window.dispatchEvent(
                 new CustomEvent("cursor-change", { detail: "userdefault" }),
@@ -277,12 +385,22 @@ export default function ContactPage() {
               rounded-full px-10 md:px-20 py-3 w-fit
               border border-black
               transition-all duration-300 cursor-none
-              mx-2
+              mx-2 -mt-2
+              disabled:opacity-50 disabled:cursor-not-allowed
             "
+            style={{
+              fontFamily: contactData?.style_button?.font,
+              fontSize: contactData?.style_button?.size
+                ? `${contactData.style_button.size}px`
+                : undefined,
+              fontWeight: contactData?.style_button?.weight,
+            }}
           >
-            {clicked
-              ? getText(contactData?.button_thank_you) || "Cảm ơn bạn!"
-              : getText(contactData?.button_get_in_touch) || "Liên hệ"}
+            {submitting
+              ? "Đang gửi..."
+              : clicked
+                ? getText(contactData?.button_thank_you) || "Cảm ơn bạn!"
+                : getText(contactData?.button_get_in_touch) || "Liên hệ"}
           </button>
         </div>
 
@@ -293,7 +411,17 @@ export default function ContactPage() {
             alt="Avatar"
           />
 
-          <div className="w-full sm:w-[440px] text-sm flex flex-col">
+          <div
+            className="w-full sm:w-[440px] text-sm flex flex-col"
+            style={{
+              fontFamily: contactData?.style_contact_info?.font,
+              fontSize: contactData?.style_contact_info?.size
+                ? `${contactData.style_contact_info.size}px`
+                : undefined,
+              fontWeight: contactData?.style_contact_info?.weight,
+              color: contactData?.style_contact_info?.color,
+            }}
+          >
             <a
               href={`mailto:${contactData?.email?.value || "hello@habcreative.com"}`}
               className="relative group border-b border-gray-400 pb-1 pt-1 cursor-pointer overflow-hidden block"
@@ -308,7 +436,12 @@ export default function ContactPage() {
                 "
               />
               <span className="relative z-10 block">
-                <span className="block group-hover:hidden text-black">
+                <span
+                  className="block group-hover:hidden text-black"
+                  style={{
+                    color: contactData?.style_contact_info?.color,
+                  }}
+                >
                   {getText(contactData?.email?.label) || "Email"}
                 </span>
                 <span className="hidden group-hover:block text-white break-all">
@@ -331,7 +464,12 @@ export default function ContactPage() {
                 "
               />
               <span className="relative z-10 block">
-                <span className="block group-hover:hidden text-black">
+                <span
+                  className="block group-hover:hidden text-black"
+                  style={{
+                    color: contactData?.style_contact_info?.color,
+                  }}
+                >
                   {getText(contactData?.phone?.label) || "Điện thoại"}
                 </span>
                 <span className="hidden group-hover:block text-white">
@@ -359,7 +497,12 @@ export default function ContactPage() {
                 "
               />
               <span className="relative z-10 block">
-                <span className="block group-hover:hidden text-black">
+                <span
+                  className="block group-hover:hidden text-black"
+                  style={{
+                    color: contactData?.style_contact_info?.color,
+                  }}
+                >
                   {getText(contactData?.address?.label) || "Địa chỉ"}
                 </span>
                 <span className="hidden group-hover:block text-white">

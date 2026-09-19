@@ -5,7 +5,7 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const rateLimit = require("express-rate-limit");
-const licenseRoutes = require("./routes/license.routes");
+const subscriberRoutes = require("./routes/subscriber.route");
 
 require("./config/passport");
 
@@ -121,10 +121,10 @@ app.use("/api/projects", require("./routes/project.route"));
 app.use("/api/about", require("./routes/about.route"));
 app.use("/api/contact", require("./routes/contact.route"));
 app.use("/api/settings", require("./routes/settings.routes"));
-app.use("/api/license", licenseRoutes);
 app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/logo", require("./routes/logo.route"));
 app.use("/api/generated-links", require("./routes/generatedLink.routes"));
+app.use("/api/subscribers", subscriberRoutes);
 
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err);

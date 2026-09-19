@@ -111,3 +111,57 @@ exports.selectFromLibrary = async (req, res) => {
       .json({ message: "Lỗi hệ thống", error: error.message });
   }
 };
+
+exports.deleteFromLibrary = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const resource = await VideoResource.findById(id);
+    if (!resource) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy video." });
+    }
+
+    // Kiểm tra xem video này có đang là intro active không
+    const config = await VideoConfig.findOne({ key: "intro_video" });
+    const isActive =
+      config && String(config.activeResource) === String(resource._id);
+
+    // Xóa file trên Cloudinary
+    try {
+      if (resource.publicId) {
+        await cloudinary.uploader.destroy(resource.publicId, {
+          resource_type: "video",
+        });
+      }
+    } catch (cloudErr) {
+      console.error("Lỗi xóa Cloudinary:", cloudErr);
+      // Vẫn tiếp tục xóa DB dù Cloudinary lỗi
+    }
+
+    // Xóa record khỏi MongoDB
+    await VideoResource.findByIdAndDelete(id);
+
+    // Nếu video đang active → reset về mặc định
+    if (isActive) {
+      await VideoConfig.findOneAndUpdate(
+        { key: "intro_video" },
+        { $unset: { activeResource: "" } },
+        { upsert: true },
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: isActive
+        ? "Đã xóa video và chuyển intro về mặc định."
+        : "Đã xóa video khỏi thư viện.",
+      wasActive: isActive,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Lỗi hệ thống", error: error.message });
+  }
+};

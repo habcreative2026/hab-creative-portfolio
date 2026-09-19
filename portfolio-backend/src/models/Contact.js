@@ -134,6 +134,13 @@ const ContactInfoSchema = new mongoose.Schema(
       type: String,
       default: "/avt_bhq.png",
     },
+    maps_url: {
+      type: String,
+      default:
+        "https://www.google.com/maps/search/?api=1&query=Ho+Chi+Minh+City",
+    },
+
+    // ============ STYLES ============
     style_header: {
       font: { type: String, default: "Inter" },
       size: { type: Number, default: 32 },
@@ -145,10 +152,31 @@ const ContactInfoSchema = new mongoose.Schema(
         default: "left",
       },
     },
-    maps_url: {
-      type: String,
-      default:
-        "https://www.google.com/maps/search/?api=1&query=Ho+Chi+Minh+City",
+    style_contact_info: {
+      font: { type: String, default: "Inter" },
+      size: { type: Number, default: 14 },
+      weight: { type: String, default: "400" },
+      color: { type: String, default: "#111111" },
+    },
+    style_button: {
+      font: { type: String, default: "Inter" },
+      size: { type: Number, default: 16 },
+      weight: { type: String, default: "500" },
+      color: { type: String, default: "#ffffff" },
+      bg_color: { type: String, default: "#000000" },
+    },
+    style_placeholder: {
+      font: { type: String, default: "Inter" },
+      size: { type: Number, default: 16 },
+      weight: { type: String, default: "400" },
+      color: { type: String, default: "#111111" },
+    },
+    style_service: {
+      font: { type: String, default: "Inter" },
+      size: { type: Number, default: 16 },
+      weight: { type: String, default: "400" },
+      color: { type: String, default: "#111111" },
+      bg_color: { type: String, default: "#ebebeb" },
     },
   },
   { timestamps: true },

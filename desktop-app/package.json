@@ -44,9 +44,16 @@
     "files": [
       "main.js",
       "preload.js",
-      "loading.html",
-      "device-auth.html",
-      "assets/**/*"
+      "face-manager.html",
+      "face-register.html",
+      "face-register.js",
+      "face-shared.js",
+      "face-unlock.html",
+      "face-unlock.js",
+      "assets/**/*",
+      "!**/*.map",
+      "!**/node_modules/**/*.md",
+      "!**/node_modules/**/*.txt"
     ],
     "publish": {
       "provider": "github",
@@ -118,6 +125,7 @@
   },
   "dependencies": {
     "@tensorflow/tfjs": "^1.7.4",
-    "face-api.js": "^0.22.2"
+    "face-api.js": "^0.22.2",
+    "node-machine-id": "^1.1.12"
   }
 }

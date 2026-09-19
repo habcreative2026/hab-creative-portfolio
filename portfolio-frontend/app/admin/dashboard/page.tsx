@@ -37,9 +37,10 @@ import AboutAdminPage from "../about/page";
 import ContactAdminPage from "../contact/page";
 import SuperAdminPage from "../superAdmin/page";
 import toast from "react-hot-toast";
-import LicenseManagement from "../licenses/page";
 import LogoAdminPage from "../logo/page";
 import GenerateLinkPage from "../generate-link/page";
+import SubscribersAdminPage from "../subscribers/page";
+import { Users } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const PREVIEW_URL = process.env.NEXT_PUBLIC_FE_API || "";
@@ -75,8 +76,8 @@ type TabType =
   | "about"
   | "contact"
   | "superadmin"
-  | "license"
   | "logo"
+  | "subscribers"
   | "generate-link";
 
 export default function DashboardPage() {
@@ -210,8 +211,6 @@ export default function DashboardPage() {
 
     fetchUser();
 
-    // ✅ ĐÃ XÓA setInterval refresh token 5 phút
-
     return () => {
       isMounted = false;
     };
@@ -250,6 +249,7 @@ export default function DashboardPage() {
         { id: "detailprojects", label: "Detail Projects", icon: Newspaper },
         { id: "about", label: "About", icon: User },
         { id: "contact", label: "Contact", icon: Mail },
+        { id: "subscribers", label: "Subscribers", icon: Users },
       ],
     },
     {
@@ -257,15 +257,6 @@ export default function DashboardPage() {
       label: "Super Admin",
       icon: Shield,
     },
-    ...(isOwner
-      ? [
-          {
-            id: "license",
-            label: "License",
-            icon: Shield,
-          },
-        ]
-      : []),
   ];
 
   const renderContent = () => {
@@ -290,12 +281,12 @@ export default function DashboardPage() {
         return <ContactAdminPage />;
       case "superadmin":
         return <SuperAdminPage />;
-      case "license":
-        return <LicenseManagement />;
       case "logo":
         return <LogoAdminPage />;
       case "generate-link":
         return <GenerateLinkPage />;
+      case "subscribers":
+        return <SubscribersAdminPage />;
 
       case "dashboard":
       default:
@@ -565,12 +556,6 @@ export default function DashboardPage() {
           ${isSidebarOpen ? "p-4" : "p-2"}
         `}
         >
-          {/* <TwoFactorAuthModal
-            has2FA={!!user?.has2FA}
-            onActivationSuccess={handle2FASuccess}
-            isSidebarOpen={isSidebarOpen}
-          /> */}
-
           <button
             onClick={handleLogout}
             className={`

@@ -11,341 +11,407 @@
       }
 
       body {
-        background: #0a0a0f;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #000;
+        color: #fff;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+          sans-serif;
         display: flex;
         align-items: center;
         justify-content: center;
         min-height: 100vh;
+        overflow: hidden;
         user-select: none;
-        overflow: hidden;
       }
 
-      .container {
+      .wrap {
         width: 100%;
-        max-width: 720px;
-        padding: 25px;
-        text-align: center;
-      }
-
-      .header {
-        margin-bottom: 15px;
-      }
-
-      .header h1 {
-        font-size: 22px;
-        font-weight: 700;
-        background: linear-gradient(135deg, #e94560, #ff6b6b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 4px;
-      }
-
-      .header p {
-        font-size: 12px;
-        color: #64748b;
-      }
-
-      /* TYPE SELECTOR - 3 cards */
-      .type-selector {
+        max-width: 420px;
+        padding: 28px 24px;
         display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
       }
 
-      .type-card {
-        flex: 1;
-        max-width: 180px;
-        padding: 14px 10px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 2px solid rgba(255, 255, 255, 0.08);
-        cursor: pointer;
-        transition: all 0.2s;
-        text-align: center;
-      }
-
-      .type-card:hover:not(.disabled) {
-        border-color: rgba(233, 69, 96, 0.5);
-        background: rgba(233, 69, 96, 0.05);
-        transform: translateY(-2px);
-      }
-
-      .type-card.active {
-        border-color: #e94560;
-        background: rgba(233, 69, 96, 0.15);
-        box-shadow: 0 0 20px rgba(233, 69, 96, 0.2);
-      }
-
-      .type-card.disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      .type-emoji {
-        font-size: 28px;
-        margin-bottom: 5px;
-      }
-
-      .type-label {
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 16px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 100px;
         font-size: 12px;
-        font-weight: 600;
-        color: #e2e8f0;
-        margin-bottom: 4px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.8);
       }
 
-      .type-status {
-        font-size: 10px;
-        color: #64748b;
+      .badge .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #0a84ff;
+        box-shadow: 0 0 8px rgba(10, 132, 255, 0.8);
       }
 
-      .type-card.active .type-status {
-        color: #e94560;
+      .badge .count {
+        color: #fff;
+        font-weight: 700;
       }
 
-      /* CAMERA */
-      .camera-container {
+      .cam-zone {
         position: relative;
-        width: 100%;
-        max-width: 400px;
-        aspect-ratio: 4/3;
-        margin: 0 auto 15px;
-        border-radius: 18px;
+        width: 240px;
+        height: 240px;
+        margin: 4px 0;
+      }
+
+      .cam-ring {
+        position: absolute;
+        inset: -14px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .cam-ring-2 {
+        position: absolute;
+        inset: -28px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+
+      .cam-circle {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
         overflow: hidden;
-        background: #1a1a24;
+        background: #050505;
+        border: 2px solid rgba(10, 132, 255, 0.4);
+        box-shadow: 0 0 60px rgba(10, 132, 255, 0.15);
+        transition:
+          border-color 0.35s,
+          box-shadow 0.35s;
+      }
+
+      .cam-circle.scanning {
+        border-color: rgba(10, 132, 255, 0.7);
+        box-shadow: 0 0 80px rgba(10, 132, 255, 0.3);
+      }
+
+      .cam-circle.ready {
+        border-color: #30d158;
+        box-shadow: 0 0 100px rgba(48, 209, 88, 0.5);
+      }
+
+      .cam-circle.warning {
+        border-color: #ffd60a;
+        box-shadow: 0 0 80px rgba(255, 214, 10, 0.35);
+      }
+
+      .cam-circle.success {
+        border-color: #30d158;
+        box-shadow: 0 0 120px rgba(48, 209, 88, 0.6);
       }
 
       #camera,
       #overlay {
         position: absolute;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
         height: 100%;
+        object-fit: cover;
       }
 
       #camera {
-        object-fit: cover;
         transform: scaleX(-1);
       }
-
       #overlay {
         transform: scaleX(-1);
         pointer-events: none;
+        z-index: 2;
       }
 
-      /* PROGRESS */
-      .progress-section {
-        margin-bottom: 15px;
+      .scan-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(10, 132, 255, 0.9),
+          transparent
+        );
+        box-shadow: 0 0 16px rgba(10, 132, 255, 0.7);
+        z-index: 4;
+        opacity: 0;
       }
 
-      .progress-label {
-        font-size: 12px;
-        color: #94a3b8;
-        margin-bottom: 6px;
-        min-height: 18px;
+      .scan-line.on {
+        opacity: 1;
+        animation: scanDown 2s ease-in-out infinite;
       }
 
-      .progress-bar-bg {
-        width: 100%;
-        max-width: 360px;
-        height: 5px;
-        background: rgba(255, 255, 255, 0.05);
+      @keyframes scanDown {
+        0% {
+          top: 6%;
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+        }
+        85% {
+          opacity: 1;
+        }
+        100% {
+          top: 94%;
+          opacity: 0;
+        }
+      }
+
+      .brightness-warn {
+        position: absolute;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 214, 10, 0.95);
+        color: #000;
+        padding: 6px 14px;
         border-radius: 100px;
-        margin: 0 auto;
-        overflow: hidden;
+        font-size: 11px;
+        font-weight: 600;
+        display: none;
+        z-index: 10;
+        white-space: nowrap;
       }
 
-      .progress-bar-fill {
-        height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, #e94560, #ff6b6b);
-        border-radius: 100px;
-        transition: width 0.4s ease;
+      .brightness-warn.on {
+        display: block;
+      }
+
+      .status-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        min-height: 50px;
       }
 
       .status {
-        font-size: 13px;
-        min-height: 20px;
-        margin-bottom: 15px;
-        color: #94a3b8;
+        font-size: 14px;
         font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        text-align: center;
+        max-width: 340px;
+        line-height: 1.4;
+        transition: color 0.25s;
       }
 
       .status.success {
-        color: #10b981;
-        font-weight: 600;
+        color: #30d158;
       }
       .status.error {
-        color: #ef4444;
+        color: #ff453a;
       }
       .status.warning {
-        color: #f59e0b;
+        color: #ffd60a;
+      }
+
+      .progress {
+        width: 160px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 100px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #0a84ff, #30d158);
+        border-radius: 100px;
+        transition: width 0.12s linear;
       }
 
       .actions {
         display: flex;
-        gap: 12px;
-        justify-content: center;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 300px;
+        margin-top: 4px;
       }
 
       .btn {
-        padding: 11px 22px;
+        padding: 13px 24px;
         border: none;
-        border-radius: 11px;
-        font-size: 13px;
+        border-radius: 12px;
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s;
         font-family: inherit;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn:active {
+        transform: scale(0.98);
       }
 
       .btn-primary {
-        background: linear-gradient(135deg, #e94560, #ff6b6b);
-        color: white;
-        box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+        background: linear-gradient(135deg, #0a84ff, #0066cc);
+        color: #fff;
+        box-shadow: 0 4px 18px rgba(10, 132, 255, 0.4);
       }
 
       .btn-primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(233, 69, 96, 0.4);
+        background: linear-gradient(135deg, #1a94ff, #0077dd);
       }
 
       .btn-primary:disabled {
-        opacity: 0.5;
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.3);
         cursor: not-allowed;
+        box-shadow: none;
       }
 
       .btn-secondary {
-        background: rgba(255, 255, 255, 0.05);
-        color: #94a3b8;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .btn-secondary:hover {
         background: rgba(255, 255, 255, 0.1);
-        color: white;
+        color: #fff;
       }
 
-      /* SUCCESS */
       .success-view {
         display: none;
         flex-direction: column;
         align-items: center;
-        padding: 40px 20px;
+        padding: 30px 20px;
+        gap: 20px;
       }
 
-      .success-view.visible {
+      .success-view.on {
         display: flex;
       }
 
-      .success-icon {
-        width: 80px;
-        height: 80px;
+      .check-circle {
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        background: rgba(16, 185, 129, 0.1);
-        border: 2px solid #10b981;
+        background: rgba(48, 209, 88, 0.15);
+        border: 2px solid #30d158;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 20px;
-        animation: popIn 0.5s ease;
+        box-shadow: 0 0 70px rgba(48, 209, 88, 0.5);
       }
 
-      .success-icon svg {
-        width: 40px;
-        height: 40px;
-        color: #10b981;
+      .check-circle svg {
+        width: 50px;
+        height: 50px;
+        stroke: #30d158;
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
-      @keyframes popIn {
-        0% {
-          transform: scale(0.5);
-          opacity: 0;
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      .success-view h2 {
+      .success-title {
         font-size: 22px;
-        color: #10b981;
-        margin-bottom: 8px;
+        font-weight: 700;
+        color: #30d158;
       }
 
-      .success-view p {
+      .success-msg {
         font-size: 13px;
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+        line-height: 1.5;
+        max-width: 280px;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div id="registerView">
-        <div class="header">
-          <h1>Đăng ký Face ID</h1>
-          <p>Chọn loại khuôn mặt bạn muốn đăng ký</p>
+    <div class="wrap">
+      <div id="registerView" style="display: contents">
+        <div class="badge">
+          <span>HAB CREATIVE</span>
         </div>
 
-        <!-- TYPE SELECTOR - 3 cards -->
-        <div class="type-selector" id="typeSelector">
-          <div class="type-card" data-type="noMask" id="cardNoMask">
-            <div class="type-emoji">😊</div>
-            <div class="type-label">Không khẩu trang</div>
-            <div class="type-status" id="statusNoMask">Chưa đăng ký</div>
+        <div class="cam-zone">
+          <div class="cam-ring"></div>
+          <div class="cam-ring-2"></div>
+          <div class="cam-circle scanning" id="cameraCircle">
+            <video id="camera" autoplay playsinline muted></video>
+            <canvas id="overlay"></canvas>
+            <div class="scan-line on" id="scanLine"></div>
           </div>
-          <div class="type-card" data-type="withMask" id="cardWithMask">
-            <div class="type-emoji">😷</div>
-            <div class="type-label">Có khẩu trang</div>
-            <div class="type-status" id="statusWithMask">Chưa đăng ký</div>
-          </div>
-          <div class="type-card" data-type="withGlasses" id="cardWithGlasses">
-            <div class="type-emoji">👓</div>
-            <div class="type-label">Đeo kính</div>
-            <div class="type-status" id="statusWithGlasses">Chưa đăng ký</div>
-          </div>
+          <div class="brightness-warn" id="brightnessWarning">Ánh sáng yếu</div>
         </div>
 
-        <div class="camera-container">
-          <video id="camera" autoplay playsinline muted></video>
-          <canvas id="overlay"></canvas>
-        </div>
-
-        <div class="progress-section">
-          <div class="progress-label" id="progressLabel">Đang khởi tạo...</div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progressBar"></div>
+        <div class="status-box">
+          <div class="status" id="status">Đang khởi tạo...</div>
+          <div class="progress">
+            <div class="progress-fill" id="progressBar"></div>
           </div>
         </div>
-
-        <div class="status" id="status">Đang tải model AI...</div>
 
         <div class="actions">
-          <button class="btn btn-secondary" id="cancelBtn">Hủy</button>
           <button class="btn btn-primary" id="captureBtn" disabled>
-            Chụp khuôn mặt
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+              />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+            Bắt đầu quét
+          </button>
+          <button class="btn btn-secondary" id="cancelBtn">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            Hủy
           </button>
         </div>
       </div>
 
       <div class="success-view" id="successView">
-        <div class="success-icon">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="3"
-              d="M5 13l4 4L19 7"
-            />
+        <div class="check-circle">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 id="successTitle">Đăng ký thành công!</h2>
-        <p id="successMessage">Face ID đã được lưu trên thiết bị của bạn</p>
+        <div class="success-title" id="successTitle">Đã đăng ký</div>
+        <div class="success-msg" id="successMessage">
+          Khuôn mặt đã được lưu an toàn trên thiết bị
+        </div>
       </div>
     </div>
 

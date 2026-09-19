@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Video, Upload, RefreshCw, CheckCircle, Film } from "lucide-react";
+import {
+  Video,
+  Upload,
+  RefreshCw,
+  CheckCircle,
+  Film,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
 
 type VideoItem = {
   _id: string;
@@ -19,6 +27,8 @@ export default function VideoAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [msg, setMsg] = useState({ text: "", type: "" });
+  const [deleteTarget, setDeleteTarget] = useState<VideoItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -30,7 +40,6 @@ export default function VideoAdminDashboard() {
 
       if (resConfig.ok) {
         const json = await resConfig.json();
-
         if (json.success) {
           setCurrentVideoUrl(json.data?.url || null);
         }
@@ -108,8 +117,38 @@ export default function VideoAdminDashboard() {
     }
   };
 
+  // ============ XÓA VIDEO ============
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_URL}/api/video/${deleteTarget._id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        showMsg(
+          json.wasActive
+            ? "Đã xóa video và chuyển intro về mặc định."
+            : "Đã xóa video khỏi thư viện.",
+          "success",
+        );
+        setDeleteTarget(null);
+        await loadDashboardData();
+      } else {
+        showMsg(json.message || "Không xóa được video", "error");
+      }
+    } catch (err) {
+      showMsg("Lỗi kết nối máy chủ", "error");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <div className="w-full bg-gray-50 p-2 text-gray-800 scroll-none">
+    <div className="w-full bg-gray-50 p-2 text-gray-800">
       <div className="max-w-full mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* CỘT TRÁI */}
         <div className="md:col-span-1 space-y-6">
@@ -118,11 +157,6 @@ export default function VideoAdminDashboard() {
               <Video className="text-indigo-600 w-5 h-5" /> Video Intro Hiện Tại
             </h1>
             <div className="bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
-              {/* <video
-                src={currentVideoUrl}
-                controls
-                className="w-full h-auto aspect-video object-cover"
-              /> */}
               {currentVideoUrl ? (
                 <video
                   key={currentVideoUrl}
@@ -160,7 +194,7 @@ export default function VideoAdminDashboard() {
           </div>
         </div>
 
-        {/* CỘT PHẢI: THƯ VIỆN LỊCH SỬ VIDEO */}
+        {/* CỘT PHẢI */}
         <div className="md:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
             <div>
@@ -168,8 +202,7 @@ export default function VideoAdminDashboard() {
                 Thư Viện Lịch Sử Video Intro
               </h2>
               <p className="text-xs text-gray-400">
-                Chọn dùng lại các đoạn phim giới thiệu cũ để tối ưu tài nguyên
-                lưu trữ.
+                Chọn dùng lại các đoạn phim cũ, hoặc xóa video không cần thiết.
               </p>
             </div>
             <button
@@ -182,7 +215,11 @@ export default function VideoAdminDashboard() {
 
           {msg.text && (
             <div
-              className={`p-2.5 text-xs font-medium rounded-md mb-3 ${msg.type === "success" ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`}
+              className={`p-2.5 text-xs font-medium rounded-md mb-3 ${
+                msg.type === "success"
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-rose-50 text-rose-800"
+              }`}
             >
               {msg.text}
             </div>
@@ -197,13 +234,17 @@ export default function VideoAdminDashboard() {
               Thư viện trống. Hãy nạp video intro đầu tiên!
             </div>
           ) : (
-            <div className="space-y-2 max-h-[380px] overflow-y-auto scroll-none pr-2 custom-scrollbar">
+            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
               {library.map((item) => {
                 const isActive = currentVideoUrl === item.url;
                 return (
                   <div
                     key={item._id}
-                    className={`flex items-center justify-between p-3 rounded-lg border text-xs transition-all ${isActive ? "border-indigo-200 bg-indigo-50/40" : "border-gray-100 hover:bg-gray-50"}`}
+                    className={`flex items-center justify-between p-3 rounded-lg border text-xs transition-all ${
+                      isActive
+                        ? "border-indigo-200 bg-indigo-50/40"
+                        : "border-gray-100 hover:bg-gray-50"
+                    }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
                       <Film className="w-4 h-4 text-gray-400 shrink-0" />
@@ -220,7 +261,8 @@ export default function VideoAdminDashboard() {
                         </p>
                       </div>
                     </div>
-                    <div>
+
+                    <div className="flex items-center gap-2">
                       {isActive ? (
                         <span className="flex items-center gap-1 text-indigo-600 font-semibold px-2 py-1 bg-indigo-100/60 rounded">
                           <CheckCircle className="w-3.5 h-3.5" /> Hoạt động
@@ -235,6 +277,15 @@ export default function VideoAdminDashboard() {
                           Dùng lại
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(item)}
+                        title="Xóa video này"
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -243,6 +294,69 @@ export default function VideoAdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* ============ MODAL XÁC NHẬN XÓA ============ */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => !deleting && setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-50 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 text-center mb-1">
+              Xóa video intro?
+            </h3>
+            <p className="text-xs text-gray-500 text-center mb-2">
+              File sẽ bị xóa vĩnh viễn khỏi Cloudinary và thư viện.
+            </p>
+            <p className="text-xs text-gray-700 text-center font-medium px-3 py-2 bg-gray-50 rounded-lg mb-4 truncate">
+              {deleteTarget.title}
+            </p>
+
+            {currentVideoUrl === deleteTarget.url && (
+              <div className="mb-4 p-2.5 bg-amber-50 border border-amber-100 rounded-lg text-[11px] text-amber-800 flex items-start gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  Đây là video <strong>đang hoạt động</strong>. Sau khi xóa,
+                  intro sẽ quay về mặc định (<code>/video.mp4</code>).
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-xs disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Đang xóa...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Xóa video
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

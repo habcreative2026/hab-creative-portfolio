@@ -13,5 +13,6 @@ router.post(
   videoController.uploadAndActivate,
 );
 router.put("/select", authMiddleware, videoController.selectFromLibrary);
+router.delete("/:id", authMiddleware, videoController.deleteFromLibrary);
 
 module.exports = router;

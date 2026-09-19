@@ -1,13 +1,20 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // ===================== CONFIG =====================
 const GLOBAL_FALLBACK_KEY = "projects";
 const BROADCAST_CHANNEL_NAME = "text-style-updates";
-const POLL_INTERVAL_MS = 10000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000; // ⭐ 5 phút (thay vì 10s)
+const MIN_FETCH_INTERVAL_MS = 30 * 1000; // ⭐ 30s throttle
 
 // ===================== TYPES =====================
 export interface StyleData {
@@ -35,6 +42,8 @@ const TextStyleContext = createContext<TextStyleContextValue>({
 export function TextStyleProvider({ children }: { children: React.ReactNode }) {
   const [stylesByKey, setStylesByKey] = useState<Record<string, StyleData>>({});
   const [loading, setLoading] = useState(true);
+  const lastFetchRef = useRef<number>(0);
+  const isFetchingRef = useRef<boolean>(false);
 
   // ===================== FETCH + APPLY STYLES =====================
   const fetchStyles = async (silent = false) => {
@@ -44,6 +53,14 @@ export function TextStyleProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // ⭐ Tránh fetch đồng thời
+    if (isFetchingRef.current) {
+      console.log("[TextStyle] ⏭️ Already fetching, skip");
+      return;
+    }
+
+    isFetchingRef.current = true;
+
     try {
       const res = await fetch(
         `${API_URL}/api/translations/public?t=${Date.now()}`,
@@ -52,6 +69,15 @@ export function TextStyleProvider({ children }: { children: React.ReactNode }) {
         },
       );
 
+      // ⭐ XỬ LÝ 429 - KHÔNG THROW, CHỈ LOG
+      if (res.status === 429) {
+        console.warn(
+          "[TextStyle] ⚠️ Rate limited (429). Giữ data cũ, thử lại sau.",
+        );
+        if (!silent) setLoading(false);
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -59,7 +85,6 @@ export function TextStyleProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       if (data.success && data.data) {
-        // 🆕 Cast type rõ ràng để TypeScript hiểu
         const stylesMap: Record<string, StyleData> = data.data._styles || {};
 
         setStylesByKey(stylesMap);
@@ -91,21 +116,43 @@ export function TextStyleProvider({ children }: { children: React.ReactNode }) {
           }
         });
       }
-    } catch (error) {
-      console.error("[TextStyle] ❌ Load error:", error);
-      if (!silent) setStylesByKey({});
+    } catch (error: any) {
+      // ⭐ Chỉ log khi KHÔNG phải 429
+      if (!error?.message?.includes("429")) {
+        console.error("[TextStyle] ❌ Load error:", error.message || error);
+      }
     } finally {
+      isFetchingRef.current = false;
       if (!silent) setLoading(false);
     }
   };
 
+  // ⭐ Throttled fetch — ít nhất 30s giữa 2 lần gọi
+  const throttledFetch = (silent = true) => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchRef.current;
+
+    if (timeSinceLastFetch < MIN_FETCH_INTERVAL_MS) {
+      console.log(
+        `[TextStyle] ⏭️ Throttled (${Math.round((MIN_FETCH_INTERVAL_MS - timeSinceLastFetch) / 1000)}s remaining)`,
+      );
+      return;
+    }
+
+    lastFetchRef.current = now;
+    fetchStyles(silent);
+  };
+
   const refresh = async () => {
+    lastFetchRef.current = Date.now();
     await fetchStyles(false);
   };
 
   // ===================== EFFECT 1: Initial load =====================
   useEffect(() => {
+    lastFetchRef.current = Date.now();
     fetchStyles(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ===================== EFFECT 2: BroadcastChannel =====================
@@ -120,40 +167,41 @@ export function TextStyleProvider({ children }: { children: React.ReactNode }) {
 
     channel.onmessage = (event) => {
       if (event.data?.type === "text-style-updated") {
-        console.log(
-          "[TextStyle] 🔔 Received update from another tab, refreshing...",
-        );
-        fetchStyles(true);
+        console.log("[TextStyle] 🔔 Received update, refreshing...");
+        throttledFetch(true);
       }
     };
 
     return () => {
       channel.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ===================== EFFECT 3: Polling (fallback) =====================
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (document.visibilityState === "visible") {
-        fetchStyles(true);
+        throttledFetch(true);
       }
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ===================== EFFECT 4: Visibility change =====================
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        fetchStyles(true);
+        throttledFetch(true);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

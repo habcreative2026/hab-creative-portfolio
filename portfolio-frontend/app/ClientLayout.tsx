@@ -38,6 +38,7 @@ export default function ClientLayout({
   });
 
   const [videoUrl, setVideoUrl] = useState("/video.mp4");
+
   useEffect(() => {
     if (isAdminRoute || isLinkRoute || !isHomePage || isIframe) return;
 
@@ -57,6 +58,7 @@ export default function ClientLayout({
 
     fetchIntroVideo();
   }, [isAdminRoute, isLinkRoute, isHomePage, isIframe]);
+
   useEffect(() => {
     if (isAdminRoute || isLinkRoute || isIframe) {
       setShowIntro(false);
@@ -100,15 +102,27 @@ export default function ClientLayout({
   return (
     <>
       <Cursor />
-      {showIntro ? (
-        <IntroVideo src={videoUrl} onFinish={handleIntroFinish} />
-      ) : (
-        <>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-        </>
-      )}
+
+      <div
+        style={{
+          display: showIntro ? "none" : "block",
+        }}
+        aria-hidden={showIntro}
+      >
+        <Navbar suppressTransitions={showIntro} />
+      </div>
+
+      {showIntro && <IntroVideo src={videoUrl} onFinish={handleIntroFinish} />}
+
+      <main
+        style={{
+          display: showIntro ? "none" : "block",
+        }}
+      >
+        {children}
+      </main>
+
+      {!showIntro && <Footer />}
     </>
   );
 }

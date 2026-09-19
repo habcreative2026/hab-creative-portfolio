@@ -599,3 +599,121 @@ function formatUptime(seconds) {
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
+
+// ⭐ BLOCK EMAIL (chỉ Owner)
+exports.blockEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const userEmail = req.user.email?.toLowerCase();
+
+    if (userEmail !== OWNER_EMAIL.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: "🚫 Chỉ Owner mới có quyền khóa email!",
+      });
+    }
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập email cần khóa!",
+      });
+    }
+
+    const targetEmail = email.toLowerCase().trim();
+
+    if (targetEmail === OWNER_EMAIL.toLowerCase()) {
+      return res.status(400).json({
+        success: false,
+        message: "🚫 Không thể khóa tài khoản Owner!",
+      });
+    }
+
+    let settings = await SystemSettings.findOne();
+    if (!settings) settings = new SystemSettings();
+
+    if (!settings.blockedEmails.includes(targetEmail)) {
+      settings.blockedEmails.push(targetEmail);
+      await settings.save();
+    }
+
+    await logActivity(
+      req.user.id,
+      "block_email",
+      `Blocked email: ${targetEmail}`,
+      { targetEmail },
+    );
+
+    console.log(`[Admin] 🔒 OWNER đã khóa: ${targetEmail}`);
+
+    res.json({
+      success: true,
+      message: `Đã khóa email ${targetEmail}`,
+      data: settings.blockedEmails,
+    });
+  } catch (error) {
+    console.error("Block email error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ⭐ UNBLOCK EMAIL (chỉ Owner)
+exports.unblockEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const userEmail = req.user.email?.toLowerCase();
+
+    if (userEmail !== OWNER_EMAIL.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: "🚫 Chỉ Owner mới có quyền mở khóa email!",
+      });
+    }
+
+    const targetEmail = email.toLowerCase().trim();
+
+    let settings = await SystemSettings.findOne();
+    if (!settings) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không có settings" });
+    }
+
+    settings.blockedEmails = settings.blockedEmails.filter(
+      (e) => e !== targetEmail,
+    );
+    await settings.save();
+
+    await logActivity(
+      req.user.id,
+      "unblock_email",
+      `Unblocked email: ${targetEmail}`,
+      { targetEmail },
+    );
+
+    console.log(`[Admin] 🔓 OWNER đã mở khóa: ${targetEmail}`);
+
+    res.json({
+      success: true,
+      message: `Đã mở khóa email ${targetEmail}`,
+      data: settings.blockedEmails,
+    });
+  } catch (error) {
+    console.error("Unblock email error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ⭐ GET BLOCKED LIST
+exports.getBlockedEmails = async (req, res) => {
+  try {
+    let settings = await SystemSettings.findOne();
+    if (!settings) {
+      settings = new SystemSettings();
+      await settings.save();
+    }
+    res.json({ success: true, data: settings.blockedEmails || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

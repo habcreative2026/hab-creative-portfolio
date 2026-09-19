@@ -12,38 +12,26 @@ const {
 const path = require("path");
 const fs = require("fs");
 
-// ===================== FLAGS =====================
 const FACE_TEST_MODE = false;
 
 let mainWindow = null;
-let loadingWindow = null;
 let faceTestWindow = null;
 let faceRegisterWindow = null;
 let faceUnlockWindow = null;
+let faceManagerWindow = null;
 let isMainReady = false;
-
 let hasRedirectedToDashboard = false;
-let faceUnlockAttempts = 0;
-const MAX_UNLOCK_ATTEMPTS = 3;
-
 let isUnlockingInProgress = false;
 let isTransitioningToMain = false;
 
-// Đường dẫn file
 const FACE_PROFILES_PATH = path.join(
   app.getPath("userData"),
   "face-profiles.enc",
 );
 const FACE_METADATA_PATH = path.join(app.getPath("userData"), "face-meta.json");
-const DASHBOARD_URL = "http://localhost:3000/admin/dashboard";
-const LOGIN_URL = "http://localhost:3000/admin/login";
-
-// 🆕 Các loại face profile (3 types)
-const FACE_TYPES = {
-  noMask: { id: "noMask", label: "Không khẩu trang", emoji: "😊" },
-  withMask: { id: "withMask", label: "Có khẩu trang", emoji: "😷" },
-  withGlasses: { id: "withGlasses", label: "Đeo kính", emoji: "👓" },
-};
+const DASHBOARD_URL = "https://hab-creative.com/admin/dashboard";
+const LOGIN_URL = "https://hab-creative.com/admin/login";
+const MAX_FACES = 3;
 
 app.commandLine.appendSwitch("enable-gpu-rasterization");
 app.commandLine.appendSwitch("enable-zero-copy");
@@ -51,37 +39,71 @@ app.commandLine.appendSwitch("enable-oop-rasterization");
 app.commandLine.appendSwitch("disable-software-rasterizer");
 app.commandLine.appendSwitch("js-flags", "--max-old-space-size=512");
 app.commandLine.appendSwitch("disable-renderer-backgrounding");
-
 app.commandLine.appendSwitch("ignore-gpu-blacklist");
 app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
+app.commandLine.appendSwitch("use-gl", "angle");
+app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
 
-// ===================== FACE ID HELPERS =====================
-function hasAnyFaceRegistered() {
-  return fs.existsSync(FACE_PROFILES_PATH);
+// ===================== FACE HELPERS =====================
+
+function loadAllFaces() {
+  try {
+    if (!fs.existsSync(FACE_PROFILES_PATH)) return [];
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error("Mã hóa hệ thống không khả dụng");
+    }
+    const encrypted = fs.readFileSync(FACE_PROFILES_PATH);
+    const decrypted = safeStorage.decryptString(encrypted);
+    const parsed = JSON.parse(decrypted);
+    const faces = parsed.faces || [];
+
+    const validFaces = faces.filter((face) => {
+      if (!face || typeof face !== "object") return false;
+
+      if (Array.isArray(face.descriptors)) {
+        return face.descriptors.every(
+          (d) => Array.isArray(d) && d.length === 128,
+        );
+      }
+
+      if (Array.isArray(face.descriptor) && face.descriptor.length === 128) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (validFaces.length !== faces.length) {
+      saveAllFaces(validFaces);
+    }
+
+    return validFaces;
+  } catch (err) {
+    console.error("[Face] Load error:", err);
+    return [];
+  }
 }
 
-function getRegisteredFaceTypes() {
+function saveAllFaces(faces) {
   try {
-    if (!fs.existsSync(FACE_METADATA_PATH)) return [];
-    const meta = JSON.parse(fs.readFileSync(FACE_METADATA_PATH, "utf-8"));
-    return Object.keys(meta.profiles || {}).filter(
-      (key) => meta.profiles[key]?.registeredAt,
-    );
+    if (!safeStorage.isEncryptionAvailable())
+      throw new Error("Mã hóa hệ thống không khả dụng");
+    const jsonStr = JSON.stringify({ faces });
+    const encrypted = safeStorage.encryptString(jsonStr);
+    fs.writeFileSync(FACE_PROFILES_PATH, encrypted);
+    return true;
   } catch (err) {
-    console.error("[Face] Get registered types error:", err);
-    return [];
+    console.error("[Face] Save error:", err);
+    return false;
   }
 }
 
 function loadFaceMetadata() {
   try {
-    if (!fs.existsSync(FACE_METADATA_PATH)) {
-      return { profiles: {}, version: "2.0.0" };
-    }
+    if (!fs.existsSync(FACE_METADATA_PATH)) return { faces: [] };
     return JSON.parse(fs.readFileSync(FACE_METADATA_PATH, "utf-8"));
-  } catch (err) {
-    console.error("[Face] Load metadata error:", err);
-    return { profiles: {}, version: "2.0.0" };
+  } catch (_) {
+    return { faces: [] };
   }
 }
 
@@ -89,107 +111,70 @@ function saveFaceMetadata(metadata) {
   try {
     fs.writeFileSync(FACE_METADATA_PATH, JSON.stringify(metadata, null, 2));
     return true;
-  } catch (err) {
-    console.error("[Face] Save metadata error:", err);
+  } catch (_) {
     return false;
   }
 }
 
-function loadAllFaceProfiles() {
-  try {
-    if (!fs.existsSync(FACE_PROFILES_PATH)) return null;
-    if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error("Mã hóa hệ thống không khả dụng");
-    }
-    const encrypted = fs.readFileSync(FACE_PROFILES_PATH);
-    const decrypted = safeStorage.decryptString(encrypted);
-    return JSON.parse(decrypted);
-  } catch (err) {
-    console.error("[Face] Load profiles error:", err);
-    return null;
-  }
+function getFaceCount() {
+  return loadAllFaces().length;
 }
 
-function saveAllFaceProfiles(profiles) {
+function hasAnyFaceRegistered() {
+  return getFaceCount() > 0;
+}
+
+function deleteAllFaces() {
   try {
-    if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error("Mã hóa hệ thống không khả dụng");
-    }
-    const jsonStr = JSON.stringify(profiles);
-    const encrypted = safeStorage.encryptString(jsonStr);
-    fs.writeFileSync(FACE_PROFILES_PATH, encrypted);
+    if (fs.existsSync(FACE_PROFILES_PATH)) fs.unlinkSync(FACE_PROFILES_PATH);
+    if (fs.existsSync(FACE_METADATA_PATH)) fs.unlinkSync(FACE_METADATA_PATH);
     return true;
-  } catch (err) {
-    console.error("[Face] Save profiles error:", err);
+  } catch (_) {
     return false;
   }
 }
 
-// ===================== LOADING WINDOW =====================
-function createLoadingWindow(type = "init") {
-  if (loadingWindow && !loadingWindow.isDestroyed()) {
-    loadingWindow.webContents.send("update-loading", type);
-    loadingWindow.show();
-    return loadingWindow;
-  }
+function deleteFaceByIndex(index) {
+  try {
+    const faces = loadAllFaces();
+    if (index < 0 || index >= faces.length) return false;
 
-  loadingWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 768,
-    frame: false,
-    transparent: false,
-    resizable: true,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, "preload.js"),
-    },
-    icon: path.join(__dirname, "assets", "icon.png"),
-    title: "HAB CREATIVE",
-    backgroundColor: "#0a0a0f",
-    show: true,
-  });
+    const newFaces = faces.filter((_, i) => i !== index);
+    saveAllFaces(newFaces);
 
-  loadingWindow.loadFile(path.join(__dirname, "loading.html"), {
-    query: { type: type },
-  });
+    const meta = loadFaceMetadata();
+    if (meta.faces && meta.faces.length > index) {
+      meta.faces.splice(index, 1);
+      saveFaceMetadata(meta);
+    }
 
-  loadingWindow.on("closed", () => {
-    loadingWindow = null;
-  });
-
-  return loadingWindow;
-}
-
-function hideLoading() {
-  if (loadingWindow && !loadingWindow.isDestroyed()) {
-    loadingWindow.close();
-    loadingWindow = null;
+    if (newFaces.length === 0) deleteAllFaces();
+    return true;
+  } catch (_) {
+    return false;
   }
 }
 
 // ===================== FACE UNLOCK WINDOW =====================
-function createFaceUnlockWindow() {
-  console.log("[Face Unlock] Creating unlock window");
 
-  faceUnlockAttempts = 0;
+function createFaceUnlockWindow() {
   isUnlockingInProgress = false;
   isTransitioningToMain = false;
 
   faceUnlockWindow = new BrowserWindow({
-    width: 550,
-    height: 720,
+    width: 460,
+    height: 680,
     resizable: false,
+    frame: false,
+    transparent: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
       webSecurity: false,
     },
-    title: "Mở khóa HAB CREATIVE",
-    backgroundColor: "#0a0a0f",
+    title: "Mở khóa",
+    backgroundColor: "#000000",
     show: true,
   });
 
@@ -197,28 +182,19 @@ function createFaceUnlockWindow() {
 
   faceUnlockWindow.webContents.session.setPermissionRequestHandler(
     (webContents, permission, callback) => {
-      if (permission === "media") callback(true);
-      else callback(false);
+      callback(permission === "media");
     },
   );
 
   faceUnlockWindow.on("closed", () => {
-    console.log("[Face Unlock] Window closed");
     faceUnlockWindow = null;
-
-    if (isUnlockingInProgress || isTransitioningToMain) {
-      console.log("[Face Unlock] Unlock in progress, skipping quit");
-      return;
-    }
-
-    if (!mainWindow && !isMainReady) {
-      console.log("[Face Unlock] Closed without unlocking → quitting app");
-      app.quit();
-    }
+    if (isUnlockingInProgress || isTransitioningToMain) return;
+    if (!mainWindow && !isMainReady) app.quit();
   });
 }
 
 // ===================== MAIN WINDOW =====================
+
 async function createMainWindow(options = {}) {
   const { fromUnlock = false } = options;
   const mainSession = session.fromPartition("persist:main");
@@ -227,10 +203,7 @@ async function createMainWindow(options = {}) {
   try {
     const cookies = await mainSession.cookies.get({ name: "auth_token" });
     isLoggedIn = cookies.length > 0 && !!cookies[0].value;
-    console.log("[Main] Auth cookie found:", isLoggedIn);
-  } catch (err) {
-    console.error("[Main] Cookie check error:", err);
-  }
+  } catch (_) {}
 
   if (isLoggedIn) hasRedirectedToDashboard = true;
 
@@ -258,17 +231,7 @@ async function createMainWindow(options = {}) {
     show: false,
   });
 
-  let targetUrl;
-  if (fromUnlock && isLoggedIn) {
-    targetUrl = DASHBOARD_URL;
-    console.log("[Main] Unlocked + has cookie → dashboard");
-  } else if (isLoggedIn) {
-    targetUrl = DASHBOARD_URL;
-    console.log("[Main] Has cookie → dashboard");
-  } else {
-    targetUrl = LOGIN_URL;
-    console.log("[Main] No cookie → login");
-  }
+  const targetUrl = isLoggedIn ? DASHBOARD_URL : LOGIN_URL;
 
   mainWindow.loadURL(targetUrl, {
     extraHeaders: "x-desktop-app: true\n",
@@ -280,24 +243,20 @@ async function createMainWindow(options = {}) {
     if (url.includes("accounts.google.com") || url.includes("google.com")) {
       if (!loginStarted) {
         loginStarted = true;
-        createLoadingWindow("login");
+        // ⭐ Không tạo loading window nữa
       }
     }
   });
 
   mainWindow.webContents.on("did-finish-load", () => {
-    console.log("[Main] ✅ Finished loading");
-    hideLoading();
     loginStarted = false;
     mainWindow.show();
     mainWindow.focus();
     isMainReady = true;
     isTransitioningToMain = false;
-    console.log("[Main] isTransitioningToMain reset to false");
   });
 
   mainWindow.webContents.on("did-fail-load", () => {
-    hideLoading();
     loginStarted = false;
     if (mainWindow) mainWindow.show();
     isTransitioningToMain = false;
@@ -322,29 +281,19 @@ async function createMainWindow(options = {}) {
   });
 }
 
-// ===================== COOKIE LISTENER =====================
 function setupCookieListener() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
   const mainSession = session.fromPartition("persist:main");
 
   mainSession.cookies.on("changed", (event, cookie, cause, removed) => {
-    if (cookie.name === "auth_token") {
-      console.log(
-        `[Cookie] auth_token | cause=${cause} | removed=${removed} | hasRedirected=${hasRedirectedToDashboard}`,
-      );
-    }
-
     if (
       cookie.name === "auth_token" &&
       !removed &&
       cause === "explicit" &&
       !hasRedirectedToDashboard
     ) {
-      console.log("[Main] ✅ Login detected → redirecting to dashboard");
       hasRedirectedToDashboard = true;
-
-      createLoadingWindow("login");
 
       setTimeout(() => {
         if (mainWindow && !mainWindow.isDestroyed()) {
@@ -352,7 +301,7 @@ function setupCookieListener() {
             extraHeaders: "x-desktop-app: true\n",
           });
         }
-      }, 500);
+      }, 400);
     }
 
     if (cookie.name === "auth_token" && removed) {
@@ -362,18 +311,32 @@ function setupCookieListener() {
 }
 
 // ===================== FACE REGISTER WINDOW =====================
-function openFaceRegistration(faceType = null) {
+
+function openFaceRegistration() {
   if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
     faceRegisterWindow.focus();
     return;
   }
 
-  console.log("[Face] Opening registration window, type:", faceType);
+  const count = getFaceCount();
+  if (count >= MAX_FACES) {
+    dialog.showMessageBox({
+      type: "warning",
+      title: "Đã đủ khuôn mặt",
+      message: `Bạn đã đăng ký tối đa ${MAX_FACES} khuôn mặt.`,
+      detail:
+        "Vui lòng xóa bớt 1 khuôn mặt trong menu 'Quản lý Face ID' trước khi đăng ký mới.",
+      buttons: ["OK"],
+    });
+    return;
+  }
 
   faceRegisterWindow = new BrowserWindow({
-    width: 750,
-    height: 800,
+    width: 460,
+    height: 680,
     resizable: false,
+    frame: false,
+    transparent: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -381,22 +344,15 @@ function openFaceRegistration(faceType = null) {
       webSecurity: false,
     },
     title: "Đăng ký Face ID",
-    backgroundColor: "#0a0a0f",
+    backgroundColor: "#000000",
     show: true,
   });
 
-  if (faceType) {
-    faceRegisterWindow.loadFile("face-register.html", {
-      query: { type: faceType },
-    });
-  } else {
-    faceRegisterWindow.loadFile("face-register.html");
-  }
+  faceRegisterWindow.loadFile("face-register.html");
 
   faceRegisterWindow.webContents.session.setPermissionRequestHandler(
     (webContents, permission, callback) => {
-      if (permission === "media") callback(true);
-      else callback(false);
+      callback(permission === "media");
     },
   );
 
@@ -406,98 +362,92 @@ function openFaceRegistration(faceType = null) {
   });
 }
 
-// ===================== DELETE FACE ID =====================
-async function confirmDeleteFaceId() {
-  const registered = getRegisteredFaceTypes();
-  if (registered.length === 0) return;
+// ===================== FACE MANAGER WINDOW =====================
 
-  const labels = registered
-    .map((t) => `  ${FACE_TYPES[t].emoji} ${FACE_TYPES[t].label}`)
-    .join("\n");
+function openFaceManager() {
+  if (faceManagerWindow && !faceManagerWindow.isDestroyed()) {
+    faceManagerWindow.focus();
+    return;
+  }
 
-  const result = await dialog.showMessageBox({
-    type: "warning",
-    title: "Xóa Face ID?",
-    message: "Bạn có chắc muốn xóa TẤT CẢ Face ID?",
-    detail: `Sẽ xóa:\n${labels}\n\nBạn cần đăng ký lại để sử dụng Face ID.`,
-    buttons: ["Hủy", "Xóa tất cả"],
-    defaultId: 0,
-    cancelId: 0,
+  faceManagerWindow = new BrowserWindow({
+    width: 520,
+    height: 620,
+    resizable: false,
+    frame: false,
+    transparent: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
+      webSecurity: false,
+    },
+    title: "Quản lý Face ID",
+    backgroundColor: "#0a0a0f",
+    show: true,
   });
 
-  if (result.response === 1) {
-    try {
-      if (fs.existsSync(FACE_PROFILES_PATH)) fs.unlinkSync(FACE_PROFILES_PATH);
-      if (fs.existsSync(FACE_METADATA_PATH)) fs.unlinkSync(FACE_METADATA_PATH);
-      console.log("[Face] ✅ Deleted all profiles");
+  faceManagerWindow.loadFile("face-manager.html");
 
-      await dialog.showMessageBox({
-        type: "info",
-        title: "Đã xóa",
-        message: "Tất cả Face ID đã được xóa thành công.",
-        buttons: ["OK"],
-      });
-
-      createMenu();
-    } catch (err) {
-      console.error("[Face] Delete error:", err);
-      dialog.showErrorBox("Lỗi", "Không thể xóa Face ID: " + err.message);
-    }
-  }
+  faceManagerWindow.on("closed", () => {
+    faceManagerWindow = null;
+    createMenu();
+  });
 }
 
-async function confirmDeleteOneFace(faceType) {
-  const meta = loadFaceMetadata();
-  const profile = meta.profiles?.[faceType];
-  if (!profile) return;
+// ===================== DELETE CONFIRM =====================
 
-  const faceInfo = FACE_TYPES[faceType];
+async function confirmDeleteOneFace(index) {
+  const meta = loadFaceMetadata();
+  const face = meta.faces?.[index];
+  const faceName = face?.name || `Khuôn mặt #${index + 1}`;
 
   const result = await dialog.showMessageBox({
     type: "warning",
-    title: `Xóa ${faceInfo.label}?`,
-    message: `Bạn có chắc muốn xóa Face ID "${faceInfo.label}"?`,
-    detail: `Đăng ký ngày: ${new Date(profile.registeredAt).toLocaleString("vi-VN")}`,
+    title: `Xóa ${faceName}?`,
+    message: `Bạn có chắc muốn xóa "${faceName}"?`,
+    detail: face?.registeredAt
+      ? `Đăng ký ngày: ${new Date(face.registeredAt).toLocaleString("vi-VN")}`
+      : "",
     buttons: ["Hủy", "Xóa"],
     defaultId: 0,
     cancelId: 0,
   });
 
   if (result.response === 1) {
-    try {
-      const profiles = loadAllFaceProfiles() || {};
-      delete profiles[faceType];
-      saveAllFaceProfiles(profiles);
-
-      const meta = loadFaceMetadata();
-      delete meta.profiles[faceType];
-      saveFaceMetadata(meta);
-
-      if (Object.keys(profiles).length === 0) {
-        if (fs.existsSync(FACE_PROFILES_PATH))
-          fs.unlinkSync(FACE_PROFILES_PATH);
-        if (fs.existsSync(FACE_METADATA_PATH))
-          fs.unlinkSync(FACE_METADATA_PATH);
-      }
-
-      console.log(`[Face] ✅ Deleted profile: ${faceType}`);
-
-      await dialog.showMessageBox({
-        type: "info",
-        title: "Đã xóa",
-        message: `Face ID "${faceInfo.label}" đã được xóa.`,
-        buttons: ["OK"],
-      });
-
+    const ok = deleteFaceByIndex(index);
+    if (ok) {
       createMenu();
-    } catch (err) {
-      console.error("[Face] Delete error:", err);
-      dialog.showErrorBox("Lỗi", "Không thể xóa: " + err.message);
+      if (faceManagerWindow && !faceManagerWindow.isDestroyed())
+        faceManagerWindow.reload();
     }
   }
 }
 
-// ===================== FACE TEST WINDOW =====================
+async function confirmDeleteAllFaces() {
+  const count = getFaceCount();
+  if (count === 0) return;
+
+  const result = await dialog.showMessageBox({
+    type: "warning",
+    title: "Xóa tất cả Face ID?",
+    message: `Bạn có chắc muốn xóa TẤT CẢ ${count} khuôn mặt?`,
+    detail: "Bạn cần đăng ký lại để sử dụng Face ID.",
+    buttons: ["Hủy", "Xóa tất cả"],
+    defaultId: 0,
+    cancelId: 0,
+  });
+
+  if (result.response === 1) {
+    deleteAllFaces();
+    createMenu();
+    if (faceManagerWindow && !faceManagerWindow.isDestroyed())
+      faceManagerWindow.reload();
+  }
+}
+
+// ===================== FACE TEST =====================
+
 function createFaceTestWindow() {
   faceTestWindow = new BrowserWindow({
     width: 900,
@@ -510,15 +460,14 @@ function createFaceTestWindow() {
       webSecurity: false,
     },
     title: "Face ID Test",
-    backgroundColor: "#0a0a0f",
+    backgroundColor: "#000000",
   });
 
   faceTestWindow.loadFile("face-test.html");
 
   faceTestWindow.webContents.session.setPermissionRequestHandler(
     (webContents, permission, callback) => {
-      if (permission === "media") callback(true);
-      else callback(false);
+      callback(permission === "media");
     },
   );
 
@@ -530,86 +479,35 @@ function createFaceTestWindow() {
 }
 
 // ===================== MENU =====================
+
 function createMenu() {
   const isMac = process.platform === "darwin";
-  const registered = getRegisteredFaceTypes();
-  const hasNoMask = registered.includes("noMask");
-  const hasWithMask = registered.includes("withMask");
-  const hasWithGlasses = registered.includes("withGlasses");
-  const hasAny = registered.length > 0;
+  const count = getFaceCount();
+  const hasAny = count > 0;
+  const isFull = count >= MAX_FACES;
 
-  // Build submenu cho Face ID
   const faceSubmenu = [
     {
-      label: hasNoMask
-        ? "📸 Đăng ký lại Không khẩu trang"
-        : "📸 Đăng ký Không khẩu trang",
+      label: isFull
+        ? `Đăng ký Face mới (đã đủ ${MAX_FACES}/${MAX_FACES})`
+        : `Đăng ký Face mới (${count}/${MAX_FACES})`,
       accelerator: "CmdOrCtrl+Shift+1",
-      click: () => openFaceRegistration("noMask"),
+      enabled: !isFull,
+      click: () => openFaceRegistration(),
     },
     {
-      label: hasWithMask
-        ? "📸 Đăng ký lại Có khẩu trang"
-        : "📸 Đăng ký Có khẩu trang",
+      label: `Quản lý Face ID (${count}/${MAX_FACES})`,
       accelerator: "CmdOrCtrl+Shift+2",
-      click: () => openFaceRegistration("withMask"),
-    },
-    {
-      label: hasWithGlasses ? "📸 Đăng ký lại Đeo kính" : "📸 Đăng ký Đeo kính",
-      accelerator: "CmdOrCtrl+Shift+3",
-      click: () => openFaceRegistration("withGlasses"),
+      enabled: hasAny,
+      click: () => openFaceManager(),
     },
     { type: "separator" },
+    {
+      label: "Xóa tất cả Face ID",
+      enabled: hasAny,
+      click: () => confirmDeleteAllFaces(),
+    },
   ];
-
-  // Nếu đã đăng ký loại nào → thêm option xóa riêng
-  if (hasNoMask) {
-    faceSubmenu.push({
-      label: "🗑️ Xóa Không khẩu trang",
-      click: () => confirmDeleteOneFace("noMask"),
-    });
-  }
-  if (hasWithMask) {
-    faceSubmenu.push({
-      label: "🗑️ Xóa Có khẩu trang",
-      click: () => confirmDeleteOneFace("withMask"),
-    });
-  }
-  if (hasWithGlasses) {
-    faceSubmenu.push({
-      label: "🗑️ Xóa Đeo kính",
-      click: () => confirmDeleteOneFace("withGlasses"),
-    });
-  }
-
-  if (hasAny) {
-    faceSubmenu.push({ type: "separator" });
-    faceSubmenu.push({
-      label: "🗑️ Xóa tất cả Face ID",
-      click: () => confirmDeleteFaceId(),
-    });
-  }
-
-  // Trạng thái
-  faceSubmenu.push({ type: "separator" });
-  faceSubmenu.push({
-    label: hasNoMask
-      ? "✅ Không khẩu trang: Đã đăng ký"
-      : "❌ Không khẩu trang: Chưa đăng ký",
-    enabled: false,
-  });
-  faceSubmenu.push({
-    label: hasWithMask
-      ? "✅ Có khẩu trang: Đã đăng ký"
-      : "❌ Có khẩu trang: Chưa đăng ký",
-    enabled: false,
-  });
-  faceSubmenu.push({
-    label: hasWithGlasses
-      ? "✅ Đeo kính: Đã đăng ký"
-      : "❌ Đeo kính: Chưa đăng ký",
-    enabled: false,
-  });
 
   const template = [
     ...(isMac
@@ -643,7 +541,7 @@ function createMenu() {
         { type: "separator" },
         {
           label: "Trang chủ",
-          click: () => shell.openExternal("http://localhost:3000"),
+          click: () => shell.openExternal("https://hab-creative.com"),
         },
         { type: "separator" },
         ...(isMac
@@ -723,20 +621,14 @@ function createMenu() {
 }
 
 // ===================== IPC HANDLERS =====================
+
 ipcMain.handle("copy-to-clipboard", (event, text) => {
   try {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) win.focus();
-    for (let i = 0; i < 3; i++) {
-      clipboard.writeText(text);
-      if (clipboard.readText() === text) return true;
-      if (i < 2) {
-        const start = Date.now();
-        while (Date.now() - start < 100) {}
-      }
-    }
-    return false;
-  } catch (error) {
+    clipboard.writeText(text);
+    return clipboard.readText() === text;
+  } catch (_) {
     return false;
   }
 });
@@ -744,7 +636,7 @@ ipcMain.handle("copy-to-clipboard", (event, text) => {
 ipcMain.handle("read-from-clipboard", () => {
   try {
     return clipboard.readText();
-  } catch (error) {
+  } catch (_) {
     return "";
   }
 });
@@ -761,185 +653,176 @@ ipcMain.on("maximize-window", () => {
 
 ipcMain.on("quit-app", () => app.quit());
 
-ipcMain.on("loading-ready", () => {
-  if (!mainWindow && !isMainReady) {
-    createMainWindow();
-  } else {
-    hideLoading();
-  }
-});
+// ⭐ ĐÃ XÓA CÁC IPC LIÊN QUAN LOADING:
+// - loading-ready
+// - update-loading
+// - close-login-loading
 
-ipcMain.on("update-loading", (event, type) => {
-  createLoadingWindow(type);
-});
+// ===================== FACE IPC =====================
 
-ipcMain.on("close-login-loading", () => {
-  hideLoading();
-});
-
-// ===================== FACE ID IPC =====================
-ipcMain.handle("face:has-descriptor", () => {
+ipcMain.handle("face:has-any", () => {
   try {
     return hasAnyFaceRegistered();
-  } catch (err) {
+  } catch (_) {
     return false;
   }
 });
 
-ipcMain.handle("face:has-type", (event, faceType) => {
+ipcMain.handle("face:count", () => {
   try {
-    const registered = getRegisteredFaceTypes();
-    return registered.includes(faceType);
-  } catch (err) {
+    return getFaceCount();
+  } catch (_) {
+    return 0;
+  }
+});
+
+ipcMain.handle("face:max", () => MAX_FACES);
+
+ipcMain.handle("face:is-full", () => {
+  try {
+    return getFaceCount() >= MAX_FACES;
+  } catch (_) {
     return false;
   }
 });
 
-ipcMain.handle("face:list-types", () => {
+ipcMain.handle("face:save", (event, payload) => {
   try {
-    return getRegisteredFaceTypes();
-  } catch (err) {
-    return [];
-  }
-});
+    let descriptors;
+    let eyesOpen;
 
-ipcMain.handle("face:save-descriptor", (event, payload) => {
-  try {
-    let faceType, descriptor;
-
-    if (Array.isArray(payload)) {
-      faceType = "noMask";
-      descriptor = payload;
-      console.warn("[Face IPC] Legacy call, defaulting to noMask");
+    if (Array.isArray(payload) && typeof payload[0] === "number") {
+      descriptors = [payload];
+      eyesOpen = true;
+    } else if (payload.descriptors && Array.isArray(payload.descriptors)) {
+      descriptors = payload.descriptors;
+      eyesOpen = payload.eyesOpen !== false;
+    } else if (payload.descriptor) {
+      descriptors = [payload.descriptor];
+      eyesOpen = payload.eyesOpen !== false;
     } else {
-      faceType = payload.faceType;
-      descriptor = payload.descriptor;
+      throw new Error("Payload không hợp lệ");
     }
 
-    if (!FACE_TYPES[faceType]) {
-      throw new Error(`Face type không hợp lệ: ${faceType}`);
+    if (descriptors.length === 0) throw new Error("Cần ít nhất 1 descriptor");
+
+    for (const d of descriptors) {
+      if (!Array.isArray(d) || d.length !== 128) {
+        throw new Error("Descriptor không hợp lệ (phải có 128 số)");
+      }
     }
 
-    if (!Array.isArray(descriptor) || descriptor.length !== 128) {
-      throw new Error("Descriptor không hợp lệ (phải có 128 số)");
-    }
-
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!eyesOpen) throw new Error("Chỉ đăng ký khi cả 2 mắt đang mở");
+    if (!safeStorage.isEncryptionAvailable())
       throw new Error("Mã hóa hệ thống không khả dụng");
+
+    const faces = loadAllFaces();
+
+    if (faces.length >= MAX_FACES) {
+      throw new Error(
+        `Đã đủ ${MAX_FACES} khuôn mặt. Vui lòng xóa bớt trước khi thêm.`,
+      );
     }
 
-    let profiles = loadAllFaceProfiles();
-    if (!profiles) profiles = {};
+    faces.push({
+      descriptors,
+      eyesOpen: true,
+      registeredAt: new Date().toISOString(),
+    });
 
-    profiles[faceType] = descriptor;
-
-    if (!saveAllFaceProfiles(profiles)) {
-      throw new Error("Không lưu được file");
-    }
+    if (!saveAllFaces(faces)) throw new Error("Không lưu được file");
 
     const meta = loadFaceMetadata();
-    if (!meta.profiles) meta.profiles = {};
-    meta.profiles[faceType] = {
+    if (!meta.faces) meta.faces = [];
+    meta.faces.push({
+      name: `Khuôn mặt #${faces.length}`,
       registeredAt: new Date().toISOString(),
       platform: process.platform,
-      version: "2.0.0",
-    };
+      version: "6.0.0",
+    });
     saveFaceMetadata(meta);
 
-    console.log(
-      `[Face IPC] ✅ Saved profile: ${faceType}, total: ${Object.keys(profiles).length}`,
-    );
-
     return {
       success: true,
-      message: `Đã lưu Face ID "${FACE_TYPES[faceType].label}"`,
-      faceType,
+      message: `Đã lưu Face ID (${faces.length}/${MAX_FACES})`,
+      count: faces.length,
+      max: MAX_FACES,
+      samples: descriptors.length,
     };
   } catch (err) {
-    console.error("[Face IPC] save-descriptor error:", err);
     return { success: false, message: err.message };
   }
 });
 
-ipcMain.handle("face:load-descriptor", () => {
+ipcMain.handle("face:load-all", () => {
   try {
-    if (!hasAnyFaceRegistered()) {
-      return { success: false, message: "Chưa có Face ID" };
+    const faces = loadAllFaces();
+    if (faces.length === 0) {
+      return { success: false, message: "Chưa có Face ID nào" };
     }
 
-    const profiles = loadAllFaceProfiles();
-    if (!profiles || Object.keys(profiles).length === 0) {
-      return { success: false, message: "Chưa có Face ID" };
-    }
-
-    console.log(
-      "[Face IPC] ✅ Loaded profiles:",
-      Object.keys(profiles).join(", "),
-    );
+    const people = faces.map((f) => {
+      if (Array.isArray(f.descriptors)) return f.descriptors;
+      if (Array.isArray(f.descriptor)) return [f.descriptor];
+      return [];
+    });
 
     return {
       success: true,
-      profiles,
-      types: Object.keys(profiles),
+      faces: people,
+      count: people.length,
     };
   } catch (err) {
-    console.error("[Face IPC] load-descriptor error:", err);
     return { success: false, message: err.message };
   }
 });
 
-ipcMain.handle("face:delete-descriptor", () => {
+ipcMain.handle("face:delete-all", () => {
   try {
-    if (fs.existsSync(FACE_PROFILES_PATH)) fs.unlinkSync(FACE_PROFILES_PATH);
-    if (fs.existsSync(FACE_METADATA_PATH)) fs.unlinkSync(FACE_METADATA_PATH);
+    deleteAllFaces();
     return { success: true };
   } catch (err) {
     return { success: false, message: err.message };
   }
 });
 
-ipcMain.handle("face:delete-type", (event, faceType) => {
+ipcMain.handle("face:delete-one", (event, index) => {
   try {
-    if (!FACE_TYPES[faceType]) {
-      throw new Error(`Face type không hợp lệ: ${faceType}`);
-    }
-
-    const profiles = loadAllFaceProfiles() || {};
-    delete profiles[faceType];
-
-    if (Object.keys(profiles).length === 0) {
-      if (fs.existsSync(FACE_PROFILES_PATH)) fs.unlinkSync(FACE_PROFILES_PATH);
-      if (fs.existsSync(FACE_METADATA_PATH)) fs.unlinkSync(FACE_METADATA_PATH);
-    } else {
-      saveAllFaceProfiles(profiles);
-      const meta = loadFaceMetadata();
-      delete meta.profiles[faceType];
-      saveFaceMetadata(meta);
-    }
-
-    return { success: true };
+    const ok = deleteFaceByIndex(index);
+    const remaining = getFaceCount();
+    return { success: ok, remaining };
   } catch (err) {
     return { success: false, message: err.message };
   }
 });
 
-ipcMain.handle("face:get-metadata", () => loadFaceMetadata());
+ipcMain.handle("face:get-list", () => {
+  try {
+    const meta = loadFaceMetadata();
+    const faces = loadAllFaces();
+    const faceList = [];
 
-ipcMain.handle("face:get-types-info", () => {
-  return FACE_TYPES;
+    for (let i = 0; i < faces.length; i++) {
+      faceList.push({
+        name: meta.faces?.[i]?.name || `Khuôn mặt #${i + 1}`,
+        registeredAt: meta.faces?.[i]?.registeredAt || null,
+      });
+    }
+
+    return {
+      success: true,
+      faces: faceList,
+      count: faces.length,
+      max: MAX_FACES,
+    };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
 });
 
-ipcMain.handle("face:get-attempts", () => faceUnlockAttempts);
+// ===================== FACE UNLOCK EVENTS =====================
 
-ipcMain.handle("face:reset-attempts", () => {
-  faceUnlockAttempts = 0;
-  return true;
-});
-
-// ===================== FACE UNLOCK SUCCESS =====================
 ipcMain.on("face:unlock-success-ack", () => {
-  console.log("[Main] 🎉 Face unlock SUCCESS → creating main window");
-
   isUnlockingInProgress = true;
   isTransitioningToMain = true;
 
@@ -951,10 +834,7 @@ ipcMain.on("face:unlock-success-ack", () => {
   createMainWindow({ fromUnlock: true });
 });
 
-// ===================== FACE UNLOCK FALLBACK =====================
 ipcMain.on("face:fallback-login", () => {
-  console.log("[Main] 🔄 Face unlock fallback → Google login");
-
   isUnlockingInProgress = true;
   isTransitioningToMain = true;
 
@@ -972,14 +852,11 @@ ipcMain.on("face:close-window", (event) => {
 });
 
 // ===================== APP LIFECYCLE =====================
+
 app.whenReady().then(() => {
-  console.log("[App] Ready");
-  const faceRegistered = hasAnyFaceRegistered();
-  console.log("[App] Face ID registered:", faceRegistered);
-  console.log("[App] Registered types:", getRegisteredFaceTypes());
+  const faceCount = getFaceCount();
 
   if (FACE_TEST_MODE) {
-    console.log("[App] 🧪 FACE TEST MODE");
     createFaceTestWindow();
     createMenu();
     return;
@@ -987,44 +864,31 @@ app.whenReady().then(() => {
 
   createMenu();
 
-  if (faceRegistered) {
-    console.log("[App] 🔒 Face registered → opening Face ID unlock");
+  // ⭐ KHÔNG DÙNG LOADING NỮA
+  // Nếu có face → mở face unlock
+  // Nếu chưa có face → mở main window luôn (login page)
+  if (faceCount > 0) {
     createFaceUnlockWindow();
   } else {
-    console.log("[App] 🔓 No Face ID → normal flow");
-    createLoadingWindow("init");
+    createMainWindow();
   }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       isMainReady = false;
       hasRedirectedToDashboard = false;
-      faceUnlockAttempts = 0;
       isUnlockingInProgress = false;
       isTransitioningToMain = false;
 
-      if (hasAnyFaceRegistered()) {
-        createFaceUnlockWindow();
-      } else {
-        createLoadingWindow("init");
-      }
+      if (getFaceCount() > 0) createFaceUnlockWindow();
+      else createMainWindow();
     }
-  });
-
-  app.on("before-quit", () => {
-    console.log("App quitting");
   });
 });
 
 app.on("window-all-closed", () => {
-  if (isTransitioningToMain || isUnlockingInProgress) {
-    console.log("[App] window-all-closed during transition → skipping quit");
-    return;
-  }
-
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (isTransitioningToMain || isUnlockingInProgress) return;
+  if (process.platform !== "darwin") app.quit();
 });
 
 process.on("uncaughtException", (error) => {

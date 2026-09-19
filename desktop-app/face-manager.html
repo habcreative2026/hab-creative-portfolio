@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Quản lý Face ID</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a0f;
+        color: #fff;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+          sans-serif;
+        min-height: 100vh;
+        padding: 20px;
+        user-select: none;
+      }
+
+      .header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .header-bar h1 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+
+      .btn-close {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .btn-close:hover {
+        background: rgba(255, 69, 58, 0.2);
+        border-color: rgba(255, 69, 58, 0.4);
+        color: #ff453a;
+      }
+
+      .btn-close:active {
+        transform: scale(0.92);
+      }
+      .btn-close svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .slot-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 16px;
+        background: rgba(10, 132, 255, 0.12);
+        border: 1px solid rgba(10, 132, 255, 0.25);
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #0a84ff;
+        margin-bottom: 18px;
+      }
+
+      .slot-badge .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #0a84ff;
+        box-shadow: 0 0 8px rgba(10, 132, 255, 0.8);
+      }
+
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+      }
+
+      .card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #0a84ff, #30d158);
+        padding: 2px;
+      }
+
+      .avatar-inner {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: #0a0a0f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .avatar-inner::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(10, 132, 255, 0.25),
+          rgba(48, 209, 88, 0.15)
+        );
+        border-radius: 50%;
+      }
+
+      .avatar svg {
+        width: 24px;
+        height: 24px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .info .name {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .verified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 7px;
+        background: rgba(48, 209, 88, 0.12);
+        border: 1px solid rgba(48, 209, 88, 0.25);
+        border-radius: 100px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #30d158;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .verified-badge svg {
+        width: 9px;
+        height: 9px;
+      }
+
+      .info .date {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+
+      .btn-delete {
+        padding: 7px 12px;
+        background: rgba(255, 69, 58, 0.12);
+        color: #ff453a;
+        border: 1px solid rgba(255, 69, 58, 0.25);
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition:
+          background 0.2s,
+          border-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .btn-delete:hover {
+        background: rgba(255, 69, 58, 0.22);
+        border-color: #ff453a;
+      }
+
+      .btn-delete svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      .empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 14px;
+      }
+
+      .empty svg {
+        width: 48px;
+        height: 48px;
+        stroke: rgba(255, 255, 255, 0.15);
+        fill: none;
+        stroke-width: 1.5;
+        margin-bottom: 14px;
+      }
+
+      .tip-box {
+        padding: 14px 16px;
+        background: rgba(10, 132, 255, 0.06);
+        border: 1px solid rgba(10, 132, 255, 0.12);
+        border-radius: 12px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        line-height: 1.6;
+        display: flex;
+        gap: 10px;
+      }
+
+      .tip-box svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        stroke: #0a84ff;
+        fill: none;
+        stroke-width: 2;
+        margin-top: 1px;
+      }
+
+      .tip-box strong {
+        color: #0a84ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header-bar">
+      <h1>Quản lý Face ID</h1>
+      <button class="btn-close" id="closeBtn">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="slot-badge">
+      <span id="slotText">0/3 khuôn mặt</span>
+    </div>
+
+    <div class="list" id="faceList"></div>
+
+    <div class="tip-box">
+      <div>
+        <strong>Mẹo:</strong> Bạn có thể đăng ký tối đa 3 khuôn mặt khác nhau.
+        Khi mở khóa, hệ thống so sánh với TẤT CẢ khuôn mặt đã lưu. Nếu mắt đang
+        nhắm/che, hệ thống sẽ không nhận diện.
+      </div>
+    </div>
+
+    <script>
+      const faceList = document.getElementById("faceList");
+      const slotText = document.getElementById("slotText");
+      const closeBtn = document.getElementById("closeBtn");
+
+      closeBtn.addEventListener("click", () => {
+        window.electronAPI.faceAuth.closeFaceWindow();
+      });
+
+      const avatarSVG = `
+        <svg viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="avGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0a84ff"/>
+              <stop offset="100%" stop-color="#30d158"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" stroke="url(#avGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4.5 20.5c.9-3.5 3.9-5.5 7.5-5.5s6.6 2 7.5 5.5" stroke="url(#avGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+
+      const verifiedSVG = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      `;
+
+      async function loadFaces() {
+        try {
+          const result = await window.electronAPI.faceAuth.getList();
+          if (!result.success) {
+            showEmpty();
+            return;
+          }
+
+          slotText.textContent = `${result.count}/${result.max} khuôn mặt`;
+
+          if (!result.faces || result.faces.length === 0) {
+            showEmpty();
+            return;
+          }
+
+          faceList.innerHTML = result.faces
+            .map(
+              (face, index) => `
+            <div class="card">
+              <div class="avatar">
+                <div class="avatar-inner">${avatarSVG}</div>
+              </div>
+              <div class="info">
+                <div class="name">
+                  ${face.name || `Khuôn mặt #${index + 1}`}
+                  <span class="verified-badge">
+                    ${verifiedSVG}
+                    Verified
+                  </span>
+                </div>
+                <div class="date">Đăng ký: ${face.registeredAt ? new Date(face.registeredAt).toLocaleString("vi-VN") : "Không rõ"}</div>
+              </div>
+              <button class="btn-delete" data-index="${index}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
+                </svg>
+                Xóa
+              </button>
+            </div>
+          `,
+            )
+            .join("");
+
+          document.querySelectorAll(".btn-delete").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              const index = parseInt(e.currentTarget.dataset.index, 10);
+              if (!confirm(`Xóa khuôn mặt #${index + 1}?`)) return;
+
+              const ok = await window.electronAPI.faceAuth.deleteOne(index);
+              if (ok.success) loadFaces();
+            });
+          });
+        } catch (_) {
+          showEmpty();
+        }
+      }
+
+      function showEmpty() {
+        faceList.innerHTML = `
+          <div class="empty">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <p>Chưa có khuôn mặt nào được đăng ký</p>
+          </div>
+        `;
+        slotText.textContent = "0/3 khuôn mặt";
+      }
+
+      window.addEventListener("DOMContentLoaded", loadFaces);
+    </script>
+  </body>
+</html>

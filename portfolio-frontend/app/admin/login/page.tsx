@@ -15,13 +15,13 @@ function LoginContent() {
   const isSessionExpired = searchParams.get("status") === "session_expired";
   const isLoggedOut = searchParams.get("status") === "logged_out";
 
-  useEffect(() => {
-    if (isLoggedOut) {
-      toast.success("Đã đăng xuất thành công!");
-    } else if (isSessionExpired) {
-      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
-    }
-  }, [isLoggedOut, isSessionExpired]);
+  // useEffect(() => {
+  //   if (isLoggedOut) {
+  //     toast.success("Đã đăng xuất thành công!");
+  //   } else if (isSessionExpired) {
+  //     toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
+  //   }
+  // }, [isLoggedOut, isSessionExpired]);
 
   useEffect(() => {
     if (isUnauthorized) {

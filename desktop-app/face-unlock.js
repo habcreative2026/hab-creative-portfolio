@@ -1,233 +1,202 @@
-// ===================== FACE UNLOCK (3-Profile, OPTIMIZED) =====================
-
 const video = document.getElementById("camera");
 const canvas = document.getElementById("overlay");
 const statusEl = document.getElementById("status");
-const lockIcon = document.getElementById("lockIcon");
-const titleEl = document.getElementById("title");
-const subtitleEl = document.getElementById("subtitle");
 const cameraContainer = document.getElementById("cameraContainer");
 const successOverlay = document.getElementById("successOverlay");
+const attemptsIndicator = document.getElementById("attemptsIndicator");
+const brightnessWarning = document.getElementById("brightnessWarning");
+const scanLine = document.getElementById("scanLine");
 const googleBtn = document.getElementById("googleBtn");
 const quitBtn = document.getElementById("quitBtn");
-const attemptsIndicator = document.getElementById("attemptsIndicator");
 
-let detectionInterval = null;
-let detectionTimeout = null;
-let storedProfiles = null;
-let profileTypes = [];
+let storedFaces = [];
 let isUnlocking = false;
 let isDetecting = false;
+let detectionTimeout = null;
 
-// 🆕 Descriptor cache
 let cachedDescriptor = null;
 let lastDescriptorTime = 0;
 
-// 🆕 Attempt tracking (5 lần cho khớp UI)
-const MATCH_THRESHOLD = 0.6;
-const MAX_ATTEMPTS = 5;
+const MATCH_THRESHOLD = 0.45;
+const MAX_ATTEMPTS = 3;
 const FAIL_CONFIRM_FRAMES = 8;
-const NO_FACE_TIMEOUT = 5000;
+const NO_FACE_TIMEOUT = 6000;
+const DETECT_INTERVAL = 100;
+const DESCRIPTOR_INTERVAL = 300;
+const BRIGHTNESS_WARNING = 50;
+const BRIGHTNESS_CRITICAL = 25;
+const REQUIRED_MATCH_FRAMES = 3;
 
 let currentAttempts = 0;
 let consecutiveNoMatch = 0;
 let consecutiveNoFace = 0;
+let consecutiveMatch = 0;
 let lastFaceDetectedTime = Date.now();
 
-// 🆕 Timing
-const DETECT_INTERVAL = 150; // ⬆️ Tăng từ 80 → 150ms
-const DESCRIPTOR_INTERVAL = 400; // ⬆️ Tăng từ 300 → 400ms
-
-// Brightness threshold
-const BRIGHTNESS_WARNING = 50;
-const BRIGHTNESS_CRITICAL = 30;
-
-// Labels
-const TYPE_LABELS = {
-  noMask: "Không khẩu trang",
-  withMask: "Có khẩu trang",
-  withGlasses: "Đeo kính",
-};
-
-// ===================== UPDATE ATTEMPT DOTS =====================
-function updateAttemptDots(failedCount) {
-  const dots = attemptsIndicator.querySelectorAll(".attempt-dot");
-  dots.forEach((dot, i) => {
-    if (i < failedCount) {
-      dot.classList.add("failed");
-    } else {
-      dot.classList.remove("failed");
-    }
+function updateAttemptDots(failed) {
+  const dots = attemptsIndicator.querySelectorAll(".dot");
+  dots.forEach((d, i) => {
+    if (i < failed) d.classList.add("failed");
+    else d.classList.remove("failed");
   });
 }
 
-// ===================== SHOW GOOGLE FALLBACK =====================
-function showGoogleFallback(reason = "") {
-  googleBtn.classList.add("visible");
-  subtitleEl.textContent = reason || "Hoặc đăng nhập bằng Google";
-  lockIcon.style.borderColor = "#f59e0b";
+function updateBrightnessWarning(brightness) {
+  if (!brightnessWarning) return;
+
+  if (brightness < BRIGHTNESS_CRITICAL) {
+    brightnessWarning.textContent = "Quá tối - Bật đèn";
+    brightnessWarning.classList.add("on");
+    cameraContainer.classList.add("warning");
+  } else if (brightness < BRIGHTNESS_WARNING) {
+    brightnessWarning.textContent = "Ánh sáng yếu";
+    brightnessWarning.classList.add("on");
+  } else {
+    brightnessWarning.classList.remove("on");
+    cameraContainer.classList.remove("warning");
+  }
 }
 
-// ===================== SHOW SUCCESS =====================
-function showSuccess(matchedType) {
-  lockIcon.classList.add("unlocked");
-  titleEl.classList.add("unlocked");
-  titleEl.textContent = "Đã mở khóa";
-  subtitleEl.textContent = "Đang mở ứng dụng...";
+function showSuccess() {
+  isUnlocking = true;
+  cameraContainer.classList.remove("scanning");
   cameraContainer.classList.add("success");
-  statusEl.textContent = `✅ Nhận diện thành công (${matchedType})`;
-  statusEl.className = "status success";
+  scanLine.classList.remove("on");
   attemptsIndicator.style.display = "none";
+  successOverlay.classList.add("on");
 
-  successOverlay.classList.add("visible");
-
-  if (detectionInterval) clearInterval(detectionInterval);
   if (detectionTimeout) clearTimeout(detectionTimeout);
 
   setTimeout(() => {
-    console.log("[Unlock] Sending unlock-success to main process");
     window.electronAPI.faceAuth.unlockSuccess();
   }, 400);
 }
 
-// ===================== HANDLE FAIL ATTEMPT =====================
 function registerFailAttempt() {
   currentAttempts++;
   updateAttemptDots(currentAttempts);
   consecutiveNoMatch = 0;
   consecutiveNoFace = 0;
+  consecutiveMatch = 0;
 
-  console.log(`[Unlock] ❌ Fail attempt ${currentAttempts}/${MAX_ATTEMPTS}`);
+  cameraContainer.classList.remove("scanning");
+  cameraContainer.classList.add("error");
 
   if (currentAttempts >= MAX_ATTEMPTS) {
-    console.log("[Unlock] 🚫 Max attempts reached → showing Google fallback");
     setFaceStatus(
       statusEl,
-      "❌ Đã thử quá nhiều lần. Vui lòng đăng nhập bằng Google.",
+      "Đã thử quá nhiều lần. Chuyển sang đăng nhập Google...",
       "error",
     );
-    showGoogleFallback("Đã thử quá nhiều lần, đăng nhập bằng Google");
 
-    if (detectionInterval) clearInterval(detectionInterval);
     if (detectionTimeout) clearTimeout(detectionTimeout);
-
     const stream = video.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+
+    setTimeout(() => {
+      window.electronAPI.faceAuth.fallbackToLogin();
+    }, 1500);
     return;
   }
 
   setFaceStatus(
     statusEl,
-    `❌ Không khớp. Còn ${MAX_ATTEMPTS - currentAttempts} lần thử.`,
+    `Không khớp. Còn ${MAX_ATTEMPTS - currentAttempts} lần thử`,
     "error",
   );
+
+  setTimeout(() => {
+    cameraContainer.classList.remove("error");
+    cameraContainer.classList.add("scanning");
+  }, 1000);
 }
 
-// ===================== MAIN =====================
 async function init() {
-  console.log("[Unlock] Starting (OPTIMIZED)...");
-
   if (typeof faceapi === "undefined") {
-    setFaceStatus(statusEl, "❌ face-api.js chưa load", "error");
+    setFaceStatus(statusEl, "face-api.js chưa load", "error");
     return;
   }
 
   if (!window.electronAPI?.faceAuth) {
-    setFaceStatus(statusEl, "❌ electronAPI không khả dụng", "error");
+    setFaceStatus(statusEl, "electronAPI không khả dụng", "error");
     return;
   }
 
   try {
-    // 🆕 Load models + camera SONG SONG
-    setFaceStatus(statusEl, "Đang tải model AI...", "info");
+    setFaceStatus(statusEl, "Đang tải model...", "info");
 
-    const [_, descriptorResult] = await Promise.all([
+    const [, facesResult] = await Promise.all([
       loadFaceModels(),
-      window.electronAPI.faceAuth.loadDescriptor(),
+      window.electronAPI.faceAuth.loadAll(),
     ]);
 
-    if (
-      !descriptorResult ||
-      !descriptorResult.success ||
-      !descriptorResult.profiles
-    ) {
+    if (!facesResult || !facesResult.success || !facesResult.faces) {
       setFaceStatus(
         statusEl,
-        "❌ Chưa có Face ID. Vui lòng đăng nhập lại.",
+        "Chưa có Face ID. Chuyển sang đăng nhập...",
         "error",
       );
-      showGoogleFallback("Chưa đăng ký Face ID");
+      setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
       return;
     }
 
-    storedProfiles = descriptorResult.profiles;
-    profileTypes = descriptorResult.types || Object.keys(storedProfiles);
+    storedFaces = facesResult.faces;
 
-    console.log(
-      "[Unlock] Loaded profiles:",
-      profileTypes.join(", "),
-      `(${profileTypes.length})`,
-    );
-
-    if (profileTypes.length === 0) {
-      setFaceStatus(statusEl, "❌ Không có profile nào", "error");
-      showGoogleFallback("Chưa đăng ký Face ID");
+    if (storedFaces.length === 0) {
+      setFaceStatus(
+        statusEl,
+        "Không có face nào. Chuyển sang đăng nhập...",
+        "error",
+      );
+      setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
       return;
     }
 
     setFaceStatus(statusEl, "Đang mở camera...", "info");
     await startFaceCamera(video);
 
-    setFaceStatus(statusEl, "🔍 Đang nhận diện...", "warning");
+    setFaceStatus(statusEl, "Mở to 2 mắt để nhận diện", "warning");
 
     lastFaceDetectedTime = Date.now();
 
-    // 🆕 Warm-up detect 1 lần để camera quen
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((r) => setTimeout(r, 150));
 
     startUnlockLoop();
   } catch (err) {
-    console.error("[Unlock] Init error:", err);
-    setFaceStatus(statusEl, "❌ Lỗi: " + err.message, "error");
-    showGoogleFallback("Lỗi khởi tạo");
+    setFaceStatus(statusEl, "Lỗi: " + err.message, "error");
+    setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
   }
 }
 
-// ===================== UNLOCK LOOP (OPTIMIZED) =====================
 function startUnlockLoop() {
   const displaySize = {
-    width: video.videoWidth,
-    height: video.videoHeight,
+    width: video.videoWidth || 640,
+    height: video.videoHeight || 480,
   };
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  async function unlockLoop() {
+  async function loop() {
     if (isUnlocking || currentAttempts >= MAX_ATTEMPTS) return;
 
     if (isDetecting) {
-      detectionTimeout = setTimeout(unlockLoop, 50);
+      detectionTimeout = setTimeout(loop, 30);
       return;
     }
 
     isDetecting = true;
 
     try {
-      const loopStart = performance.now();
       const now = performance.now();
-
-      // 🆕 Bước 1: Đo độ sáng (rất nhanh — canvas 160x120)
       const brightness = calculateBrightness(video);
+      updateBrightnessWarning(brightness);
 
       if (brightness < BRIGHTNESS_CRITICAL) {
         setFaceStatus(
           statusEl,
-          "💡 Ánh sáng quá yếu. Vui lòng bật đèn.",
+          "Ánh sáng quá yếu. Vui lòng bật đèn.",
           "warning",
         );
-
         if (Date.now() - lastFaceDetectedTime > NO_FACE_TIMEOUT) {
           registerFailAttempt();
           lastFaceDetectedTime = Date.now();
@@ -235,7 +204,6 @@ function startUnlockLoop() {
         return;
       }
 
-      // 🆕 Bước 2: Check có cần update descriptor không
       const shouldUpdateDescriptor =
         !cachedDescriptor || now - lastDescriptorTime > DESCRIPTOR_INTERVAL;
 
@@ -243,22 +211,11 @@ function startUnlockLoop() {
       let currentDescriptor = null;
 
       if (shouldUpdateDescriptor) {
-        // 🎯 CHỈ DETECT 1 LẦN với full pipeline
-        const detectStart = performance.now();
-
         if (brightness < BRIGHTNESS_WARNING) {
-          // Tối → dùng enhanced
           detection = await detectFaceEnhanced(video);
         } else {
-          // Đủ sáng → detect trực tiếp
           detection = await detectFace(video);
         }
-
-        const detectTime = performance.now() - detectStart;
-        if (detectTime > 200) {
-          console.log(`[Unlock] ⚠️ Slow detect: ${detectTime.toFixed(0)}ms`);
-        }
-
         if (detection) {
           currentDescriptor = Array.from(detection.descriptor);
           cachedDescriptor = currentDescriptor;
@@ -267,17 +224,15 @@ function startUnlockLoop() {
           cachedDescriptor = null;
         }
       } else {
-        // 🚀 KHÔNG cần descriptor → chỉ detect landmarks (siêu nhanh)
         detection = await detectFaceLandmarksOnly(video);
       }
 
-      // Vẽ UI
       drawFaceIdStyle(canvas, detection, displaySize);
 
       if (!detection) {
         consecutiveNoFace++;
         consecutiveNoMatch = 0;
-
+        consecutiveMatch = 0;
         if (consecutiveNoFace >= FAIL_CONFIRM_FRAMES) {
           if (Date.now() - lastFaceDetectedTime > NO_FACE_TIMEOUT) {
             registerFailAttempt();
@@ -285,57 +240,77 @@ function startUnlockLoop() {
           }
           consecutiveNoFace = 0;
         }
-
-        setFaceStatus(statusEl, "🔍 Đang tìm khuôn mặt...", "info");
+        setFaceStatus(statusEl, "Đang tìm khuôn mặt...", "info");
         return;
       }
 
       lastFaceDetectedTime = Date.now();
       consecutiveNoFace = 0;
 
-      // 🆕 Bước 3: So sánh
+      const eyes = checkEyes(detection.landmarks);
+      if (!eyes.ok) {
+        consecutiveNoMatch = 0;
+        consecutiveMatch = 0;
+        let reason = "Mở to 2 mắt để nhận diện";
+        if (eyes.reason === "left_closed")
+          reason = "Mắt TRÁI đang nhắm - Mở to";
+        else if (eyes.reason === "right_closed")
+          reason = "Mắt PHẢI đang nhắm - Mở to";
+        else if (eyes.reason === "both_closed")
+          reason = "Mở to cả 2 mắt để nhận diện";
+        setFaceStatus(statusEl, reason, "warning");
+        return;
+      }
+
       if (!currentDescriptor && cachedDescriptor) {
         currentDescriptor = cachedDescriptor;
       }
 
       if (!currentDescriptor) {
-        // Chưa có descriptor → skip compare lần này
-        setFaceStatus(statusEl, "🔍 Đang nhận diện...", "warning");
+        setFaceStatus(statusEl, "Đang nhận diện...", "warning");
         return;
       }
 
-      let bestMatch = null;
+      let bestMatch = -1;
       let bestDistance = Infinity;
 
-      for (const type of profileTypes) {
-        const storedDescriptor = storedProfiles[type];
-        if (!storedDescriptor) continue;
+      for (let i = 0; i < storedFaces.length; i++) {
+        const person = storedFaces[i];
+        if (!person) continue;
 
-        const distance = compareDescriptors(
-          currentDescriptor,
-          storedDescriptor,
-        );
+        const descList = Array.isArray(person) ? person : [person];
 
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestMatch = type;
+        let minDist = Infinity;
+        for (const desc of descList) {
+          if (!Array.isArray(desc) || desc.length !== 128) continue;
+          const d = compareDescriptors(currentDescriptor, desc);
+          if (d < minDist) minDist = d;
+        }
+
+        if (minDist < bestDistance) {
+          bestDistance = minDist;
+          bestMatch = i;
         }
       }
 
       const confidence = Math.max(0, (1 - bestDistance) * 100).toFixed(1);
 
       if (bestDistance < MATCH_THRESHOLD) {
-        isUnlocking = true;
+        consecutiveMatch++;
         consecutiveNoMatch = 0;
 
-        const matchedInfo = TYPE_LABELS[bestMatch] || bestMatch;
-        console.log(
-          `[Unlock] ✅ MATCH! type=${bestMatch} distance=${bestDistance.toFixed(4)} confidence=${confidence}%`,
-        );
+        if (consecutiveMatch >= REQUIRED_MATCH_FRAMES) {
+          showSuccess();
+          return;
+        }
 
-        showSuccess(matchedInfo);
-        return;
+        setFaceStatus(
+          statusEl,
+          `Đang xác minh... (${consecutiveMatch}/${REQUIRED_MATCH_FRAMES})`,
+          "success",
+        );
       } else {
+        consecutiveMatch = 0;
         consecutiveNoMatch++;
 
         if (consecutiveNoMatch >= FAIL_CONFIRM_FRAMES) {
@@ -346,83 +321,54 @@ function startUnlockLoop() {
 
         setFaceStatus(
           statusEl,
-          `🔍 Đang nhận diện... (${confidence}%)`,
+          `Đang nhận diện... (${confidence}%)`,
           "warning",
         );
       }
-
-      const loopTime = performance.now() - loopStart;
-      if (loopTime > 300) {
-        console.log(`[Unlock] ⚠️ Slow loop: ${loopTime.toFixed(0)}ms`);
-      }
-    } catch (err) {
-      console.error("[Unlock] Detection error:", err);
+    } catch (_) {
     } finally {
       isDetecting = false;
       if (!isUnlocking && currentAttempts < MAX_ATTEMPTS) {
-        detectionTimeout = setTimeout(unlockLoop, DETECT_INTERVAL);
+        detectionTimeout = setTimeout(loop, DETECT_INTERVAL);
       }
     }
   }
 
-  unlockLoop();
+  loop();
 }
-
-// ===================== BUTTONS =====================
 googleBtn.addEventListener("click", () => {
-  console.log("[Unlock] User clicked Google fallback");
-  if (detectionInterval) clearInterval(detectionInterval);
+  console.log("[Unlock] Google fallback clicked");
   if (detectionTimeout) clearTimeout(detectionTimeout);
-
   const stream = video.srcObject;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-  }
-
+  if (stream) stream.getTracks().forEach((t) => t.stop());
   window.electronAPI.faceAuth.fallbackToLogin();
 });
 
 quitBtn.addEventListener("click", () => {
-  console.log("[Unlock] User quit app");
-  if (detectionInterval) clearInterval(detectionInterval);
+  console.log("[Unlock] Quit clicked");
   if (detectionTimeout) clearTimeout(detectionTimeout);
-
   const stream = video.srcObject;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-  }
-
+  if (stream) stream.getTracks().forEach((t) => t.stop());
   window.electronAPI.quitApp();
 });
 
-// ===================== CLEANUP =====================
 window.addEventListener("beforeunload", () => {
-  if (detectionInterval) clearInterval(detectionInterval);
   if (detectionTimeout) clearTimeout(detectionTimeout);
   const stream = video.srcObject;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-  }
+  if (stream) stream.getTracks().forEach((t) => t.stop());
 });
 
-// ===================== TIMEOUT 60s =====================
 setTimeout(() => {
   if (!isUnlocking && currentAttempts < MAX_ATTEMPTS) {
-    console.log("[Unlock] Timeout 60s → showing fallback");
     setFaceStatus(
       statusEl,
-      "⏰ Hết thời gian. Vui lòng đăng nhập bằng Google.",
+      "Hết thời gian. Chuyển sang đăng nhập Google...",
       "warning",
     );
-    showGoogleFallback("Hết thời gian chờ");
-
-    if (detectionInterval) clearInterval(detectionInterval);
     if (detectionTimeout) clearTimeout(detectionTimeout);
-
     const stream = video.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
   }
 }, 60000);
 

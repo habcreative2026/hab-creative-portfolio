@@ -27,9 +27,6 @@ interface TranslationItem {
 
 export default function LanguageCMSPage() {
   const [translations, setTranslations] = useState<TranslationItem[]>([]);
-  const [originalTranslations, setOriginalTranslations] = useState<
-    TranslationItem[]
-  >([]);
   const [filteredItems, setFilteredItems] = useState<TranslationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,12 +34,17 @@ export default function LanguageCMSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
+  // 🆕 Draft values (chưa commit)
+  const [draftValues, setDraftValues] = useState<Record<string, string>>({});
+
+  // 🆕 Track key đang edit — để giữ card hiển thị dù không match filter
+  const [editingKeys, setEditingKeys] = useState<Set<string>>(new Set());
+
   const [alert, setAlert] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
-  // 🆕 Edit modal state
   const [editingItem, setEditingItem] = useState<TranslationItem | null>(null);
 
   // ===================== FETCH =====================
@@ -55,8 +57,9 @@ export default function LanguageCMSPage() {
       const json = await res.json();
       if (json.success) {
         setTranslations(json.data);
-        setOriginalTranslations(json.data);
         setFilteredItems(json.data);
+        setDraftValues({}); // reset draft khi reload
+        setEditingKeys(new Set()); // reset editing keys
       } else {
         showAlert("error", json.message || "Không thể tải danh sách ngôn ngữ.");
       }
@@ -72,31 +75,33 @@ export default function LanguageCMSPage() {
   }, []);
 
   // ===================== FILTER =====================
+  // 🆕 Filter CHỈ dùng giá trị đã commit
+  // + Giữ card nếu đang edit (editingKeys)
   useEffect(() => {
-    let result = [...originalTranslations];
+    let result = [...translations];
 
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
 
-      result = result.filter(
-        (item) =>
+      result = result.filter((item) => {
+        // 🆕 Nếu item đang được edit → GIỮ LẠI dù không match
+        if (editingKeys.has(item.key)) return true;
+
+        return (
           item.key.toLowerCase().includes(q) ||
-          item.vi.toLowerCase().includes(q) ||
-          item.en.toLowerCase().includes(q) ||
-          item.de.toLowerCase().includes(q),
-      );
+          (item.vi || "").toLowerCase().includes(q) ||
+          (item.en || "").toLowerCase().includes(q) ||
+          (item.de || "").toLowerCase().includes(q)
+        );
+      });
     }
 
     if (selectedCategory !== "all") {
       result = result.filter((item) => item.category === selectedCategory);
     }
 
-    const merged = result.map((item) => {
-      return translations.find((t) => t.key === item.key) || item;
-    });
-
-    setFilteredItems(merged);
-  }, [searchQuery, selectedCategory, translations, originalTranslations]);
+    setFilteredItems(result);
+  }, [searchQuery, selectedCategory, translations, editingKeys]);
 
   // ===================== EDIT =====================
   const handleInputChange = (
@@ -104,29 +109,87 @@ export default function LanguageCMSPage() {
     lang: "vi" | "en" | "de",
     value: string,
   ) => {
+    // 🆕 Track key đang edit
+    setEditingKeys((prev) => {
+      if (prev.has(key)) return prev; // Không tạo Set mới nếu đã có
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+
+    // Chỉ lưu vào draft, KHÔNG setTranslations
+    setDraftValues((prev) => ({
+      ...prev,
+      [`${key}:${lang}`]: value,
+    }));
+  };
+
+  const handleInputBlur = (key: string, lang: "vi" | "en" | "de") => {
+    const draftKey = `${key}:${lang}`;
+    const draftValue = draftValues[draftKey];
+    if (draftValue === undefined) return;
+
+    // Commit draft vào translations
     setTranslations((prev) =>
       prev.map((item) =>
-        item.key === key ? { ...item, [lang]: value } : item,
+        item.key === key ? { ...item, [lang]: draftValue } : item,
       ),
     );
+
+    // Xóa draft
+    setDraftValues((prev) => {
+      const next = { ...prev };
+      delete next[draftKey];
+      return next;
+    });
+
+    // 🆕 Bỏ khỏi editingKeys sau 300ms
+    // (delay để filter kịp update translations mà không mất card đột ngột)
+    setTimeout(() => {
+      setEditingKeys((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }, 300);
   };
 
   // ===================== SAVE ALL =====================
   const handleSaveAll = async () => {
     setSaving(true);
+
+    // 🆕 Merge draft chưa commit vào translations
+    const mergedTranslations = translations.map((item) => {
+      const viDraft = draftValues[`${item.key}:vi`];
+      const enDraft = draftValues[`${item.key}:en`];
+      const deDraft = draftValues[`${item.key}:de`];
+
+      return {
+        ...item,
+        vi: viDraft !== undefined ? viDraft : item.vi,
+        en: enDraft !== undefined ? enDraft : item.en,
+        de: deDraft !== undefined ? deDraft : item.de,
+      };
+    });
+
     try {
       const res = await fetch(`${API_URL}/api/translations/bulk-update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ updates: translations }),
+        body: JSON.stringify({ updates: mergedTranslations }),
         credentials: "include",
       });
       const json = await res.json();
       if (json.success) {
+        setTranslations(mergedTranslations);
+        setDraftValues({});
+        setEditingKeys(new Set());
         showAlert(
           "success",
           "Đã lưu toàn bộ các chỉnh sửa ngôn ngữ thành công!",
         );
+        await fetchTranslations(); // 🆕 Reload để đồng bộ hoàn toàn
       } else {
         showAlert("error", json.message || "Cập nhật thất bại.");
       }
@@ -155,7 +218,7 @@ export default function LanguageCMSPage() {
   // ===================== RENDER =====================
   return (
     <div className="p-6 w-full space-y-6 scroll-none">
-      {/* ===================== HEADER ===================== */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-5">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
@@ -191,7 +254,7 @@ export default function LanguageCMSPage() {
         </div>
       </div>
 
-      {/* ===================== ALERT ===================== */}
+      {/* ALERT */}
       {alert && (
         <div
           className={`p-4 rounded-xl flex items-center gap-3 border ${
@@ -209,7 +272,7 @@ export default function LanguageCMSPage() {
         </div>
       )}
 
-      {/* ===================== SEARCH ===================== */}
+      {/* SEARCH */}
       <div className="gap-3 bg-white p-4 border border-gray-200 rounded-2xl shadow-sm">
         <div className="relative col-span-2">
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -223,7 +286,7 @@ export default function LanguageCMSPage() {
         </div>
       </div>
 
-      {/* ===================== TABLE ===================== */}
+      {/* TABLE */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="max-h-[64vh] overflow-auto">
           <table className="w-full border-collapse text-left text-sm">
@@ -265,40 +328,58 @@ export default function LanguageCMSPage() {
                     {/* INPUT VI */}
                     <td className="p-2 border-l border-gray-200">
                       <textarea
+                        key={`${item.key}-vi-${searchQuery}-${selectedCategory}`}
                         rows={4}
-                        value={item.vi}
+                        defaultValue={item.vi}
                         onChange={(e) =>
                           handleInputChange(item.key, "vi", e.target.value)
                         }
+                        onBlur={() => handleInputBlur(item.key, "vi")}
                         className="w-full p-2 text-xs border border-transparent hover:border-gray-300 focus:border-indigo-500 rounded-lg focus:outline-none focus:bg-white resize-y transition-all"
+                        spellCheck={false}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
                       />
                     </td>
 
                     {/* INPUT EN */}
                     <td className="p-2 border-l border-gray-200">
                       <textarea
+                        key={`${item.key}-en-${searchQuery}-${selectedCategory}`}
                         rows={4}
-                        value={item.en}
+                        defaultValue={item.en}
                         onChange={(e) =>
                           handleInputChange(item.key, "en", e.target.value)
                         }
+                        onBlur={() => handleInputBlur(item.key, "en")}
                         className="w-full p-2 text-xs border border-transparent hover:border-gray-300 focus:border-indigo-500 rounded-lg focus:outline-none focus:bg-white resize-y transition-all"
+                        spellCheck={false}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
                       />
                     </td>
 
                     {/* INPUT DE */}
                     <td className="p-2 border-l border-gray-200">
                       <textarea
+                        key={`${item.key}-de-${searchQuery}-${selectedCategory}`}
                         rows={4}
-                        value={item.de}
+                        defaultValue={item.de}
                         onChange={(e) =>
                           handleInputChange(item.key, "de", e.target.value)
                         }
+                        onBlur={() => handleInputBlur(item.key, "de")}
                         className="w-full p-2 text-xs border border-transparent hover:border-gray-300 focus:border-indigo-500 rounded-lg focus:outline-none focus:bg-white resize-y transition-all"
+                        spellCheck={false}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
                       />
                     </td>
 
-                    {/* 🆕 STYLE BUTTON */}
+                    {/* STYLE BUTTON */}
                     <td className="p-2 border-l border-gray-200 text-center align-middle">
                       <button
                         onClick={() => setEditingItem(item)}
@@ -330,7 +411,7 @@ export default function LanguageCMSPage() {
         </div>
       </div>
 
-      {/* ===================== 🆕 TEXT STYLE MODAL ===================== */}
+      {/* TEXT STYLE MODAL */}
       {editingItem && (
         <TextStyleModal
           isOpen={!!editingItem}

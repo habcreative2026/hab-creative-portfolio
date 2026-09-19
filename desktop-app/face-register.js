@@ -1,331 +1,349 @@
-// ===================== FACE REGISTRATION (3-Profile - FAST) =====================
-
 const video = document.getElementById("camera");
 const canvas = document.getElementById("overlay");
 const statusEl = document.getElementById("status");
 const progressBar = document.getElementById("progressBar");
-const progressLabel = document.getElementById("progressLabel");
 const captureBtn = document.getElementById("captureBtn");
 const cancelBtn = document.getElementById("cancelBtn");
 const registerView = document.getElementById("registerView");
 const successView = document.getElementById("successView");
 const successTitle = document.getElementById("successTitle");
 const successMessage = document.getElementById("successMessage");
+const brightnessWarning = document.getElementById("brightnessWarning");
+const cameraCircle = document.getElementById("cameraCircle");
+const scanLine = document.getElementById("scanLine");
 
-// Type selector elements
-const cardNoMask = document.getElementById("cardNoMask");
-const cardWithMask = document.getElementById("cardWithMask");
-const cardWithGlasses = document.getElementById("cardWithGlasses");
-const statusNoMask = document.getElementById("statusNoMask");
-const statusWithMask = document.getElementById("statusWithMask");
-const statusWithGlasses = document.getElementById("statusWithGlasses");
-
-let detectionInterval = null;
-let detectionTimeout = null; // 🆕
-let currentDetection = null;
+let detectionTimeout = null;
 let isCapturing = false;
-let isDetecting = false; // 🆕 Flag chống overlap
-let selectedType = "noMask";
-let faceTypesInfo = {};
-let registeredTypes = [];
+let isDetecting = false;
+let autoCaptureFired = false;
 
-// All types list
-const ALL_TYPES = ["noMask", "withMask", "withGlasses"];
+let stableFrameCount = 0;
+const REQUIRED_STABLE_FRAMES = 4;
+let consecutiveBadFrames = 0;
+const MAX_BAD_FRAMES = 8;
 
-// 🆕 Timing config
-const DETECT_INTERVAL = 100; // 10 FPS
+const DETECT_INTERVAL = 80;
+const BRIGHTNESS_WARNING = 50;
+const BRIGHTNESS_CRITICAL = 25;
 
-// ===================== GET TYPE FROM URL QUERY =====================
-function getTypeFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("type");
+const REQUIRED_SAMPLES = 5;
+const MIN_VALID_SAMPLES = 3;
+const SAMPLE_DELAY = 250;
+
+function updateProgress(p) {
+  progressBar.style.width = p + "%";
 }
 
-// ===================== UPDATE TYPE CARD UI =====================
-function updateTypeCardUI(type, isRegistered) {
-  const elementMap = {
-    noMask: { card: cardNoMask, status: statusNoMask },
-    withMask: { card: cardWithMask, status: statusWithMask },
-    withGlasses: { card: cardWithGlasses, status: statusWithGlasses },
-  };
-
-  const mapping = elementMap[type];
-  if (!mapping) {
-    console.warn("[Register] Unknown type:", type);
-    return;
-  }
-
-  const { card, status } = mapping;
-
-  if (isRegistered) {
-    status.textContent = "✅ Đã đăng ký";
-    status.style.color = "#10b981";
+function updateBrightnessWarning(brightness) {
+  if (!brightnessWarning) return;
+  if (brightness < BRIGHTNESS_CRITICAL) {
+    brightnessWarning.textContent = "Quá tối - Cần bật đèn";
+    brightnessWarning.classList.add("on");
+    cameraCircle.classList.remove("scanning", "ready");
+    cameraCircle.classList.add("warning");
+  } else if (brightness < BRIGHTNESS_WARNING) {
+    brightnessWarning.textContent = "Ánh sáng yếu";
+    brightnessWarning.classList.add("on");
   } else {
-    status.textContent = "Chưa đăng ký";
-    status.style.color = "#64748b";
+    brightnessWarning.classList.remove("on");
   }
-
-  card.classList.toggle("active", type === selectedType);
 }
 
-// ===================== SELECT TYPE =====================
-function selectType(type) {
-  if (isCapturing) return;
-
-  selectedType = type;
-
-  // Update active cho TẤT CẢ cards
-  const allCards = [cardNoMask, cardWithMask, cardWithGlasses];
-  allCards.forEach((card) => {
-    if (!card) return;
-    const cardType = card.getAttribute("data-type");
-    card.classList.toggle("active", cardType === type);
-  });
-
-  const info = faceTypesInfo[type] || {};
-  const isReg = registeredTypes.includes(type);
-
-  setFaceStatus(
-    statusEl,
-    `${info.emoji || ""} Đang chọn: ${info.label || type}${isReg ? " (đăng ký lại)" : ""}`,
-    "info",
-  );
-
-  console.log("[Register] Selected type:", type);
-}
-
-// ===================== UPDATE PROGRESS =====================
-function updateProgress(percent, label) {
-  progressBar.style.width = percent + "%";
-  if (label) progressLabel.textContent = label;
-}
-
-// ===================== INIT =====================
 async function init() {
-  console.log("[Register] Starting (3-profile, FAST)...");
+  console.log("[Register] Init started");
 
   if (typeof faceapi === "undefined") {
-    setFaceStatus(statusEl, "❌ face-api.js chưa load", "error");
+    setFaceStatus(statusEl, "face id chưa load", "error");
     return;
   }
 
   if (!window.electronAPI?.faceAuth) {
-    setFaceStatus(statusEl, "❌ electronAPI.faceAuth không khả dụng", "error");
+    setFaceStatus(statusEl, "electronAPI không khả dụng", "error");
     return;
   }
 
   try {
-    // Load types info và danh sách đã đăng ký
-    faceTypesInfo = (await window.electronAPI.faceAuth.getTypesInfo()) || {};
-    registeredTypes = (await window.electronAPI.faceAuth.listTypes()) || [];
+    const count = await window.electronAPI.faceAuth.count();
+    const max = await window.electronAPI.faceAuth.max();
 
-    console.log("[Register] Types info:", faceTypesInfo);
-    console.log("[Register] Registered types:", registeredTypes);
-
-    // Update UI cho TẤT CẢ cards
-    ALL_TYPES.forEach((type) => {
-      updateTypeCardUI(type, registeredTypes.includes(type));
-    });
-
-    // Kiểm tra URL query
-    const urlType = getTypeFromUrl();
-    if (urlType && faceTypesInfo[urlType]) {
-      selectType(urlType);
-    } else {
-      const firstUnregistered = ALL_TYPES.find(
-        (t) => !registeredTypes.includes(t),
+    if (count >= max) {
+      setFaceStatus(
+        statusEl,
+        `Đã đủ ${max} khuôn mặt. Vui lòng xóa bớt.`,
+        "error",
       );
-      selectType(firstUnregistered || "noMask");
+      captureBtn.disabled = true;
+      return;
     }
 
-    // Load models
-    updateProgress(10, "Đang tải model AI...");
-    setFaceStatus(statusEl, "Đang tải model AI...", "info");
+    setFaceStatus(statusEl, "Đang tải model...", "info");
+    updateProgress(10);
     await loadFaceModels();
 
-    // Start camera
-    updateProgress(40, "Đang mở camera...");
     setFaceStatus(statusEl, "Đang mở camera...", "info");
+    updateProgress(40);
     await startFaceCamera(video);
 
-    // Ready
-    updateProgress(100, "Sẵn sàng!");
-    const info = faceTypesInfo[selectedType] || {};
-    setFaceStatus(
-      statusEl,
-      `${info.emoji || ""} Nhìn thẳng vào camera và bấm 'Chụp khuôn mặt'`,
-      "success",
-    );
+    cameraCircle.classList.add("scanning");
+    cameraCircle.classList.remove("warning");
 
+    setFaceStatus(statusEl, "Nhìn thẳng vào camera", "info");
+    updateProgress(60);
     captureBtn.disabled = false;
+
+    await new Promise((r) => setTimeout(r, 500));
+
     startDetectionLoop();
   } catch (err) {
     console.error("[Register] Init error:", err);
-    setFaceStatus(statusEl, "❌ Lỗi: " + err.message, "error");
+    setFaceStatus(statusEl, "Lỗi: " + err.message, "error");
   }
 }
 
-// ===================== DETECTION LOOP (FAST) =====================
 function startDetectionLoop() {
   const displaySize = {
-    width: video.videoWidth,
-    height: video.videoHeight,
+    width: video.videoWidth || 640,
+    height: video.videoHeight || 480,
   };
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  // 🆕 Recursive setTimeout — tránh overlap
-  async function detectLoop() {
+  async function loop() {
     if (isCapturing) return;
 
     if (isDetecting) {
-      // Skip frame nếu đang xử lý
-      detectionTimeout = setTimeout(detectLoop, 30);
+      detectionTimeout = setTimeout(loop, 30);
       return;
     }
-
     isDetecting = true;
 
     try {
+      const brightness = calculateBrightness(video);
+      updateBrightnessWarning(brightness);
+
+      if (brightness < BRIGHTNESS_CRITICAL) {
+        setFaceStatus(statusEl, "Ánh sáng quá yếu - Bật đèn", "warning");
+        stableFrameCount = 0;
+        updateProgress(0);
+        return;
+      }
+
       const detection = await detectFace(video);
-      currentDetection = detection;
 
-      drawDetection(canvas, detection, displaySize);
+      drawFaceIdStyle(canvas, detection, displaySize);
 
-      if (detection) {
-        const score = detection.detection.score;
-        captureBtn.disabled = score <= 0.6; // ⬇️ Threshold 0.6
+      if (!detection) {
+        consecutiveBadFrames++;
+        if (consecutiveBadFrames > MAX_BAD_FRAMES) {
+          stableFrameCount = 0;
+          updateProgress(0);
+        }
+        cameraCircle.classList.remove("ready");
+        cameraCircle.classList.add("scanning");
+        setFaceStatus(statusEl, "Đang tìm khuôn mặt...", "info");
+        return;
+      }
+
+      const score = detection.detection.score;
+
+      if (score < 0.5) {
+        consecutiveBadFrames++;
+        if (consecutiveBadFrames > MAX_BAD_FRAMES) {
+          stableFrameCount = 0;
+          updateProgress(0);
+        }
+        setFaceStatus(statusEl, "Đang tìm khuôn mặt...", "info");
+        return;
+      }
+
+      const eyes = checkEyes(detection.landmarks);
+
+      if (!eyes.ok) {
+        consecutiveBadFrames++;
+        if (consecutiveBadFrames > MAX_BAD_FRAMES) {
+          stableFrameCount = 0;
+          updateProgress(0);
+        }
+
+        let reasonText = "Mở to cả 2 mắt để tiếp tục";
+        if (eyes.reason === "left_closed")
+          reasonText = "Mắt TRÁI đang nhắm/che";
+        else if (eyes.reason === "right_closed")
+          reasonText = "Mắt PHẢI đang nhắm/che";
+
+        setFaceStatus(statusEl, reasonText, "warning");
+        cameraCircle.classList.remove("ready");
+        cameraCircle.classList.add("warning");
+        return;
+      }
+
+      consecutiveBadFrames = 0;
+      stableFrameCount++;
+
+      const progressPercent = Math.min(
+        100,
+        (stableFrameCount / REQUIRED_STABLE_FRAMES) * 100,
+      );
+      updateProgress(progressPercent);
+
+      if (stableFrameCount >= REQUIRED_STABLE_FRAMES) {
+        cameraCircle.classList.remove("scanning", "warning");
+        cameraCircle.classList.add("ready");
+        captureBtn.disabled = false;
+        setFaceStatus(
+          statusEl,
+          `Sẵn sàng (${(score * 100).toFixed(0)}%)`,
+          "success",
+        );
       } else {
-        captureBtn.disabled = true;
+        cameraCircle.classList.remove("warning");
+        cameraCircle.classList.add("scanning");
+        captureBtn.disabled = false;
+        setFaceStatus(
+          statusEl,
+          `Giữ 2 mắt mở... (${progressPercent.toFixed(0)}%)`,
+          "success",
+        );
       }
     } catch (err) {
-      console.error("[Register] Detection error:", err);
+      console.error("[Register] Loop error:", err);
     } finally {
       isDetecting = false;
       if (!isCapturing) {
-        detectionTimeout = setTimeout(detectLoop, DETECT_INTERVAL);
+        detectionTimeout = setTimeout(loop, DETECT_INTERVAL);
       }
     }
   }
 
-  detectLoop();
+  loop();
 }
 
-// ===================== CAPTURE FACE =====================
 async function captureFace() {
   if (isCapturing) return;
+
+  const count = await window.electronAPI.faceAuth.count();
+  const max = await window.electronAPI.faceAuth.max();
+
+  if (count >= max) {
+    setFaceStatus(statusEl, `Đã đủ ${max} khuôn mặt`, "error");
+    return;
+  }
+
   isCapturing = true;
 
-  // Clear loop
   if (detectionTimeout) {
     clearTimeout(detectionTimeout);
     detectionTimeout = null;
   }
-  if (detectionInterval) {
-    clearInterval(detectionInterval);
-    detectionInterval = null;
-  }
 
-  console.log("[Register] Capturing face for type:", selectedType);
   captureBtn.disabled = true;
   captureBtn.textContent = "Đang xử lý...";
+  scanLine.classList.remove("on");
 
-  const info = faceTypesInfo[selectedType] || {};
-  setFaceStatus(
-    statusEl,
-    `🔍 Đang phân tích khuôn mặt (${info.label || selectedType})...`,
-    "info",
-  );
+  const descriptors = [];
 
   try {
-    const detection = await detectFace(video);
+    for (let i = 0; i < REQUIRED_SAMPLES; i++) {
+      setFaceStatus(
+        statusEl,
+        `Đang lấy mẫu ${i + 1}/${REQUIRED_SAMPLES}...`,
+        "info",
+      );
+      updateProgress(((i + 1) / REQUIRED_SAMPLES) * 100);
 
-    if (!detection) {
-      throw new Error("Không phát hiện khuôn mặt");
+      await new Promise((r) => setTimeout(r, SAMPLE_DELAY));
+
+      const det = await detectFace(video);
+      if (!det) continue;
+
+      const eyes = checkEyes(det.landmarks);
+      if (!eyes.ok) continue;
+
+      if (det.detection.score < 0.5) continue;
+
+      descriptors.push(Array.from(det.descriptor));
     }
 
-    console.log("[Register] Descriptor length:", detection.descriptor.length);
+    if (descriptors.length < MIN_VALID_SAMPLES) {
+      throw new Error(
+        `Chỉ lấy được ${descriptors.length}/${REQUIRED_SAMPLES} mẫu. Vui lòng thử lại.`,
+      );
+    }
 
-    const descriptorArray = Array.from(detection.descriptor);
+    setFaceStatus(statusEl, "Đang lưu dữ liệu...", "info");
 
-    setFaceStatus(statusEl, "💾 Đang lưu dữ liệu...", "info");
-    const result = await window.electronAPI.faceAuth.saveDescriptor({
-      faceType: selectedType,
-      descriptor: descriptorArray,
+    const result = await window.electronAPI.faceAuth.save({
+      descriptors,
+      eyesOpen: true,
     });
 
     if (!result || !result.success) {
       throw new Error(result?.message || "Không lưu được descriptor");
     }
 
-    console.log("[Register] ✅ Saved successfully");
+    cameraCircle.classList.remove("scanning", "ready", "warning");
+    cameraCircle.classList.add("success");
 
-    registeredTypes = (await window.electronAPI.faceAuth.listTypes()) || [];
-
-    ALL_TYPES.forEach((type) => {
-      updateTypeCardUI(type, registeredTypes.includes(type));
-    });
-
-    updateProgress(100, "Hoàn tất!");
-
-    successTitle.textContent = `Đã đăng ký "${info.label || selectedType}"!`;
-    successMessage.textContent = `Bạn đã đăng ký ${registeredTypes.length}/3 loại khuôn mặt`;
+    successTitle.textContent = `Đã đăng ký #${result.count}`;
+    successMessage.textContent = `Đã lưu ${descriptors.length} mẫu (${result.count}/${result.max})`;
 
     const stream = video.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
 
     showSuccess();
   } catch (err) {
     console.error("[Register] Capture error:", err);
-    setFaceStatus(statusEl, "❌ " + err.message, "error");
-    captureBtn.disabled = false;
-    captureBtn.textContent = "Chụp khuôn mặt";
-    isCapturing = false;
+    setFaceStatus(statusEl, "" + err.message, "error");
+    cameraCircle.classList.remove("ready", "success");
+    cameraCircle.classList.add("warning");
 
-    // Restart loop sau lỗi
+    setTimeout(() => {
+      cameraCircle.classList.remove("warning");
+      cameraCircle.classList.add("scanning");
+      scanLine.classList.add("on");
+    }, 1200);
+
+    isCapturing = false;
+    stableFrameCount = 0;
+    consecutiveBadFrames = 0;
+    autoCaptureFired = false;
+    captureBtn.disabled = false;
+    captureBtn.textContent = "Bắt đầu quét";
+    updateProgress(0);
+
     startDetectionLoop();
   }
 }
 
-// ===================== SHOW SUCCESS =====================
 function showSuccess() {
   registerView.style.display = "none";
-  successView.classList.add("visible");
+  successView.classList.add("on");
 
   setTimeout(() => {
     window.electronAPI.faceAuth.closeFaceWindow();
-  }, 2000);
+  }, 2200);
 }
 
-// ===================== EVENTS =====================
-captureBtn.addEventListener("click", captureFace);
-
-cardNoMask.addEventListener("click", () => selectType("noMask"));
-cardWithMask.addEventListener("click", () => selectType("withMask"));
-cardWithGlasses.addEventListener("click", () => selectType("withGlasses"));
+captureBtn.addEventListener("click", () => {
+  console.log("[Register] Capture button clicked");
+  if (!isCapturing) captureFace();
+});
 
 cancelBtn.addEventListener("click", () => {
-  console.log("[Register] Cancelled by user");
-  if (detectionInterval) clearInterval(detectionInterval);
+  console.log("[Register] Cancel clicked");
+
   if (detectionTimeout) clearTimeout(detectionTimeout);
 
   const stream = video.srcObject;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-  }
+  if (stream) stream.getTracks().forEach((t) => t.stop());
 
   window.electronAPI.faceAuth.closeFaceWindow();
 });
 
 window.addEventListener("beforeunload", () => {
-  if (detectionInterval) clearInterval(detectionInterval);
   if (detectionTimeout) clearTimeout(detectionTimeout);
   const stream = video.srcObject;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-  }
+  if (stream) stream.getTracks().forEach((t) => t.stop());
 });
 
 window.addEventListener("DOMContentLoaded", init);

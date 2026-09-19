@@ -146,7 +146,8 @@ export default function LinkAdminDashboard() {
               onClick={handleAddRow}
               className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
             >
-              <Plus className="w-4 h-4" /> Thêm
+              <Plus className="w-4 h-4" /> Thêm dữ liệu ( Không thêm tùy tiện *
+              )
             </button>
             <button
               onClick={handleSaveAll}
