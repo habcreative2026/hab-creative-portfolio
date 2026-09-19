@@ -10,6 +10,7 @@ jobs:
   build:
     timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
         include:
@@ -24,9 +25,6 @@ jobs:
             artifact-name: linux-build
 
     runs-on: ${{ matrix.os }}
-
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
@@ -44,18 +42,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libnss3 \
-            libatk-bridge2.0-0 \
-            libdrm-dev \
-            libxkbcommon-dev \
-            libgbm-dev \
-            libasound2-dev \
-            libgtk-3-0 \
-            libx11-xcb1 \
-            libxcb-dri3-0 \
-            libxtst-dev \
-            libxss1 \
-            libnotify-dev
+            libnss3 libatk-bridge2.0-0 libdrm-dev libxkbcommon-dev \
+            libgbm-dev libasound2-dev libgtk-3-0 libx11-xcb1 \
+            libxcb-dri3-0 libxtst-dev libxss1 libnotify-dev
 
       - name: Install dependencies
         run: npm install
@@ -75,19 +64,35 @@ jobs:
           path: desktop-app/dist/*
           retention-days: 7
 
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-temp
+
+      - name: List downloaded files
+        run: find dist-temp -type f | head -50
+
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            desktop-app/dist/*.exe
-            desktop-app/dist/*.dmg
-            desktop-app/dist/*.zip
-            desktop-app/dist/*.AppImage
-            desktop-app/dist/*.yml
-            desktop-app/dist/*.blockmap
+            dist-temp/**/*.exe
+            dist-temp/**/*.dmg
+            dist-temp/**/*.zip
+            dist-temp/**/*.AppImage
+            dist-temp/**/*.yml
+            dist-temp/**/*.blockmap
           draft: false
           prerelease: false
           generate_release_notes: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
