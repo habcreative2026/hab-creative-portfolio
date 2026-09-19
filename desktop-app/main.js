@@ -1084,6 +1084,7 @@ function setupFullAutoUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
+  autoUpdater.differentialDownload = false;
 
   autoUpdater.logger = {
     info: (msg) => console.log("[Updater]", msg),
