@@ -44,9 +44,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libnss3 libatk-bridge2.0-0 libdrm-dev libxkbcommon-dev \
-            libgbm-dev libasound2-dev libgtk-3-0 libx11-xcb1 \
-            libxcb-dri3-0 libxtst-dev libxss1 libnotify-dev
+            libnss3 \
+            libatk-bridge2.0-0 \
+            libdrm-dev \
+            libxkbcommon-dev \
+            libgbm-dev \
+            libasound2-dev \
+            libgtk-3-0 \
+            libx11-xcb1 \
+            libxcb-dri3-0 \
+            libxtst-dev \
+            libxss1 \
+            libnotify-dev
 
       - name: Install dependencies
         run: npm install
@@ -59,12 +68,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
-      - name: Upload artifacts (temporary)
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
-          path: desktop-app/dist/*
+          path: |
+            desktop-app/dist/*.exe
+            desktop-app/dist/*.dmg
+            desktop-app/dist/*.zip
+            desktop-app/dist/*.AppImage
+            desktop-app/dist/latest*.yml
+            desktop-app/dist/*.blockmap
           retention-days: 7
+          if-no-files-found: warn
 
   release:
     needs: build
@@ -74,24 +90,41 @@ jobs:
       contents: write
 
     steps:
-      - name: Download all artifacts
+      - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist-temp
+          name: windows-build
+          path: release-files/windows
 
-      - name: List downloaded files (debug)
-        run: find dist-temp -type f
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+          path: release-files/macos
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: release-files/linux
+
+      - name: List all files
+        run: find release-files -type f
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist-temp/**/*.exe
-            dist-temp/**/*.dmg
-            dist-temp/**/*.zip
-            dist-temp/**/*.AppImage
-            dist-temp/**/*.yml
-            dist-temp/**/*.blockmap
+            release-files/windows/*.exe
+            release-files/windows/latest.yml
+            release-files/windows/*.blockmap
+            release-files/macos/*.dmg
+            release-files/macos/*.zip
+            release-files/macos/latest-mac.yml
+            release-files/macos/*.blockmap
+            release-files/linux/*.AppImage
+            release-files/linux/latest-linux.yml
+            release-files/linux/*.blockmap
           draft: false
           prerelease: false
           generate_release_notes: true
