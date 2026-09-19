@@ -987,23 +987,24 @@ ipcMain.on("face:close-window", (event) => {
 
 function setupAutoUpdater() {
   if (!app.isPackaged) {
-    console.log("[Updater] Dev mode - skip auto update");
+    log.info("[Updater] ⭐ Dev mode - skip auto update");
+    console.log("[Updater] ⭐ Dev mode - skip auto update");
     return;
   }
 
-  const platform = process.platform; // "win32" | "darwin" | "linux"
-  console.log(`[Updater] Platform: ${platform}`);
+  const platform = process.platform;
+  log.info(`[Updater] ⭐ Platform: ${platform}`);
+  console.log(`[Updater] ⭐ Platform: ${platform}`);
 
-  // ⭐ macOS: electron-updater KHÔNG hoạt động nếu unsigned
-  // → Chỉ check version và mở trang tải
   if (platform === "darwin") {
-    console.log("[Updater] macOS detected → check-only mode");
+    log.info("[Updater] ⭐ macOS → check-only mode");
+    console.log("[Updater] ⭐ macOS → check-only mode");
     setupMacOSUpdater();
     return;
   }
 
-  // ⭐ Windows + Linux: Dùng electron-updater (full auto-update)
-  console.log(`[Updater] ${platform} detected → full auto-update mode`);
+  log.info(`[Updater] ⭐ ${platform} → full auto-update mode`);
+  console.log(`[Updater] ⭐ ${platform} → full auto-update mode`);
   setupFullAutoUpdater();
 }
 
@@ -1018,9 +1019,7 @@ function setupMacOSUpdater() {
     const options = {
       hostname: "api.github.com",
       path: "/repos/habcreative2026/hab-creative-portfolio/releases/latest",
-      headers: {
-        "User-Agent": "HAB-Creative-App",
-      },
+      headers: { "User-Agent": "HAB-Creative-App" },
     };
 
     https
@@ -1033,13 +1032,13 @@ function setupMacOSUpdater() {
             const latestVersion = (release.tag_name || "").replace("v", "");
             const currentVersion = app.getVersion();
 
-            console.log(
-              `[Updater] macOS check: current=${currentVersion}, latest=${latestVersion}`,
+            log.info(
+              `[Updater] ⭐ macOS check: current=${currentVersion}, latest=${latestVersion}`,
             );
 
             if (isNewerVersion(latestVersion, currentVersion)) {
-              console.log(
-                `[Updater] macOS: New version available ${latestVersion}`,
+              log.info(
+                `[Updater] ⭐ macOS: New version available ${latestVersion}`,
               );
 
               dialog
@@ -1055,27 +1054,24 @@ function setupMacOSUpdater() {
                 })
                 .then((result) => {
                   if (result.response === 0) {
-                    console.log("[Updater] Opening:", RELEASES_URL);
+                    log.info("[Updater] ⭐ Opening:", RELEASES_URL);
                     shell.openExternal(RELEASES_URL);
                   }
                 });
             } else {
-              console.log("[Updater] macOS: Already latest version");
+              log.info("[Updater] ⭐ macOS: Already latest version");
             }
           } catch (err) {
-            console.warn("[Updater] macOS parse error:", err.message);
+            log.warn("[Updater] ⭐ macOS parse error:", err.message);
           }
         });
       })
       .on("error", (err) => {
-        console.warn("[Updater] macOS check failed:", err.message);
+        log.warn("[Updater] ⭐ macOS check failed:", err.message);
       });
   };
 
-  // Check sau 5s
   setTimeout(checkVersion, 5000);
-
-  // Check mỗi 4 giờ
   setInterval(checkVersion, 4 * 60 * 60 * 1000);
 }
 
@@ -1086,53 +1082,73 @@ function setupFullAutoUpdater() {
   autoUpdater.allowPrerelease = false;
   autoUpdater.differentialDownload = false;
 
-  autoUpdater.logger = {
-    info: (msg) => console.log("[Updater]", msg),
-    warn: (msg) => console.warn("[Updater]", msg),
-    error: (msg) => console.error("[Updater]", msg),
-    debug: (msg) => console.log("[Updater:debug]", msg),
-  };
+  // ⭐ DÙNG electron-log để ghi file
+  autoUpdater.logger = log;
+  log.transports.file.level = "info";
+  log.transports.console.level = "info";
+
+  log.info("[Updater] ⭐⭐⭐ INIT ⭐⭐⭐");
+  console.log("[Updater] ⭐⭐⭐ INIT ⭐⭐⭐");
 
   autoUpdater.on("checking-for-update", () => {
-    console.log("[Updater] Checking for updates...");
+    log.info("[Updater] ⭐ Checking for updates...");
+    console.log("[Updater] ⭐ Checking...");
   });
 
   autoUpdater.on("update-available", (info) => {
-    console.log("[Updater] Update available:", info.version);
+    log.info(`[Updater] ⭐ UPDATE AVAILABLE: ${info.version}`);
+    console.log(`[Updater] ⭐ UPDATE AVAILABLE: ${info.version}`);
 
     dialog
       .showMessageBox({
         type: "info",
         title: "Có bản cập nhật mới",
         message: `Phiên bản ${info.version} đã sẵn sàng!`,
-        detail: `Bạn đang dùng phiên bản cũ. Cập nhật ngay để có tính năng mới nhất?`,
+        detail: `Bạn đang dùng phiên bản cũ. Cập nhật ngay?`,
         buttons: ["Cập nhật ngay", "Để sau"],
         defaultId: 0,
         cancelId: 1,
       })
       .then((result) => {
+        log.info(`[Updater] ⭐ DIALOG RESULT: ${result.response}`);
+        console.log(`[Updater] ⭐ DIALOG RESULT: ${result.response}`);
+
         if (result.response === 0) {
-          console.log("[Updater] User accepted update");
-          autoUpdater.downloadUpdate();
+          log.info("[Updater] ⭐ USER ACCEPTED - STARTING DOWNLOAD");
+          console.log("[Updater] ⭐ USER ACCEPTED - STARTING DOWNLOAD");
+
+          // ⭐ Dùng async/await + catch error
+          (async () => {
+            try {
+              log.info("[Updater] ⭐ Calling downloadUpdate()...");
+              await autoUpdater.downloadUpdate();
+              log.info("[Updater] ⭐ downloadUpdate() resolved");
+            } catch (err) {
+              log.error("[Updater] ❌ DOWNLOAD ERROR:", err.message);
+              log.error("[Updater] ❌ STACK:", err.stack);
+
+              dialog.showMessageBox({
+                type: "error",
+                title: "Lỗi tải bản cập nhật",
+                message: err.message || "Không thể tải bản cập nhật",
+                detail: err.stack || "",
+                buttons: ["OK"],
+              });
+            }
+          })();
         } else {
-          console.log("[Updater] User postponed update");
+          log.info("[Updater] ⭐ User postponed update");
         }
       });
   });
 
   autoUpdater.on("update-not-available", (info) => {
-    console.log("[Updater] No update available. Current:", info.version);
+    log.info(`[Updater] ⭐ No update. Current: ${info.version}`);
   });
 
   autoUpdater.on("download-progress", (progressObj) => {
     const percent = progressObj.percent.toFixed(1);
-    const mbps = (progressObj.bytesPerSecond / 1024 / 1024).toFixed(2);
-    const transferred = (progressObj.transferred / 1024 / 1024).toFixed(2);
-    const total = (progressObj.total / 1024 / 1024).toFixed(2);
-
-    console.log(
-      `[Updater] Download: ${percent}% (${transferred}/${total} MB, ${mbps} MB/s)`,
-    );
+    log.info(`[Updater] ⭐ PROGRESS: ${percent}%`);
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setTitle(`Đang tải bản cập nhật... ${percent}%`);
@@ -1140,7 +1156,7 @@ function setupFullAutoUpdater() {
   });
 
   autoUpdater.on("update-downloaded", (info) => {
-    console.log("[Updater] Update downloaded:", info.version);
+    log.info(`[Updater] ⭐ DOWNLOADED: ${info.version}`);
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setTitle("HAB CREATIVE");
@@ -1158,16 +1174,16 @@ function setupFullAutoUpdater() {
       })
       .then((result) => {
         if (result.response === 0) {
-          console.log("[Updater] Installing update...");
+          log.info("[Updater] ⭐ INSTALLING...");
           autoUpdater.quitAndInstall(false, true);
         }
       });
   });
 
   autoUpdater.on("error", (err) => {
-    console.error("[Updater] Error:", err.message);
+    log.error("[Updater] ❌ ERROR:", err.message);
+    console.error("[Updater] ❌ Error:", err.message);
 
-    // ⭐ Chỉ hiện dialog nếu không phải 404 (chưa có release)
     if (err.message && !err.message.includes("404")) {
       dialog.showMessageBox({
         type: "error",
@@ -1179,24 +1195,43 @@ function setupFullAutoUpdater() {
     }
   });
 
-  // Check sau 5s
   setTimeout(() => {
+    log.info("[Updater] ⭐ Auto check after 5s");
     autoUpdater.checkForUpdates().catch((err) => {
-      console.warn("[Updater] Check failed:", err.message);
+      log.warn("[Updater] ⭐ Check failed:", err.message);
     });
   }, 5000);
 
-  // Check mỗi 1 giờ
   setInterval(
     () => {
       autoUpdater.checkForUpdates().catch((err) => {
-        console.warn("[Updater] Periodic check failed:", err.message);
+        log.warn("[Updater] ⭐ Periodic check failed:", err.message);
       });
     },
     60 * 60 * 1000,
   );
 
-  console.log("[Updater] Full auto-updater initialized");
+  log.info("[Updater] ⭐⭐⭐ READY ⭐⭐⭐");
+  console.log("[Updater] ⭐⭐⭐ READY ⭐⭐⭐");
+}
+
+function isNewerVersion(latest, current) {
+  if (!latest || !current) return false;
+
+  const l = String(latest)
+    .split(".")
+    .map((n) => parseInt(n) || 0);
+  const c = String(current)
+    .split(".")
+    .map((n) => parseInt(n) || 0);
+
+  for (let i = 0; i < Math.max(l.length, c.length); i++) {
+    const lv = l[i] || 0;
+    const cv = c[i] || 0;
+    if (lv > cv) return true;
+    if (lv < cv) return false;
+  }
+  return false;
 }
 
 function isNewerVersion(latest, current) {
