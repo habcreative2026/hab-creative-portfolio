@@ -372,4 +372,10 @@ setTimeout(() => {
   }
 }, 60000);
 
-window.addEventListener("DOMContentLoaded", init);
+// ⭐ Tự động gọi init() — không dùng DOMContentLoaded
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", init);
+} else {
+  console.log("[Unlock] 🚀 DOM ready, calling init()");
+  init();
+}

@@ -415,9 +415,68 @@
       </div>
     </div>
 
-    <script src="./node_modules/@tensorflow/tfjs/dist/tf.min.js"></script>
-    <script src="./node_modules/face-api.js/dist/face-api.min.js"></script>
-    <script src="./face-shared.js"></script>
-    <script src="./face-register.js"></script>
+    <script>
+      (async function () {
+        let libs = {
+          tf: "./node_modules/@tensorflow/tfjs/dist/tf.min.js",
+          faceApi: "./node_modules/face-api.js/dist/face-api.min.js",
+        };
+
+        // ⭐ Lấy paths từ electron
+        try {
+          if (window.electronAPI?.getLibsPath) {
+            libs = await window.electronAPI.getLibsPath();
+            console.log("[Register] Libs paths:", libs);
+          }
+        } catch (err) {
+          console.error("[Register] Cannot get libs path:", err);
+        }
+
+        // Load TFJS
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = libs.tf;
+          script.onload = () => {
+            console.log("[Register] ✅ Loaded tf.min.js");
+            resolve();
+          };
+          script.onerror = () => {
+            console.error("[Register] ❌ Failed to load:", libs.tf);
+            reject(new Error("Failed to load tf.min.js"));
+          };
+          document.head.appendChild(script);
+        });
+
+        // Load face-api.js
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = libs.faceApi;
+          script.onload = () => {
+            console.log("[Register] ✅ Loaded face-api.min.js");
+            resolve();
+          };
+          script.onerror = () => {
+            console.error("[Register] ❌ Failed to load:", libs.faceApi);
+            reject(new Error("Failed to load face-api.min.js"));
+          };
+          document.head.appendChild(script);
+        });
+
+        // Load face-shared.js
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "./face-shared.js";
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error("Failed to load face-shared.js"));
+          document.body.appendChild(script);
+        });
+
+        // Load face-register.js
+        const scriptRegister = document.createElement("script");
+        scriptRegister.src = "./face-register.js";
+        document.body.appendChild(scriptRegister);
+      })();
+    </script>
   </body>
 </html>

@@ -11,6 +11,8 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { autoUpdater } = require("electron-updater");
+const log = require("electron-log"); // Optional
 
 const FACE_TEST_MODE = false;
 
@@ -29,8 +31,8 @@ const FACE_PROFILES_PATH = path.join(
   "face-profiles.enc",
 );
 const FACE_METADATA_PATH = path.join(app.getPath("userData"), "face-meta.json");
-const DASHBOARD_URL = "https://hab-creative.com/admin/dashboard";
-const LOGIN_URL = "https://hab-creative.com/admin/login";
+const DASHBOARD_URL = "http://localhost:3000/admin/dashboard";
+const LOGIN_URL = "http://localhost:3000/admin/login";
 const MAX_FACES = 3;
 
 app.commandLine.appendSwitch("enable-gpu-rasterization");
@@ -46,15 +48,52 @@ app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
 
 // ===================== FACE HELPERS =====================
 
+// ⭐ Wrapper an toàn cho safeStorage — fallback nếu Linux không có libsecret
+function isSafeStorageAvailable() {
+  try {
+    return safeStorage.isEncryptionAvailable();
+  } catch (err) {
+    console.warn("[Face] safeStorage check error:", err);
+    return false;
+  }
+}
+
 function loadAllFaces() {
   try {
     if (!fs.existsSync(FACE_PROFILES_PATH)) return [];
-    if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error("Mã hóa hệ thống không khả dụng");
+
+    const raw = fs.readFileSync(FACE_PROFILES_PATH);
+
+    let parsed;
+
+    // ⭐ Nếu safeStorage khả dụng → decrypt
+    if (isSafeStorageAvailable()) {
+      try {
+        const decrypted = safeStorage.decryptString(raw);
+        parsed = JSON.parse(decrypted);
+      } catch (err) {
+        console.warn("[Face] Decrypt failed, trying plain JSON:", err);
+        // Fallback: thử đọc plain JSON (trường hợp file cũ lưu plain)
+        try {
+          parsed = JSON.parse(raw.toString("utf-8"));
+        } catch (_) {
+          console.error("[Face] Cannot parse face file");
+          return [];
+        }
+      }
+    } else {
+      // ⭐ Linux không có safeStorage → đọc plain JSON
+      console.warn(
+        "[Face] ⚠️ safeStorage not available, reading plain JSON (Linux fallback)",
+      );
+      try {
+        parsed = JSON.parse(raw.toString("utf-8"));
+      } catch (err) {
+        console.error("[Face] Cannot parse plain JSON:", err);
+        return [];
+      }
     }
-    const encrypted = fs.readFileSync(FACE_PROFILES_PATH);
-    const decrypted = safeStorage.decryptString(encrypted);
-    const parsed = JSON.parse(decrypted);
+
     const faces = parsed.faces || [];
 
     const validFaces = faces.filter((face) => {
@@ -86,12 +125,28 @@ function loadAllFaces() {
 
 function saveAllFaces(faces) {
   try {
-    if (!safeStorage.isEncryptionAvailable())
-      throw new Error("Mã hóa hệ thống không khả dụng");
     const jsonStr = JSON.stringify({ faces });
-    const encrypted = safeStorage.encryptString(jsonStr);
-    fs.writeFileSync(FACE_PROFILES_PATH, encrypted);
-    return true;
+
+    // ⭐ Nếu safeStorage khả dụng → encrypt
+    if (isSafeStorageAvailable()) {
+      try {
+        const encrypted = safeStorage.encryptString(jsonStr);
+        fs.writeFileSync(FACE_PROFILES_PATH, encrypted);
+        return true;
+      } catch (err) {
+        console.error("[Face] Encrypt failed, saving plain JSON:", err);
+        // Fallback: lưu plain JSON
+        fs.writeFileSync(FACE_PROFILES_PATH, jsonStr, "utf-8");
+        return true;
+      }
+    } else {
+      // ⭐ Linux không có safeStorage → lưu plain JSON
+      console.warn(
+        "[Face] ⚠️ safeStorage not available, saving plain JSON (Linux fallback)",
+      );
+      fs.writeFileSync(FACE_PROFILES_PATH, jsonStr, "utf-8");
+      return true;
+    }
   } catch (err) {
     console.error("[Face] Save error:", err);
     return false;
@@ -541,7 +596,7 @@ function createMenu() {
         { type: "separator" },
         {
           label: "Trang chủ",
-          click: () => shell.openExternal("https://hab-creative.com"),
+          click: () => shell.openExternal("http://localhost:3000"),
         },
         { type: "separator" },
         ...(isMac
@@ -653,6 +708,82 @@ ipcMain.on("maximize-window", () => {
 
 ipcMain.on("quit-app", () => app.quit());
 
+const { pathToFileURL } = require("url");
+
+ipcMain.handle("get-models-path", () => {
+  try {
+    const isDev = !app.isPackaged;
+
+    let modelsPath;
+    if (isDev) {
+      modelsPath = path.join(__dirname, "models");
+    } else {
+      modelsPath = path.join(process.resourcesPath, "models");
+    }
+
+    const urlPath = pathToFileURL(modelsPath).href + "/";
+
+    console.log("[App] Models path:", modelsPath);
+    console.log("[App] Models URL:", urlPath);
+    console.log("[App] Packaged:", app.isPackaged);
+
+    return urlPath;
+  } catch (err) {
+    console.error("[App] get-models-path error:", err);
+    return "./models/";
+  }
+});
+
+ipcMain.handle("get-libs-path", () => {
+  try {
+    const isDev = !app.isPackaged;
+
+    if (isDev) {
+      // ⭐ Dev: trả về 2 paths riêng biệt
+      const tfPath = path.join(
+        __dirname,
+        "node_modules",
+        "@tensorflow",
+        "tfjs",
+        "dist",
+        "tf.min.js",
+      );
+      const faceApiPath = path.join(
+        __dirname,
+        "node_modules",
+        "face-api.js",
+        "dist",
+        "face-api.min.js",
+      );
+
+      const result = {
+        tf: pathToFileURL(tfPath).href,
+        faceApi: pathToFileURL(faceApiPath).href,
+      };
+
+      console.log("[App] ✅ Libs URLs (dev):", result);
+      return result;
+    } else {
+      // ⭐ Production: file đã được copy vào resources/libs/
+      const libsPath = path.join(process.resourcesPath, "libs");
+
+      const result = {
+        tf: pathToFileURL(path.join(libsPath, "tf.min.js")).href,
+        faceApi: pathToFileURL(path.join(libsPath, "face-api.min.js")).href,
+      };
+
+      console.log("[App] ✅ Libs URLs (prod):", result);
+      return result;
+    }
+  } catch (err) {
+    console.error("[App] ❌ get-libs-path error:", err);
+    return {
+      tf: "./node_modules/@tensorflow/tfjs/dist/tf.min.js",
+      faceApi: "./node_modules/face-api.js/dist/face-api.min.js",
+    };
+  }
+});
+
 // ⭐ ĐÃ XÓA CÁC IPC LIÊN QUAN LOADING:
 // - loading-ready
 // - update-loading
@@ -713,8 +844,9 @@ ipcMain.handle("face:save", (event, payload) => {
     }
 
     if (!eyesOpen) throw new Error("Chỉ đăng ký khi cả 2 mắt đang mở");
-    if (!safeStorage.isEncryptionAvailable())
-      throw new Error("Mã hóa hệ thống không khả dụng");
+    // ⭐ Bỏ check safeStorage vì đã có fallback trong saveAllFaces
+    // if (!safeStorage.isEncryptionAvailable())
+    //   throw new Error("Mã hóa hệ thống không khả dụng");
 
     const faces = loadAllFaces();
 
@@ -851,10 +983,246 @@ ipcMain.on("face:close-window", (event) => {
   if (win) win.close();
 });
 
+// ===================== AUTO UPDATER =====================
+
+function setupAutoUpdater() {
+  if (!app.isPackaged) {
+    console.log("[Updater] Dev mode - skip auto update");
+    return;
+  }
+
+  const platform = process.platform; // "win32" | "darwin" | "linux"
+  console.log(`[Updater] Platform: ${platform}`);
+
+  // ⭐ macOS: electron-updater KHÔNG hoạt động nếu unsigned
+  // → Chỉ check version và mở trang tải
+  if (platform === "darwin") {
+    console.log("[Updater] macOS detected → check-only mode");
+    setupMacOSUpdater();
+    return;
+  }
+
+  // ⭐ Windows + Linux: Dùng electron-updater (full auto-update)
+  console.log(`[Updater] ${platform} detected → full auto-update mode`);
+  setupFullAutoUpdater();
+}
+
+// ⭐ macOS: Chỉ check version + mở link tải
+function setupMacOSUpdater() {
+  const https = require("https");
+
+  const RELEASES_URL =
+    "https://github.com/habcreative2026/hab-creative-portfolio/releases/latest";
+
+  const checkVersion = () => {
+    const options = {
+      hostname: "api.github.com",
+      path: "/repos/habcreative2026/hab-creative-portfolio/releases/latest",
+      headers: {
+        "User-Agent": "HAB-Creative-App",
+      },
+    };
+
+    https
+      .get(options, (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            const release = JSON.parse(data);
+            const latestVersion = (release.tag_name || "").replace("v", "");
+            const currentVersion = app.getVersion();
+
+            console.log(
+              `[Updater] macOS check: current=${currentVersion}, latest=${latestVersion}`,
+            );
+
+            if (isNewerVersion(latestVersion, currentVersion)) {
+              console.log(
+                `[Updater] macOS: New version available ${latestVersion}`,
+              );
+
+              dialog
+                .showMessageBox({
+                  type: "info",
+                  title: "Có bản cập nhật mới",
+                  message: `Phiên bản ${latestVersion} đã sẵn sàng!`,
+                  detail:
+                    "Bạn đang dùng phiên bản cũ. Mở trang tải để tải bản mới nhất cho macOS?",
+                  buttons: ["Mở trang tải", "Để sau"],
+                  defaultId: 0,
+                  cancelId: 1,
+                })
+                .then((result) => {
+                  if (result.response === 0) {
+                    console.log("[Updater] Opening:", RELEASES_URL);
+                    shell.openExternal(RELEASES_URL);
+                  }
+                });
+            } else {
+              console.log("[Updater] macOS: Already latest version");
+            }
+          } catch (err) {
+            console.warn("[Updater] macOS parse error:", err.message);
+          }
+        });
+      })
+      .on("error", (err) => {
+        console.warn("[Updater] macOS check failed:", err.message);
+      });
+  };
+
+  // Check sau 5s
+  setTimeout(checkVersion, 5000);
+
+  // Check mỗi 4 giờ
+  setInterval(checkVersion, 4 * 60 * 60 * 1000);
+}
+
+// ⭐ Windows + Linux: Full auto-update
+function setupFullAutoUpdater() {
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+
+  autoUpdater.logger = {
+    info: (msg) => console.log("[Updater]", msg),
+    warn: (msg) => console.warn("[Updater]", msg),
+    error: (msg) => console.error("[Updater]", msg),
+    debug: (msg) => console.log("[Updater:debug]", msg),
+  };
+
+  autoUpdater.on("checking-for-update", () => {
+    console.log("[Updater] Checking for updates...");
+  });
+
+  autoUpdater.on("update-available", (info) => {
+    console.log("[Updater] Update available:", info.version);
+
+    dialog
+      .showMessageBox({
+        type: "info",
+        title: "Có bản cập nhật mới",
+        message: `Phiên bản ${info.version} đã sẵn sàng!`,
+        detail: `Bạn đang dùng phiên bản cũ. Cập nhật ngay để có tính năng mới nhất?`,
+        buttons: ["Cập nhật ngay", "Để sau"],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then((result) => {
+        if (result.response === 0) {
+          console.log("[Updater] User accepted update");
+          autoUpdater.downloadUpdate();
+        } else {
+          console.log("[Updater] User postponed update");
+        }
+      });
+  });
+
+  autoUpdater.on("update-not-available", (info) => {
+    console.log("[Updater] No update available. Current:", info.version);
+  });
+
+  autoUpdater.on("download-progress", (progressObj) => {
+    const percent = progressObj.percent.toFixed(1);
+    const mbps = (progressObj.bytesPerSecond / 1024 / 1024).toFixed(2);
+    const transferred = (progressObj.transferred / 1024 / 1024).toFixed(2);
+    const total = (progressObj.total / 1024 / 1024).toFixed(2);
+
+    console.log(
+      `[Updater] Download: ${percent}% (${transferred}/${total} MB, ${mbps} MB/s)`,
+    );
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setTitle(`Đang tải bản cập nhật... ${percent}%`);
+    }
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    console.log("[Updater] Update downloaded:", info.version);
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setTitle("HAB CREATIVE");
+    }
+
+    dialog
+      .showMessageBox({
+        type: "info",
+        title: "Đã tải xong",
+        message: `Phiên bản ${info.version} đã sẵn sàng cài đặt.`,
+        detail: "Ứng dụng sẽ khởi động lại để hoàn tất cập nhật.",
+        buttons: ["Khởi động lại ngay", "Để sau"],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then((result) => {
+        if (result.response === 0) {
+          console.log("[Updater] Installing update...");
+          autoUpdater.quitAndInstall(false, true);
+        }
+      });
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("[Updater] Error:", err.message);
+
+    // ⭐ Chỉ hiện dialog nếu không phải 404 (chưa có release)
+    if (err.message && !err.message.includes("404")) {
+      dialog.showMessageBox({
+        type: "error",
+        title: "Lỗi cập nhật",
+        message: "Không thể kiểm tra bản cập nhật",
+        detail: err.message,
+        buttons: ["OK"],
+      });
+    }
+  });
+
+  // Check sau 5s
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.warn("[Updater] Check failed:", err.message);
+    });
+  }, 5000);
+
+  // Check mỗi 1 giờ
+  setInterval(
+    () => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.warn("[Updater] Periodic check failed:", err.message);
+      });
+    },
+    60 * 60 * 1000,
+  );
+
+  console.log("[Updater] Full auto-updater initialized");
+}
+
+function isNewerVersion(latest, current) {
+  if (!latest || !current) return false;
+
+  const l = String(latest)
+    .split(".")
+    .map((n) => parseInt(n) || 0);
+  const c = String(current)
+    .split(".")
+    .map((n) => parseInt(n) || 0);
+
+  for (let i = 0; i < Math.max(l.length, c.length); i++) {
+    const lv = l[i] || 0;
+    const cv = c[i] || 0;
+    if (lv > cv) return true;
+    if (lv < cv) return false;
+  }
+  return false;
+}
+
 // ===================== APP LIFECYCLE =====================
 
 app.whenReady().then(() => {
   const faceCount = getFaceCount();
+
+  setupAutoUpdater();
 
   if (FACE_TEST_MODE) {
     createFaceTestWindow();

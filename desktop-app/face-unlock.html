@@ -429,9 +429,58 @@
       <p>Đang mở ứng dụng...</p>
     </div>
 
-    <script src="./node_modules/@tensorflow/tfjs/dist/tf.min.js"></script>
-    <script src="./node_modules/face-api.js/dist/face-api.min.js"></script>
-    <script src="./face-shared.js"></script>
-    <script src="./face-unlock.js"></script>
+    <script>
+      (async function () {
+        let libs = {
+          tf: "./node_modules/@tensorflow/tfjs/dist/tf.min.js",
+          faceApi: "./node_modules/face-api.js/dist/face-api.min.js",
+        };
+
+        try {
+          if (window.electronAPI?.getLibsPath) {
+            libs = await window.electronAPI.getLibsPath();
+            console.log("[Unlock] Libs paths:", libs);
+          }
+        } catch (err) {
+          console.error("[Unlock] Cannot get libs path:", err);
+        }
+
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = libs.tf;
+          script.onload = () => {
+            console.log("[Unlock] ✅ Loaded tf.min.js");
+            resolve();
+          };
+          script.onerror = () => reject(new Error("Failed to load tf.min.js"));
+          document.head.appendChild(script);
+        });
+
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = libs.faceApi;
+          script.onload = () => {
+            console.log("[Unlock] ✅ Loaded face-api.min.js");
+            resolve();
+          };
+          script.onerror = () =>
+            reject(new Error("Failed to load face-api.min.js"));
+          document.head.appendChild(script);
+        });
+
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "./face-shared.js";
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error("Failed to load face-shared.js"));
+          document.body.appendChild(script);
+        });
+
+        const scriptUnlock = document.createElement("script");
+        scriptUnlock.src = "./face-unlock.js";
+        document.body.appendChild(scriptUnlock);
+      })();
+    </script>
   </body>
 </html>

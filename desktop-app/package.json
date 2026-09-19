@@ -15,17 +15,14 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win --x64 --publish never",
-    "build:mac": "electron-builder --mac --x64 --arm64 --publish never",
-    "build:mac:arm64": "electron-builder --mac --arm64 --publish never",
-    "build:mac:x64": "electron-builder --mac --x64 --publish never",
-    "build:linux": "electron-builder --linux --x64 --publish never",
-    "build:linux:arm64": "electron-builder --linux --arm64 --publish never",
-    "build:all": "electron-builder -wml --publish never",
-    "build:all:arm64": "electron-builder -wml --arm64 --publish never",
-    "test:copy": "npx playwright test tests/copy-macos.spec.js",
-    "test:copy:headed": "npx playwright test tests/copy-macos.spec.js --headed",
-    "test:all": "npm run test:copy",
+    "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac --x64 --arm64",
+    "build:mac:arm64": "electron-builder --mac --arm64",
+    "build:mac:x64": "electron-builder --mac --x64",
+    "build:linux": "electron-builder --linux --x64",
+    "build:linux:arm64": "electron-builder --linux --arm64",
+    "build:all": "electron-builder -wml",
+    "build:all:arm64": "electron-builder -wml --arm64",
     "clean": "rm -rf dist/",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -51,14 +48,33 @@
       "face-unlock.html",
       "face-unlock.js",
       "assets/**/*",
-      "!**/*.map",
-      "!**/node_modules/**/*.md",
-      "!**/node_modules/**/*.txt"
+      "!**/*.map"
     ],
-    "publish": {
-      "provider": "github",
-      "releaseType": "release"
-    },
+    "extraResources": [
+      {
+        "from": "models",
+        "to": "models",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "node_modules/@tensorflow/tfjs/dist/tf.min.js",
+        "to": "libs/tf.min.js"
+      },
+      {
+        "from": "node_modules/face-api.js/dist/face-api.min.js",
+        "to": "libs/face-api.min.js"
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "habcreative2026",
+        "repo": "hab-creative-portfolio",
+        "releaseType": "release"
+      }
+    ],
     "win": {
       "target": [
         {
@@ -66,21 +82,21 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
         }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "publish": [
+        "github"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "deleteAppDataOnUninstall": false
     },
     "mac": {
       "target": [
@@ -100,7 +116,20 @@
         }
       ],
       "icon": "assets/icon.icns",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Ứng dụng cần quyền truy cập camera để nhận diện khuôn mặt Face ID.",
+        "NSMicrophoneUsageDescription": "Ứng dụng cần quyền truy cập microphone.",
+        "NSClipboardUsageDescription": "Ứng dụng cần quyền truy cập clipboard để hỗ trợ copy/paste.",
+        "NSAppleEventsUsageDescription": "Ứng dụng cần quyền gửi Apple Events.",
+        "LSApplicationCategoryType": "public.app-category.productivity",
+        "NSHighResolutionCapable": true,
+        "LSMinimumSystemVersion": "10.13.0"
+      }
     },
     "linux": {
       "target": [
@@ -109,22 +138,22 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
         }
       ],
       "icon": "assets/icon.png",
       "category": "Utility",
-      "maintainer": "Bui Hai Trong <buihaitrong.dev@gmail.com>"
+      "maintainer": "Bui Hai Trong <buihaitrong.dev@gmail.com>",
+      "desktop": {
+        "Name": "HAB Creative",
+        "Comment": "Portfolio Desktop App",
+        "Categories": "Utility;Office;"
+      }
     },
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^1.7.4",
+    "electron-updater": "^6.8.9",
     "face-api.js": "^0.22.2",
     "node-machine-id": "^1.1.12"
   }

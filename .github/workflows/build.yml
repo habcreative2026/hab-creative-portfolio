@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    timeout-minutes: 30 # 👈 THÊM DÒNG NÀY
+    timeout-minutes: 60
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
@@ -16,17 +16,17 @@ jobs:
           - os: windows-latest
             build-command: build:win
             artifact-name: windows-build
-            artifact-path: dist/*.exe
           - os: macos-latest
             build-command: build:mac
             artifact-name: macos-build
-            artifact-path: dist/*.dmg
           - os: ubuntu-latest
             build-command: build:linux
             artifact-name: linux-build
-            artifact-path: dist/*.AppImage
 
     runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -55,7 +55,7 @@ jobs:
             libxcb-dri3-0 \
             libxtst-dev \
             libxss1 \
-            libnotify-dev  # 👈 THÊM THÊM
+            libnotify-dev
 
       - name: Install dependencies
         run: npm install
@@ -66,11 +66,32 @@ jobs:
         working-directory: desktop-app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true # 👈 THÊM DÒNG NÀY
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
-      - name: Upload artifacts
+      - name: List dist files (debug)
+        run: ls -la dist/
+        working-directory: desktop-app
+
+      - name: Upload artifacts (temporary)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
-          path: desktop-app/${{ matrix.artifact-path }}
+          path: desktop-app/dist/*
           retention-days: 7
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            desktop-app/dist/*.exe
+            desktop-app/dist/*.dmg
+            desktop-app/dist/*.zip
+            desktop-app/dist/*.AppImage
+            desktop-app/dist/*.yml
+            desktop-app/dist/*.blockmap
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

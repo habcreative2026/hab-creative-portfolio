@@ -346,4 +346,11 @@ window.addEventListener("beforeunload", () => {
   if (stream) stream.getTracks().forEach((t) => t.stop());
 });
 
-window.addEventListener("DOMContentLoaded", init);
+// ⭐ Tự động gọi init() — không dùng DOMContentLoaded
+// Vì script được load động sau khi DOM đã sẵn sàng
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", init);
+} else {
+  console.log("[Register] 🚀 DOM ready, calling init()");
+  init();
+}

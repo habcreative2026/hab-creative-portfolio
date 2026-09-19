@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   maximizeWindow: () => ipcRenderer.send("maximize-window"),
   quitApp: () => ipcRenderer.send("quit-app"),
 
+  getModelsPath: () => ipcRenderer.invoke("get-models-path"),
+  getLibsPath: () => ipcRenderer.invoke("get-libs-path"),
+
   faceAuth: {
     hasAny: () => ipcRenderer.invoke("face:has-any"),
     count: () => ipcRenderer.invoke("face:count"),
