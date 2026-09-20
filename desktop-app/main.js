@@ -1441,7 +1441,7 @@ function setupFullAutoUpdater() {
       dialogPromise.then((result) => {
         if (result.response === 0) {
           log.info("[Updater] INSTALLING...");
-          autoUpdater.quitAndInstall(false, true);
+          autoUpdater.quitAndInstall(true, true);
         } else {
           // ⭐ Nếu user chọn "Để sau", vẫn đảm bảo progress window đã đóng
           closeDownloadProgressWindow();
