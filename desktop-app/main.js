@@ -132,24 +132,18 @@ if (!gotTheLock) {
  * Phát hiện: Update hay Reinstall?
  *
  * Logic:
- * 1. Nếu có UPDATE_MARKER_PATH VÀ marker < 7 ngày → Đây là UPDATE
- *    → Giữ Face ID cũ
- *    → Xóa marker
- *
- * 2. Nếu KHÔNG có INSTALL_MARKER_PATH (lần đầu cài) → Đây là INSTALL MỚI
- *    → Tạo marker, giữ nguyên
- *
- * 3. Nếu CÓ INSTALL_MARKER_PATH + KHÔNG có UPDATE_MARKER hợp lệ + CÓ face files
- *    → Đây là REINSTALL (user uninstall thủ công → cài lại)
- *    → Xóa Face ID cũ
- *
- * FIX 1: Update marker có TTL 7 ngày — marker quá cũ bị bỏ qua
+ * 1. Có .update-in-progress (valid TTL) → UPDATE → giữ Face ID
+ * 2. Không có .install-completed → FIRST-INSTALL → tạo marker
+ * 3. Có .install-completed + có face files → SO SÁNH THỜI GIAN:
+ *    - Nếu face file được tạo SAU install marker → "mở lại app" → GIỮ
+ *    - Nếu face file được tạo TRƯỚC install marker → "cài lại" → XÓA
  */
 function handleInstallDetection() {
   try {
     const hasInstallMarker = fs.existsSync(INSTALL_MARKER_PATH);
     const hasFaceFiles = fs.existsSync(FACE_PROFILES_PATH);
 
+    // ⭐ Kiểm tra update marker có hợp lệ không
     let hasValidUpdateMarker = false;
     if (fs.existsSync(UPDATE_MARKER_PATH)) {
       try {
@@ -180,6 +174,7 @@ function handleInstallDetection() {
       hasFaceFiles,
     });
 
+    // ⭐ TRƯỜNG HỢP 1: UPDATE
     if (hasValidUpdateMarker) {
       console.log("[Install] UPDATE detected - Keeping Face ID");
       try {
@@ -193,6 +188,7 @@ function handleInstallDetection() {
       return "update";
     }
 
+    // ⭐ TRƯỜNG HỢP 2: FIRST-INSTALL (chưa từng cài)
     if (!hasInstallMarker) {
       console.log("[Install] First install detected");
       try {
@@ -201,9 +197,56 @@ function handleInstallDetection() {
       return "first-install";
     }
 
+    // ⭐ TRƯỜNG HỢP 3: CÓ INSTALL MARKER + CÓ FACE FILES
+    // Cần phân biệt: "mở lại app" vs "cài lại sau uninstall"
     if (hasFaceFiles) {
+      // Lấy thời gian cài đặt từ .install-completed
+      let installTime = 0;
+      try {
+        const installContent = fs
+          .readFileSync(INSTALL_MARKER_PATH, "utf-8")
+          .trim();
+        const parsed = Date.parse(installContent);
+        if (!isNaN(parsed)) {
+          installTime = parsed;
+        } else {
+          // Fallback: dùng mtime của file
+          installTime = fs.statSync(INSTALL_MARKER_PATH).mtimeMs;
+        }
+      } catch (_) {
+        installTime = 0;
+      }
+
+      // Lấy thời gian tạo face file
+      let faceTime = 0;
+      try {
+        faceTime = fs.statSync(FACE_PROFILES_PATH).mtimeMs;
+      } catch (_) {
+        faceTime = 0;
+      }
+
+      console.log("[Install] Time comparison:", {
+        installTime: new Date(installTime).toISOString(),
+        faceTime: new Date(faceTime).toISOString(),
+        faceIsNewer: faceTime > installTime - 5000,
+      });
+
+      // ⭐ So sánh thời gian:
+      // - faceTime > installTime - 5s → "mở lại app" → GIỮ Face ID
+      // - faceTime < installTime - 5s → "cài lại" → XÓA Face ID
+      // (dùng 5s tolerance để tránh sai lệch filesystem)
+      const TIME_TOLERANCE = 5000;
+
+      if (faceTime > installTime - TIME_TOLERANCE) {
+        console.log(
+          "[Install] NORMAL STARTUP (face newer than install) - Keeping Face ID",
+        );
+        return "normal";
+      }
+
+      // ⭐ Đây là REINSTALL thực sự
       console.log(
-        "[Install] REINSTALL detected (uninstall + reinstall) - Resetting Face ID",
+        "[Install] REINSTALL detected (face older than install) - Resetting Face ID",
       );
       try {
         if (fs.existsSync(FACE_PROFILES_PATH)) {
@@ -217,10 +260,17 @@ function handleInstallDetection() {
       } catch (err) {
         console.warn("[Install] Không xóa được face files:", err.message);
       }
+
+      // ⭐ Cập nhật lại install marker để lần sau không bị coi là reinstall
+      try {
+        fs.writeFileSync(INSTALL_MARKER_PATH, new Date().toISOString());
+        console.log("[Install] Đã reset install marker");
+      } catch (_) {}
+
       return "reinstall";
     }
 
-    console.log("[Install] Normal startup");
+    console.log("[Install] Normal startup (no face files)");
     return "normal";
   } catch (err) {
     console.error("[Install] Detection error:", err);
