@@ -1082,7 +1082,11 @@ function updateDownloadProgress(percent, transferred, total) {
 
 function closeDownloadProgressWindow() {
   if (downloadProgressWindow && !downloadProgressWindow.isDestroyed()) {
-    downloadProgressWindow.close();
+    try {
+      downloadProgressWindow.destroy(); // ⭐ Dùng destroy() thay vì close()
+    } catch (err) {
+      log.warn("[Updater] Failed to destroy progress window:", err.message);
+    }
     downloadProgressWindow = null;
   }
 }
@@ -1402,6 +1406,8 @@ function setupFullAutoUpdater() {
     log.info(`[Updater] DOWNLOADED: ${info.version}`);
 
     isDownloadingUpdate = false;
+
+    // ⭐ ĐÓNG PROGRESS WINDOW NGAY LẬP TỨC (trước khi hiện dialog)
     closeDownloadProgressWindow();
 
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -1415,27 +1421,34 @@ function setupFullAutoUpdater() {
       return null;
     };
 
-    const dialogOptions = {
-      type: "info",
-      title: "Đã tải xong",
-      message: `Phiên bản ${info.version} đã sẵn sàng cài đặt.`,
-      detail: "Ứng dụng sẽ khởi động lại để hoàn tất cập nhật.",
-      buttons: ["Khởi động lại ngay", "Để sau"],
-      defaultId: 0,
-      cancelId: 1,
-    };
+    // ⭐ Đợi 300ms cho progress window đóng hẳn trước khi hiện dialog
+    setTimeout(() => {
+      const dialogOptions = {
+        type: "info",
+        title: "Đã tải xong",
+        message: `Phiên bản ${info.version} đã sẵn sàng cài đặt.`,
+        detail: "Ứng dụng sẽ khởi động lại để hoàn tất cập nhật.",
+        buttons: ["Khởi động lại ngay", "Để sau"],
+        defaultId: 0,
+        cancelId: 1,
+      };
 
-    const parentWin = getParentWindow();
-    const dialogPromise = parentWin
-      ? dialog.showMessageBox(parentWin, dialogOptions)
-      : dialog.showMessageBox(dialogOptions);
+      const parentWin = getParentWindow();
+      const dialogPromise = parentWin
+        ? dialog.showMessageBox(parentWin, dialogOptions)
+        : dialog.showMessageBox(dialogOptions);
 
-    dialogPromise.then((result) => {
-      if (result.response === 0) {
-        log.info("[Updater] INSTALLING...");
-        autoUpdater.quitAndInstall(false, true);
-      }
-    });
+      dialogPromise.then((result) => {
+        if (result.response === 0) {
+          log.info("[Updater] INSTALLING...");
+          autoUpdater.quitAndInstall(false, true);
+        } else {
+          // ⭐ Nếu user chọn "Để sau", vẫn đảm bảo progress window đã đóng
+          closeDownloadProgressWindow();
+          log.info("[Updater] User postponed install, will install on quit");
+        }
+      });
+    }, 300);
   });
 
   autoUpdater.on("error", (err) => {
