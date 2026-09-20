@@ -14,12 +14,11 @@ const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 
-// ⭐ Cấu hình electron-log với auto rotation (giới hạn 5MB)
 try {
   log.initialize({ preload: true });
   log.transports.file.level = "info";
   log.transports.console.level = "info";
-  log.transports.file.maxSize = 5 * 1024 * 1024; // 5 MB
+  log.transports.file.maxSize = 5 * 1024 * 1024;
   log.transports.file.format =
     "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
   log.transports.file.resolvePathFn = () =>
@@ -53,6 +52,8 @@ try {
 
 const FACE_TEST_MODE = false;
 
+const UPDATE_MARKER_TTL_DAYS = 7;
+
 let mainWindow = null;
 let faceTestWindow = null;
 let faceRegisterWindow = null;
@@ -66,11 +67,12 @@ let isTransitioningToMain = false;
 let isDownloadingUpdate = false;
 let downloadProgressWindow = null;
 
-// ⭐ Đường dẫn userData
 const USER_DATA_PATH = app.getPath("userData");
 const LOGS_PATH = path.join(USER_DATA_PATH, "logs");
 
-// ⭐ Version face data
+const UPDATE_MARKER_PATH = path.join(USER_DATA_PATH, ".update-in-progress");
+const INSTALL_MARKER_PATH = path.join(USER_DATA_PATH, ".install-completed");
+
 const FACE_DATA_VERSION = "v2";
 
 const FACE_PROFILES_PATH = path.join(
@@ -97,7 +99,6 @@ app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
 app.commandLine.appendSwitch("use-gl", "angle");
 app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
 
-// ⭐ SINGLE INSTANCE LOCK — Ngăn 2 app chạy cùng lúc
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -127,8 +128,116 @@ if (!gotTheLock) {
   });
 }
 
-// ===================== CLEANUP HELPERS =====================
+/**
+ * Phát hiện: Update hay Reinstall?
+ *
+ * Logic:
+ * 1. Nếu có UPDATE_MARKER_PATH VÀ marker < 7 ngày → Đây là UPDATE
+ *    → Giữ Face ID cũ
+ *    → Xóa marker
+ *
+ * 2. Nếu KHÔNG có INSTALL_MARKER_PATH (lần đầu cài) → Đây là INSTALL MỚI
+ *    → Tạo marker, giữ nguyên
+ *
+ * 3. Nếu CÓ INSTALL_MARKER_PATH + KHÔNG có UPDATE_MARKER hợp lệ + CÓ face files
+ *    → Đây là REINSTALL (user uninstall thủ công → cài lại)
+ *    → Xóa Face ID cũ
+ *
+ * FIX 1: Update marker có TTL 7 ngày — marker quá cũ bị bỏ qua
+ */
+function handleInstallDetection() {
+  try {
+    const hasInstallMarker = fs.existsSync(INSTALL_MARKER_PATH);
+    const hasFaceFiles = fs.existsSync(FACE_PROFILES_PATH);
 
+    let hasValidUpdateMarker = false;
+    if (fs.existsSync(UPDATE_MARKER_PATH)) {
+      try {
+        const stats = fs.statSync(UPDATE_MARKER_PATH);
+        const ageDays = (Date.now() - stats.mtimeMs) / 1000 / 60 / 60 / 24;
+
+        if (ageDays <= UPDATE_MARKER_TTL_DAYS) {
+          hasValidUpdateMarker = true;
+          console.log(
+            `[Install] Update marker valid (${ageDays.toFixed(2)} ngày)`,
+          );
+        } else {
+          console.log(
+            `[Install] Update marker quá cũ (${ageDays.toFixed(2)} ngày) → bỏ qua`,
+          );
+          try {
+            fs.unlinkSync(UPDATE_MARKER_PATH);
+          } catch (_) {}
+        }
+      } catch (err) {
+        console.warn("[Install] Không đọc được update marker:", err.message);
+      }
+    }
+
+    console.log("[Install] Detection:", {
+      hasValidUpdateMarker,
+      hasInstallMarker,
+      hasFaceFiles,
+    });
+
+    if (hasValidUpdateMarker) {
+      console.log("[Install] UPDATE detected - Keeping Face ID");
+      try {
+        fs.unlinkSync(UPDATE_MARKER_PATH);
+      } catch (_) {}
+      if (!hasInstallMarker) {
+        try {
+          fs.writeFileSync(INSTALL_MARKER_PATH, new Date().toISOString());
+        } catch (_) {}
+      }
+      return "update";
+    }
+
+    if (!hasInstallMarker) {
+      console.log("[Install] First install detected");
+      try {
+        fs.writeFileSync(INSTALL_MARKER_PATH, new Date().toISOString());
+      } catch (_) {}
+      return "first-install";
+    }
+
+    if (hasFaceFiles) {
+      console.log(
+        "[Install] REINSTALL detected (uninstall + reinstall) - Resetting Face ID",
+      );
+      try {
+        if (fs.existsSync(FACE_PROFILES_PATH)) {
+          fs.unlinkSync(FACE_PROFILES_PATH);
+          console.log("[Install] Đã xóa face-profiles cũ");
+        }
+        if (fs.existsSync(FACE_METADATA_PATH)) {
+          fs.unlinkSync(FACE_METADATA_PATH);
+          console.log("[Install] Đã xóa face-meta cũ");
+        }
+      } catch (err) {
+        console.warn("[Install] Không xóa được face files:", err.message);
+      }
+      return "reinstall";
+    }
+
+    console.log("[Install] Normal startup");
+    return "normal";
+  } catch (err) {
+    console.error("[Install] Detection error:", err);
+    return "error";
+  }
+}
+
+function markUpdateInProgress() {
+  try {
+    fs.writeFileSync(UPDATE_MARKER_PATH, new Date().toISOString());
+    console.log("[Install]Đã tạo update marker");
+    return true;
+  } catch (err) {
+    console.error("[Install] Không tạo được update marker:", err);
+    return false;
+  }
+}
 function cleanupOldFaceFiles() {
   try {
     const currentFaceFile = path.basename(FACE_PROFILES_PATH);
@@ -140,7 +249,6 @@ function cleanupOldFaceFiles() {
     let deletedCount = 0;
 
     for (const file of files) {
-      // Xóa tất cả file face-* NHƯNG không xóa file hiện tại
       if (
         (file.startsWith("face-profiles") || file.startsWith("face-meta")) &&
         file !== currentFaceFile &&
@@ -148,14 +256,13 @@ function cleanupOldFaceFiles() {
       ) {
         try {
           fs.unlinkSync(path.join(USER_DATA_PATH, file));
-          console.log(`[Cleanup] 🗑️  Xóa file cũ: ${file}`);
+          console.log(`[Cleanup] Xóa file face cũ: ${file}`);
           deletedCount++;
         } catch (err) {
           console.warn(`[Cleanup] Không xóa được ${file}:`, err.message);
         }
       }
 
-      // Xóa file .tmp, .bak, .old
       if (
         (file.endsWith(".tmp") ||
           file.endsWith(".bak") ||
@@ -164,14 +271,14 @@ function cleanupOldFaceFiles() {
       ) {
         try {
           fs.unlinkSync(path.join(USER_DATA_PATH, file));
-          console.log(`[Cleanup] 🗑️  Xóa file tạm: ${file}`);
+          console.log(`[Cleanup] Xóa file face tạm: ${file}`);
           deletedCount++;
         } catch (_) {}
       }
     }
 
     if (deletedCount > 0) {
-      console.log(`[Cleanup] ✅ Đã xóa ${deletedCount} file face cũ`);
+      console.log(`[Cleanup] Đã xóa ${deletedCount} file face cũ`);
     }
   } catch (err) {
     console.warn("[Cleanup] Lỗi cleanup face:", err.message);
@@ -183,22 +290,70 @@ function cleanupOldLogs() {
     if (!fs.existsSync(LOGS_PATH)) return;
 
     const files = fs.readdirSync(LOGS_PATH);
+    const now = Date.now();
+    let deletedCount = 0;
 
     for (const file of files) {
-      if (!file.endsWith(".log")) continue;
-
       const filePath = path.join(LOGS_PATH, file);
-      const stats = fs.statSync(filePath);
-      const sizeMB = stats.size / 1024 / 1024;
 
-      if (sizeMB > 5) {
+      let stats;
+      try {
+        stats = fs.statSync(filePath);
+      } catch (_) {
+        continue;
+      }
+
+      const sizeMB = stats.size / 1024 / 1024;
+      const ageDays = (now - stats.mtimeMs) / 1000 / 60 / 60 / 24;
+
+      if (file.endsWith(".log") && sizeMB > 5) {
         try {
           fs.unlinkSync(filePath);
           console.log(
-            `[Cleanup] 🗑️  Xóa log cũ (${sizeMB.toFixed(2)} MB): ${file}`,
+            `[Cleanup] Xóa log cũ (${sizeMB.toFixed(2)} MB): ${file}`,
           );
+          deletedCount++;
         } catch (_) {}
       }
+
+      if (file.endsWith(".bak") && ageDays > 7) {
+        try {
+          fs.unlinkSync(filePath);
+          console.log(
+            `[Cleanup] Xóa log archive cũ (${ageDays.toFixed(1)} ngày): ${file}`,
+          );
+          deletedCount++;
+        } catch (_) {}
+      }
+    }
+
+    const archives = fs
+      .readdirSync(LOGS_PATH)
+      .filter((f) => f.endsWith(".bak"))
+      .map((f) => {
+        try {
+          return {
+            name: f,
+            time: fs.statSync(path.join(LOGS_PATH, f)).mtimeMs,
+          };
+        } catch (_) {
+          return { name: f, time: 0 };
+        }
+      })
+      .sort((a, b) => b.time - a.time);
+
+    if (archives.length > 5) {
+      for (let i = 5; i < archives.length; i++) {
+        try {
+          fs.unlinkSync(path.join(LOGS_PATH, archives[i].name));
+          console.log(`[Cleanup] Xóa archive thừa: ${archives[i].name}`);
+          deletedCount++;
+        } catch (_) {}
+      }
+    }
+
+    if (deletedCount > 0) {
+      console.log(`[Cleanup] Đã xóa ${deletedCount} file log cũ`);
     }
   } catch (err) {
     console.warn("[Cleanup] Lỗi cleanup log:", err.message);
@@ -207,50 +362,139 @@ function cleanupOldLogs() {
 
 function cleanupOldUpdateCache() {
   try {
-    const cachePaths = [
-      path.join(app.getPath("appData"), "hab-creative-desktop-updater"),
-      path.join(USER_DATA_PATH, "..", "hab-creative-desktop-updater"),
-    ];
+    const cachePaths = [];
+
+    if (process.platform === "win32") {
+      const localAppData =
+        process.env.LOCALAPPDATA ||
+        path.join(app.getPath("home"), "AppData", "Local");
+      cachePaths.push(path.join(localAppData, "hab-creative-desktop-updater"));
+    } else if (process.platform === "darwin") {
+      cachePaths.push(
+        path.join(
+          app.getPath("home"),
+          "Library",
+          "Caches",
+          "hab-creative-desktop-updater",
+        ),
+      );
+    } else {
+      cachePaths.push(
+        path.join(
+          app.getPath("home"),
+          ".cache",
+          "hab-creative-desktop-updater",
+        ),
+      );
+    }
 
     for (const cachePath of cachePaths) {
       if (!fs.existsSync(cachePath)) continue;
 
-      const files = fs.readdirSync(cachePath);
+      const deleteOldFiles = (dir, depth = 0) => {
+        if (depth > 3) return;
 
-      for (const file of files) {
-        if (
-          file.endsWith(".exe") ||
-          file.endsWith(".dmg") ||
-          file.endsWith(".AppImage") ||
-          file.endsWith(".zip")
-        ) {
-          const filePath = path.join(cachePath, file);
-          const stats = fs.statSync(filePath);
-          const ageHours = (Date.now() - stats.mtimeMs) / 1000 / 60 / 60;
+        let entries;
+        try {
+          entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch (_) {
+          return;
+        }
 
-          if (ageHours > 24 * 7) {
-            try {
-              fs.unlinkSync(filePath);
-              console.log(`[Cleanup] 🗑️  Xóa cache cũ: ${file}`);
-            } catch (_) {}
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+
+          if (entry.isDirectory()) {
+            deleteOldFiles(fullPath, depth + 1);
+          } else if (entry.isFile()) {
+            if (
+              entry.name.endsWith(".exe") ||
+              entry.name.endsWith(".dmg") ||
+              entry.name.endsWith(".AppImage") ||
+              entry.name.endsWith(".zip") ||
+              entry.name.endsWith(".blockmap")
+            ) {
+              try {
+                const stats = fs.statSync(fullPath);
+                const ageHours = (Date.now() - stats.mtimeMs) / 1000 / 60 / 60;
+
+                if (ageHours > 24 * 7) {
+                  fs.unlinkSync(fullPath);
+                  console.log(`[Cleanup] Xóa cache cũ: ${entry.name}`);
+                }
+              } catch (_) {}
+            }
           }
         }
-      }
+
+        try {
+          const remaining = fs.readdirSync(dir);
+          if (remaining.length === 0 && dir !== cachePath) {
+            fs.rmdirSync(dir);
+            console.log(`[Cleanup] Xóa folder rỗng: ${path.basename(dir)}`);
+          }
+        } catch (_) {}
+      };
+
+      deleteOldFiles(cachePath);
     }
   } catch (err) {
     console.warn("[Cleanup] Lỗi cleanup cache:", err.message);
   }
 }
 
-function runStartupCleanup() {
-  console.log("[Cleanup] 🚀 Bắt đầu cleanup khi khởi động...");
+async function cleanupOldSessionData() {
+  try {
+    const sessionPath = path.join(USER_DATA_PATH, "Partitions", "main");
+
+    if (!fs.existsSync(sessionPath)) return;
+
+    const getFolderSize = (dir) => {
+      let size = 0;
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            size += getFolderSize(fullPath);
+          } else {
+            size += fs.statSync(fullPath).size;
+          }
+        }
+      } catch (_) {}
+      return size;
+    };
+
+    const sizeBytes = getFolderSize(sessionPath);
+    const sizeMB = sizeBytes / 1024 / 1024;
+
+    console.log(`[Cleanup] Session size: ${sizeMB.toFixed(2)} MB`);
+
+    if (sizeMB > 500) {
+      try {
+        const mainSession = session.fromPartition("persist:main");
+        await mainSession.clearCache();
+        await mainSession.clearStorageData({
+          storages: ["appcache", "cachestorage", "shadercache"],
+        });
+        console.log("[Cleanup] Đã clear session cache (>500 MB)");
+      } catch (err) {
+        console.warn("[Cleanup] Không clear được session:", err.message);
+      }
+    }
+  } catch (err) {
+    console.warn("[Cleanup] Lỗi session cleanup:", err.message);
+  }
+}
+
+async function runStartupCleanup() {
+  console.log("[Cleanup] Bắt đầu cleanup khi khởi động...");
   cleanupOldFaceFiles();
   cleanupOldLogs();
   cleanupOldUpdateCache();
-  console.log("[Cleanup] ✅ Cleanup hoàn tất");
+  await cleanupOldSessionData();
+  console.log("[Cleanup] Cleanup hoàn tất");
 }
-
-// ===================== FACE HELPERS =====================
 
 function isSafeStorageAvailable() {
   try {
@@ -433,8 +677,6 @@ function deleteFaceByIndex(index) {
   }
 }
 
-// ===================== FACE UNLOCK WINDOW =====================
-
 function createFaceUnlockWindow() {
   isUnlockingInProgress = false;
   isTransitioningToMain = false;
@@ -470,8 +712,6 @@ function createFaceUnlockWindow() {
     if (!mainWindow && !isMainReady) app.quit();
   });
 }
-
-// ===================== MAIN WINDOW =====================
 
 async function createMainWindow(options = {}) {
   const { fromUnlock = false } = options;
@@ -587,8 +827,6 @@ function setupCookieListener() {
   });
 }
 
-// ===================== FACE REGISTER WINDOW =====================
-
 function openFaceRegistration() {
   if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
     faceRegisterWindow.focus();
@@ -639,8 +877,6 @@ function openFaceRegistration() {
   });
 }
 
-// ===================== FACE MANAGER WINDOW =====================
-
 function openFaceManager() {
   if (faceManagerWindow && !faceManagerWindow.isDestroyed()) {
     faceManagerWindow.focus();
@@ -671,8 +907,6 @@ function openFaceManager() {
     createMenu();
   });
 }
-
-// ===================== DELETE CONFIRM =====================
 
 async function confirmDeleteOneFace(index) {
   const meta = loadFaceMetadata();
@@ -723,8 +957,6 @@ async function confirmDeleteAllFaces() {
   }
 }
 
-// ===================== FACE TEST =====================
-
 function createFaceTestWindow() {
   faceTestWindow = new BrowserWindow({
     width: 900,
@@ -754,8 +986,6 @@ function createFaceTestWindow() {
     faceTestWindow = null;
   });
 }
-
-// ===================== MENU =====================
 
 function createMenu() {
   const isMac = process.platform === "darwin";
@@ -895,6 +1125,11 @@ function createMenu() {
         },
         { type: "separator" },
         {
+          label: "Xóa toàn bộ dữ liệu",
+          click: () => confirmResetApp(),
+        },
+        { type: "separator" },
+        {
           label: "Website hỗ trợ",
           click: () => shell.openExternal("https://bhtdev.work"),
         },
@@ -913,7 +1148,55 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-// ===================== IPC HANDLERS =====================
+async function confirmResetApp() {
+  const result = await dialog.showMessageBox({
+    type: "warning",
+    title: "Xóa toàn bộ dữ liệu?",
+    message: "Toàn bộ Face ID, cache, log sẽ bị xóa vĩnh viễn.",
+    detail:
+      "Ứng dụng sẽ khởi động lại sau khi xóa. Bạn sẽ cần đăng ký lại Face ID.",
+    buttons: ["Hủy", "Xóa tất cả"],
+    defaultId: 0,
+    cancelId: 0,
+  });
+
+  if (result.response === 1) {
+    try {
+      console.log("[Reset] Bắt đầu xóa dữ liệu...");
+
+      deleteAllFaces();
+
+      if (fs.existsSync(LOGS_PATH)) {
+        try {
+          fs.rmSync(LOGS_PATH, { recursive: true, force: true });
+          console.log("[Reset] Đã xóa logs");
+        } catch (_) {}
+      }
+
+      try {
+        const mainSession = session.fromPartition("persist:main");
+        await mainSession.clearStorageData();
+        await mainSession.clearCache();
+        console.log("[Reset] Đã xóa session");
+      } catch (_) {}
+
+      try {
+        if (fs.existsSync(INSTALL_MARKER_PATH))
+          fs.unlinkSync(INSTALL_MARKER_PATH);
+        if (fs.existsSync(UPDATE_MARKER_PATH))
+          fs.unlinkSync(UPDATE_MARKER_PATH);
+      } catch (_) {}
+
+      console.log("[Reset] Xóa xong, đang khởi động lại...");
+
+      app.relaunch();
+      app.exit(0);
+    } catch (err) {
+      console.error("[Reset] Lỗi:", err);
+      dialog.showErrorBox("Lỗi", err.message);
+    }
+  }
+}
 
 ipcMain.handle("copy-to-clipboard", (event, text) => {
   try {
@@ -1004,8 +1287,6 @@ ipcMain.handle("get-libs-path", () => {
     };
   }
 });
-
-// ===================== FACE IPC =====================
 
 ipcMain.handle("face:has-any", () => {
   try {
@@ -1165,8 +1446,6 @@ ipcMain.handle("face:get-list", () => {
   }
 });
 
-// ===================== FACE UNLOCK EVENTS =====================
-
 ipcMain.on("face:unlock-success-ack", () => {
   isUnlockingInProgress = true;
   isTransitioningToMain = true;
@@ -1195,8 +1474,6 @@ ipcMain.on("face:close-window", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) win.close();
 });
-
-// ===================== AUTO UPDATER =====================
 
 function createDownloadProgressWindow() {
   if (downloadProgressWindow && !downloadProgressWindow.isDestroyed()) {
@@ -1447,6 +1724,13 @@ function setupMacOSUpdater() {
                 `[Updater] macOS: New version available ${latestVersion}`,
               );
 
+              if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
+                log.info(
+                  "[Updater] macOS: Face registration in progress, skip update dialog",
+                );
+                return;
+              }
+
               const showMacDialog = (retries = 3) => {
                 const parentWin = getParentWindow();
 
@@ -1475,6 +1759,7 @@ function setupMacOSUpdater() {
 
                 dialogPromise.then((result) => {
                   if (result.response === 0) {
+                    markUpdateInProgress();
                     log.info("[Updater] macOS: Opening:", RELEASES_URL);
                     shell.openExternal(RELEASES_URL);
                   }
@@ -1526,6 +1811,11 @@ function setupFullAutoUpdater() {
 
     if (isDownloadingUpdate) {
       log.info("[Updater] Already downloading, skip dialog");
+      return;
+    }
+
+    if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
+      log.info("[Updater] Face registration in progress, skip update dialog");
       return;
     }
 
@@ -1663,10 +1953,14 @@ function setupFullAutoUpdater() {
       dialogPromise.then((result) => {
         if (result.response === 0) {
           log.info("[Updater] INSTALLING...");
-          autoUpdater.quitAndInstall(true, true);
+          markUpdateInProgress();
+          setTimeout(() => {
+            autoUpdater.quitAndInstall(true, true);
+          }, 500);
         } else {
           closeDownloadProgressWindow();
           log.info("[Updater] User postponed install, will install on quit");
+          markUpdateInProgress();
         }
       });
     }, 300);
@@ -1754,10 +2048,11 @@ function isNewerVersion(latest, current) {
   return false;
 }
 
-// ===================== APP LIFECYCLE =====================
+app.whenReady().then(async () => {
+  const installType = handleInstallDetection();
+  console.log(`[App] Install type: ${installType}`);
 
-app.whenReady().then(() => {
-  runStartupCleanup();
+  await runStartupCleanup();
 
   const faceCount = getFaceCount();
 
@@ -1776,6 +2071,14 @@ app.whenReady().then(() => {
   } else {
     createMainWindow();
   }
+
+  setInterval(
+    () => {
+      cleanupOldLogs();
+      cleanupOldUpdateCache();
+    },
+    60 * 60 * 1000,
+  );
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

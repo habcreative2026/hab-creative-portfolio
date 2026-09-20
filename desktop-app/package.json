@@ -1,6 +1,6 @@
 {
   "name": "hab-creative-desktop",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "HAB CREATIVE Desktop Application",
   "main": "main.js",
   "author": {
@@ -86,13 +86,17 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
+      "oneClick": true,
       "perMachine": false,
       "allowElevation": true,
-      "deleteAppDataOnUninstall": false
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
     },
     "mac": {
       "target": [
