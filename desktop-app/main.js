@@ -49,6 +49,8 @@ app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
 app.commandLine.appendSwitch("use-gl", "angle");
 app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
 
+// ===================== FACE HELPERS =====================
+
 function isSafeStorageAvailable() {
   try {
     return safeStorage.isEncryptionAvailable();
@@ -200,6 +202,8 @@ function deleteFaceByIndex(index) {
   }
 }
 
+// ===================== FACE UNLOCK WINDOW =====================
+
 function createFaceUnlockWindow() {
   isUnlockingInProgress = false;
   isTransitioningToMain = false;
@@ -235,6 +239,8 @@ function createFaceUnlockWindow() {
     if (!mainWindow && !isMainReady) app.quit();
   });
 }
+
+// ===================== MAIN WINDOW =====================
 
 async function createMainWindow(options = {}) {
   const { fromUnlock = false } = options;
@@ -350,6 +356,8 @@ function setupCookieListener() {
   });
 }
 
+// ===================== FACE REGISTER WINDOW =====================
+
 function openFaceRegistration() {
   if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
     faceRegisterWindow.focus();
@@ -400,6 +408,8 @@ function openFaceRegistration() {
   });
 }
 
+// ===================== FACE MANAGER WINDOW =====================
+
 function openFaceManager() {
   if (faceManagerWindow && !faceManagerWindow.isDestroyed()) {
     faceManagerWindow.focus();
@@ -430,6 +440,8 @@ function openFaceManager() {
     createMenu();
   });
 }
+
+// ===================== DELETE CONFIRM =====================
 
 async function confirmDeleteOneFace(index) {
   const meta = loadFaceMetadata();
@@ -480,6 +492,8 @@ async function confirmDeleteAllFaces() {
   }
 }
 
+// ===================== FACE TEST =====================
+
 function createFaceTestWindow() {
   faceTestWindow = new BrowserWindow({
     width: 900,
@@ -509,6 +523,8 @@ function createFaceTestWindow() {
     faceTestWindow = null;
   });
 }
+
+// ===================== MENU =====================
 
 function createMenu() {
   const isMac = process.platform === "darwin";
@@ -665,6 +681,8 @@ function createMenu() {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
+
+// ===================== IPC HANDLERS =====================
 
 ipcMain.handle("copy-to-clipboard", (event, text) => {
   try {
@@ -916,6 +934,8 @@ ipcMain.handle("face:get-list", () => {
   }
 });
 
+// ===================== FACE UNLOCK EVENTS =====================
+
 ipcMain.on("face:unlock-success-ack", () => {
   isUnlockingInProgress = true;
   isTransitioningToMain = true;
@@ -944,6 +964,8 @@ ipcMain.on("face:close-window", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) win.close();
 });
+
+// ===================== AUTO UPDATER =====================
 
 function createDownloadProgressWindow() {
   if (downloadProgressWindow && !downloadProgressWindow.isDestroyed()) {
@@ -1183,9 +1205,15 @@ function setupFullAutoUpdater() {
   autoUpdater.allowPrerelease = false;
   autoUpdater.differentialDownload = false;
 
-  autoUpdater.logger = log;
-  log.transports.file.level = "info";
-  log.transports.console.level = "info";
+  try {
+    autoUpdater.logger = log;
+    if (log && log.transports) {
+      if (log.transports.file) log.transports.file.level = "info";
+      if (log.transports.console) log.transports.console.level = "info";
+    }
+  } catch (loggerErr) {
+    console.warn("[Updater] Logger config failed:", loggerErr.message);
+  }
 
   log.info("[Updater] INIT");
 
@@ -1195,7 +1223,7 @@ function setupFullAutoUpdater() {
 
   autoUpdater.on("update-available", (info) => {
     log.info(`[Updater] UPDATE AVAILABLE: ${info.version}`);
-    a;
+
     if (isDownloadingUpdate) {
       log.info("[Updater] Already downloading, skip dialog");
       return;
@@ -1219,6 +1247,7 @@ function setupFullAutoUpdater() {
           isDownloadingUpdate = true;
 
           createDownloadProgressWindow();
+
           setTimeout(() => {
             autoUpdater
               .downloadUpdate()
@@ -1252,7 +1281,7 @@ function setupFullAutoUpdater() {
 
   autoUpdater.on("download-progress", (progressObj) => {
     const percent = progressObj.percent.toFixed(1);
-    log.info(`[Updater] ⭐ PROGRESS: ${percent}%`);
+    log.info(`[Updater] PROGRESS: ${percent}%`);
 
     updateDownloadProgress(
       progressObj.percent,
@@ -1294,26 +1323,41 @@ function setupFullAutoUpdater() {
   });
 
   autoUpdater.on("error", (err) => {
-    log.error("[Updater] ERROR:", err.message);
+    const msg = err?.message || "Unknown error";
+    log.error("[Updater] ERROR:", msg);
+    log.error("[Updater] STACK:", err?.stack);
+
     isDownloadingUpdate = false;
     closeDownloadProgressWindow();
 
-    if (err.message && !err.message.includes("404")) {
-      dialog.showMessageBox({
-        type: "error",
-        title: "Lỗi cập nhật",
-        message: "Không thể kiểm tra bản cập nhật",
-        detail: err.message,
-        buttons: ["OK"],
-      });
+    // Bỏ qua các lỗi không quan trọng
+    if (
+      msg.includes("404") ||
+      msg.includes("No published versions") ||
+      msg.includes("is not defined")
+    ) {
+      log.warn("[Updater] Ignored library error:", msg);
+      return;
     }
+
+    dialog.showMessageBox({
+      type: "error",
+      title: "Lỗi cập nhật",
+      message: "Không thể kiểm tra bản cập nhật",
+      detail: msg,
+      buttons: ["OK"],
+    });
   });
 
   setTimeout(() => {
     log.info("[Updater] Auto check after 5s");
-    autoUpdater.checkForUpdates().catch((err) => {
-      log.warn("[Updater] Check failed:", err.message);
-    });
+    try {
+      autoUpdater.checkForUpdates().catch((err) => {
+        log.warn("[Updater] Check failed:", err.message);
+      });
+    } catch (err) {
+      log.warn("[Updater] Check threw synchronously:", err.message);
+    }
   }, 5000);
 
   setInterval(
@@ -1347,6 +1391,8 @@ function isNewerVersion(latest, current) {
   }
   return false;
 }
+
+// ===================== APP LIFECYCLE =====================
 
 app.whenReady().then(() => {
   const faceCount = getFaceCount();
