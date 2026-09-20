@@ -69,7 +69,11 @@ jobs:
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
       - name: List dist files
-        run: ls -la desktop-app/dist/
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Contents of desktop-app/dist/ ==="
+          ls -la desktop-app/dist/ || echo "dist folder not found"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
