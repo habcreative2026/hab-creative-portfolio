@@ -12,7 +12,7 @@ const {
 const path = require("path");
 const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
-const log = require("electron-log"); // Optional
+const log = require("electron-log");
 
 const FACE_TEST_MODE = false;
 
@@ -25,6 +25,9 @@ let isMainReady = false;
 let hasRedirectedToDashboard = false;
 let isUnlockingInProgress = false;
 let isTransitioningToMain = false;
+
+let isDownloadingUpdate = false;
+let downloadProgressWindow = null;
 
 const FACE_PROFILES_PATH = path.join(
   app.getPath("userData"),
@@ -46,9 +49,6 @@ app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
 app.commandLine.appendSwitch("use-gl", "angle");
 app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
 
-// ===================== FACE HELPERS =====================
-
-// ⭐ Wrapper an toàn cho safeStorage — fallback nếu Linux không có libsecret
 function isSafeStorageAvailable() {
   try {
     return safeStorage.isEncryptionAvailable();
@@ -63,17 +63,14 @@ function loadAllFaces() {
     if (!fs.existsSync(FACE_PROFILES_PATH)) return [];
 
     const raw = fs.readFileSync(FACE_PROFILES_PATH);
-
     let parsed;
 
-    // ⭐ Nếu safeStorage khả dụng → decrypt
     if (isSafeStorageAvailable()) {
       try {
         const decrypted = safeStorage.decryptString(raw);
         parsed = JSON.parse(decrypted);
       } catch (err) {
         console.warn("[Face] Decrypt failed, trying plain JSON:", err);
-        // Fallback: thử đọc plain JSON (trường hợp file cũ lưu plain)
         try {
           parsed = JSON.parse(raw.toString("utf-8"));
         } catch (_) {
@@ -82,9 +79,8 @@ function loadAllFaces() {
         }
       }
     } else {
-      // ⭐ Linux không có safeStorage → đọc plain JSON
       console.warn(
-        "[Face] ⚠️ safeStorage not available, reading plain JSON (Linux fallback)",
+        "[Face] safeStorage not available, reading plain JSON (Linux fallback)",
       );
       try {
         parsed = JSON.parse(raw.toString("utf-8"));
@@ -98,17 +94,14 @@ function loadAllFaces() {
 
     const validFaces = faces.filter((face) => {
       if (!face || typeof face !== "object") return false;
-
       if (Array.isArray(face.descriptors)) {
         return face.descriptors.every(
           (d) => Array.isArray(d) && d.length === 128,
         );
       }
-
       if (Array.isArray(face.descriptor) && face.descriptor.length === 128) {
         return true;
       }
-
       return false;
     });
 
@@ -127,7 +120,6 @@ function saveAllFaces(faces) {
   try {
     const jsonStr = JSON.stringify({ faces });
 
-    // ⭐ Nếu safeStorage khả dụng → encrypt
     if (isSafeStorageAvailable()) {
       try {
         const encrypted = safeStorage.encryptString(jsonStr);
@@ -135,14 +127,12 @@ function saveAllFaces(faces) {
         return true;
       } catch (err) {
         console.error("[Face] Encrypt failed, saving plain JSON:", err);
-        // Fallback: lưu plain JSON
         fs.writeFileSync(FACE_PROFILES_PATH, jsonStr, "utf-8");
         return true;
       }
     } else {
-      // ⭐ Linux không có safeStorage → lưu plain JSON
       console.warn(
-        "[Face] ⚠️ safeStorage not available, saving plain JSON (Linux fallback)",
+        "[Face] safeStorage not available, saving plain JSON (Linux fallback)",
       );
       fs.writeFileSync(FACE_PROFILES_PATH, jsonStr, "utf-8");
       return true;
@@ -210,8 +200,6 @@ function deleteFaceByIndex(index) {
   }
 }
 
-// ===================== FACE UNLOCK WINDOW =====================
-
 function createFaceUnlockWindow() {
   isUnlockingInProgress = false;
   isTransitioningToMain = false;
@@ -247,8 +235,6 @@ function createFaceUnlockWindow() {
     if (!mainWindow && !isMainReady) app.quit();
   });
 }
-
-// ===================== MAIN WINDOW =====================
 
 async function createMainWindow(options = {}) {
   const { fromUnlock = false } = options;
@@ -298,7 +284,6 @@ async function createMainWindow(options = {}) {
     if (url.includes("accounts.google.com") || url.includes("google.com")) {
       if (!loginStarted) {
         loginStarted = true;
-        // ⭐ Không tạo loading window nữa
       }
     }
   });
@@ -365,8 +350,6 @@ function setupCookieListener() {
   });
 }
 
-// ===================== FACE REGISTER WINDOW =====================
-
 function openFaceRegistration() {
   if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
     faceRegisterWindow.focus();
@@ -417,8 +400,6 @@ function openFaceRegistration() {
   });
 }
 
-// ===================== FACE MANAGER WINDOW =====================
-
 function openFaceManager() {
   if (faceManagerWindow && !faceManagerWindow.isDestroyed()) {
     faceManagerWindow.focus();
@@ -449,8 +430,6 @@ function openFaceManager() {
     createMenu();
   });
 }
-
-// ===================== DELETE CONFIRM =====================
 
 async function confirmDeleteOneFace(index) {
   const meta = loadFaceMetadata();
@@ -501,8 +480,6 @@ async function confirmDeleteAllFaces() {
   }
 }
 
-// ===================== FACE TEST =====================
-
 function createFaceTestWindow() {
   faceTestWindow = new BrowserWindow({
     width: 900,
@@ -532,8 +509,6 @@ function createFaceTestWindow() {
     faceTestWindow = null;
   });
 }
-
-// ===================== MENU =====================
 
 function createMenu() {
   const isMac = process.platform === "darwin";
@@ -657,6 +632,22 @@ function createMenu() {
       label: "Trợ giúp",
       submenu: [
         {
+          label: "Kiểm tra cập nhật",
+          click: () => {
+            if (!app.isPackaged) {
+              dialog.showMessageBox({
+                type: "info",
+                title: "Chế độ Dev",
+                message: "Không thể kiểm tra cập nhật trong chế độ phát triển.",
+                buttons: ["OK"],
+              });
+              return;
+            }
+            manualCheckForUpdates();
+          },
+        },
+        { type: "separator" },
+        {
           label: "Website hỗ trợ",
           click: () => shell.openExternal("https://bhtdev.work"),
         },
@@ -666,7 +657,7 @@ function createMenu() {
           click: () => shell.openExternal("mailto:buihaitrong.dev@gmail.com"),
         },
         { type: "separator" },
-        { label: "Phiên bản 1.0.0", enabled: false },
+        { label: `Phiên bản ${app.getVersion()}`, enabled: false },
       ],
     },
   ];
@@ -674,8 +665,6 @@ function createMenu() {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
-
-// ===================== IPC HANDLERS =====================
 
 ipcMain.handle("copy-to-clipboard", (event, text) => {
   try {
@@ -713,20 +702,14 @@ const { pathToFileURL } = require("url");
 ipcMain.handle("get-models-path", () => {
   try {
     const isDev = !app.isPackaged;
-
     let modelsPath;
     if (isDev) {
       modelsPath = path.join(__dirname, "models");
     } else {
       modelsPath = path.join(process.resourcesPath, "models");
     }
-
     const urlPath = pathToFileURL(modelsPath).href + "/";
-
     console.log("[App] Models path:", modelsPath);
-    console.log("[App] Models URL:", urlPath);
-    console.log("[App] Packaged:", app.isPackaged);
-
     return urlPath;
   } catch (err) {
     console.error("[App] get-models-path error:", err);
@@ -737,9 +720,7 @@ ipcMain.handle("get-models-path", () => {
 ipcMain.handle("get-libs-path", () => {
   try {
     const isDev = !app.isPackaged;
-
     if (isDev) {
-      // ⭐ Dev: trả về 2 paths riêng biệt
       const tfPath = path.join(
         __dirname,
         "node_modules",
@@ -755,39 +736,25 @@ ipcMain.handle("get-libs-path", () => {
         "dist",
         "face-api.min.js",
       );
-
-      const result = {
+      return {
         tf: pathToFileURL(tfPath).href,
         faceApi: pathToFileURL(faceApiPath).href,
       };
-
-      console.log("[App] ✅ Libs URLs (dev):", result);
-      return result;
     } else {
-      // ⭐ Production: file đã được copy vào resources/libs/
       const libsPath = path.join(process.resourcesPath, "libs");
-
-      const result = {
+      return {
         tf: pathToFileURL(path.join(libsPath, "tf.min.js")).href,
         faceApi: pathToFileURL(path.join(libsPath, "face-api.min.js")).href,
       };
-
-      console.log("[App] ✅ Libs URLs (prod):", result);
-      return result;
     }
   } catch (err) {
-    console.error("[App] ❌ get-libs-path error:", err);
+    console.error("[App] get-libs-path error:", err);
     return {
       tf: "./node_modules/@tensorflow/tfjs/dist/tf.min.js",
       faceApi: "./node_modules/face-api.js/dist/face-api.min.js",
     };
   }
 });
-
-// ⭐ ĐÃ XÓA CÁC IPC LIÊN QUAN LOADING:
-// - loading-ready
-// - update-loading
-// - close-login-loading
 
 // ===================== FACE IPC =====================
 
@@ -844,9 +811,6 @@ ipcMain.handle("face:save", (event, payload) => {
     }
 
     if (!eyesOpen) throw new Error("Chỉ đăng ký khi cả 2 mắt đang mở");
-    // ⭐ Bỏ check safeStorage vì đã có fallback trong saveAllFaces
-    // if (!safeStorage.isEncryptionAvailable())
-    //   throw new Error("Mã hóa hệ thống không khả dụng");
 
     const faces = loadAllFaces();
 
@@ -870,7 +834,7 @@ ipcMain.handle("face:save", (event, payload) => {
       name: `Khuôn mặt #${faces.length}`,
       registeredAt: new Date().toISOString(),
       platform: process.platform,
-      version: "6.0.0",
+      version: app.getVersion(),
     });
     saveFaceMetadata(meta);
 
@@ -952,8 +916,6 @@ ipcMain.handle("face:get-list", () => {
   }
 });
 
-// ===================== FACE UNLOCK EVENTS =====================
-
 ipcMain.on("face:unlock-success-ack", () => {
   isUnlockingInProgress = true;
   isTransitioningToMain = true;
@@ -983,32 +945,172 @@ ipcMain.on("face:close-window", (event) => {
   if (win) win.close();
 });
 
-// ===================== AUTO UPDATER =====================
+function createDownloadProgressWindow() {
+  if (downloadProgressWindow && !downloadProgressWindow.isDestroyed()) {
+    return downloadProgressWindow;
+  }
+
+  downloadProgressWindow = new BrowserWindow({
+    width: 420,
+    height: 180,
+    resizable: false,
+    frame: true,
+    minimizable: false,
+    maximizable: false,
+    closable: false,
+    alwaysOnTop: true,
+    center: true,
+    title: "Đang tải bản cập nhật...",
+    backgroundColor: "#1a1a2e",
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+    show: true,
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          color: #fff;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          padding: 20px;
+          -webkit-user-select: none;
+          user-select: none;
+        }
+        h2 {
+          font-size: 15px;
+          font-weight: 600;
+          margin-bottom: 14px;
+          text-align: center;
+        }
+        .bar-container {
+          width: 100%;
+          height: 10px;
+          background: rgba(255,255,255,0.15);
+          border-radius: 5px;
+          overflow: hidden;
+          margin-bottom: 10px;
+        }
+        .bar {
+          height: 100%;
+          width: 0%;
+          background: linear-gradient(90deg, #4ade80, #22d3ee);
+          border-radius: 5px;
+          transition: width 0.3s ease;
+        }
+        .percent {
+          font-size: 22px;
+          font-weight: 700;
+          color: #22d3ee;
+        }
+        .status {
+          font-size: 11px;
+          color: #94a3b8;
+          margin-top: 8px;
+        }
+      </style>
+    </head>
+    <body>
+      <h2>Đang tải bản cập nhật...</h2>
+      <div class="bar-container">
+        <div class="bar" id="bar"></div>
+      </div>
+      <div class="percent" id="percent">0%</div>
+      <div class="status" id="status">Vui lòng đợi trong giây lát</div>
+    </body>
+    </html>
+  `;
+
+  downloadProgressWindow.loadURL(
+    "data:text/html;charset=utf-8," + encodeURIComponent(html),
+  );
+
+  return downloadProgressWindow;
+}
+
+function updateDownloadProgress(percent, transferred, total) {
+  if (!downloadProgressWindow || downloadProgressWindow.isDestroyed()) return;
+
+  const p = Math.round(percent);
+  const mbTransferred = (transferred / 1024 / 1024).toFixed(2);
+  const mbTotal = (total / 1024 / 1024).toFixed(2);
+
+  downloadProgressWindow.webContents
+    .executeJavaScript(
+      `
+      document.getElementById('bar').style.width = '${p}%';
+      document.getElementById('percent').textContent = '${p}%';
+      document.getElementById('status').textContent = '${mbTransferred} MB / ${mbTotal} MB';
+    `,
+    )
+    .catch(() => {});
+}
+
+function closeDownloadProgressWindow() {
+  if (downloadProgressWindow && !downloadProgressWindow.isDestroyed()) {
+    downloadProgressWindow.close();
+    downloadProgressWindow = null;
+  }
+}
+
+function manualCheckForUpdates() {
+  if (isDownloadingUpdate) {
+    dialog.showMessageBox({
+      type: "info",
+      title: "Đang tải",
+      message: "Đang có bản cập nhật được tải xuống. Vui lòng đợi.",
+      buttons: ["OK"],
+    });
+    return;
+  }
+
+  log.info("[Updater] Manual check triggered");
+  autoUpdater.checkForUpdates().catch((err) => {
+    log.error("[Updater] Manual check failed:", err.message);
+    dialog.showMessageBox({
+      type: "error",
+      title: "Lỗi kiểm tra cập nhật",
+      message: err.message || "Không thể kiểm tra bản cập nhật",
+      buttons: ["OK"],
+    });
+  });
+}
 
 function setupAutoUpdater() {
   if (!app.isPackaged) {
-    log.info("[Updater] ⭐ Dev mode - skip auto update");
-    console.log("[Updater] ⭐ Dev mode - skip auto update");
+    log.info("[Updater] Dev mode - skip auto update");
+    console.log("[Updater] Dev mode - skip auto update");
     return;
   }
 
   const platform = process.platform;
-  log.info(`[Updater] ⭐ Platform: ${platform}`);
-  console.log(`[Updater] ⭐ Platform: ${platform}`);
+  log.info(`[Updater] Platform: ${platform}`);
+  console.log(`[Updater] Platform: ${platform}`);
 
   if (platform === "darwin") {
-    log.info("[Updater] ⭐ macOS → check-only mode");
-    console.log("[Updater] ⭐ macOS → check-only mode");
+    log.info("[Updater] macOS → check-only mode");
+    console.log("[Updater] macOS → check-only mode");
     setupMacOSUpdater();
     return;
   }
 
-  log.info(`[Updater] ⭐ ${platform} → full auto-update mode`);
-  console.log(`[Updater] ⭐ ${platform} → full auto-update mode`);
+  log.info(`[Updater] ${platform} → full auto-update mode`);
+  console.log(`[Updater] ${platform} → full auto-update mode`);
   setupFullAutoUpdater();
 }
 
-// ⭐ macOS: Chỉ check version + mở link tải
 function setupMacOSUpdater() {
   const https = require("https");
 
@@ -1033,12 +1135,12 @@ function setupMacOSUpdater() {
             const currentVersion = app.getVersion();
 
             log.info(
-              `[Updater] ⭐ macOS check: current=${currentVersion}, latest=${latestVersion}`,
+              `[Updater] macOS check: current=${currentVersion}, latest=${latestVersion}`,
             );
 
             if (isNewerVersion(latestVersion, currentVersion)) {
               log.info(
-                `[Updater] ⭐ macOS: New version available ${latestVersion}`,
+                `[Updater] macOS: New version available ${latestVersion}`,
               );
 
               dialog
@@ -1054,20 +1156,20 @@ function setupMacOSUpdater() {
                 })
                 .then((result) => {
                   if (result.response === 0) {
-                    log.info("[Updater] ⭐ Opening:", RELEASES_URL);
+                    log.info("[Updater] Opening:", RELEASES_URL);
                     shell.openExternal(RELEASES_URL);
                   }
                 });
             } else {
-              log.info("[Updater] ⭐ macOS: Already latest version");
+              log.info("[Updater] macOS: Already latest version");
             }
           } catch (err) {
-            log.warn("[Updater] ⭐ macOS parse error:", err.message);
+            log.warn("[Updater] macOS parse error:", err.message);
           }
         });
       })
       .on("error", (err) => {
-        log.warn("[Updater] ⭐ macOS check failed:", err.message);
+        log.warn("[Updater] macOS check failed:", err.message);
       });
   };
 
@@ -1075,80 +1177,88 @@ function setupMacOSUpdater() {
   setInterval(checkVersion, 4 * 60 * 60 * 1000);
 }
 
-// ⭐ Windows + Linux: Full auto-update
 function setupFullAutoUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
   autoUpdater.differentialDownload = false;
 
-  // ⭐ DÙNG electron-log để ghi file
   autoUpdater.logger = log;
   log.transports.file.level = "info";
   log.transports.console.level = "info";
 
-  log.info("[Updater] ⭐⭐⭐ INIT ⭐⭐⭐");
-  console.log("[Updater] ⭐⭐⭐ INIT ⭐⭐⭐");
+  log.info("[Updater] INIT");
 
   autoUpdater.on("checking-for-update", () => {
-    log.info("[Updater] ⭐ Checking for updates...");
-    console.log("[Updater] ⭐ Checking...");
+    log.info("[Updater] Checking for updates...");
   });
 
   autoUpdater.on("update-available", (info) => {
-    log.info(`[Updater] ⭐ UPDATE AVAILABLE: ${info.version}`);
-    console.log(`[Updater] ⭐ UPDATE AVAILABLE: ${info.version}`);
+    log.info(`[Updater] UPDATE AVAILABLE: ${info.version}`);
+    a;
+    if (isDownloadingUpdate) {
+      log.info("[Updater] Already downloading, skip dialog");
+      return;
+    }
 
     dialog
       .showMessageBox({
         type: "info",
         title: "Có bản cập nhật mới",
         message: `Phiên bản ${info.version} đã sẵn sàng!`,
-        detail: `Bạn đang dùng phiên bản cũ. Cập nhật ngay?`,
+        detail: `Bạn đang dùng phiên bản ${app.getVersion()}. Cập nhật ngay?`,
         buttons: ["Cập nhật ngay", "Để sau"],
         defaultId: 0,
         cancelId: 1,
       })
       .then((result) => {
-        log.info(`[Updater] ⭐ DIALOG RESULT: ${result.response}`);
-        console.log(`[Updater] ⭐ DIALOG RESULT: ${result.response}`);
+        log.info(`[Updater] DIALOG RESULT: ${result.response}`);
 
         if (result.response === 0) {
-          log.info("[Updater] ⭐ USER ACCEPTED - STARTING DOWNLOAD");
-          console.log("[Updater] ⭐ USER ACCEPTED - STARTING DOWNLOAD");
+          log.info("[Updater] USER ACCEPTED - STARTING DOWNLOAD");
+          isDownloadingUpdate = true;
 
-          // ⭐ Dùng async/await + catch error
-          (async () => {
-            try {
-              log.info("[Updater] ⭐ Calling downloadUpdate()...");
-              await autoUpdater.downloadUpdate();
-              log.info("[Updater] ⭐ downloadUpdate() resolved");
-            } catch (err) {
-              log.error("[Updater] ❌ DOWNLOAD ERROR:", err.message);
-              log.error("[Updater] ❌ STACK:", err.stack);
+          createDownloadProgressWindow();
+          setTimeout(() => {
+            autoUpdater
+              .downloadUpdate()
+              .then(() => {
+                log.info("[Updater] downloadUpdate() resolved");
+              })
+              .catch((err) => {
+                log.error("[Updater] DOWNLOAD ERROR:", err.message);
+                log.error("[Updater] STACK:", err.stack);
+                isDownloadingUpdate = false;
+                closeDownloadProgressWindow();
 
-              dialog.showMessageBox({
-                type: "error",
-                title: "Lỗi tải bản cập nhật",
-                message: err.message || "Không thể tải bản cập nhật",
-                detail: err.stack || "",
-                buttons: ["OK"],
+                dialog.showMessageBox({
+                  type: "error",
+                  title: "Lỗi tải bản cập nhật",
+                  message: err.message || "Không thể tải bản cập nhật",
+                  detail: err.stack || "",
+                  buttons: ["OK"],
+                });
               });
-            }
-          })();
+          }, 300);
         } else {
-          log.info("[Updater] ⭐ User postponed update");
+          log.info("[Updater] User postponed update");
         }
       });
   });
 
   autoUpdater.on("update-not-available", (info) => {
-    log.info(`[Updater] ⭐ No update. Current: ${info.version}`);
+    log.info(`[Updater] No update. Current: ${info.version}`);
   });
 
   autoUpdater.on("download-progress", (progressObj) => {
     const percent = progressObj.percent.toFixed(1);
     log.info(`[Updater] ⭐ PROGRESS: ${percent}%`);
+
+    updateDownloadProgress(
+      progressObj.percent,
+      progressObj.transferred,
+      progressObj.total,
+    );
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setTitle(`Đang tải bản cập nhật... ${percent}%`);
@@ -1156,7 +1266,10 @@ function setupFullAutoUpdater() {
   });
 
   autoUpdater.on("update-downloaded", (info) => {
-    log.info(`[Updater] ⭐ DOWNLOADED: ${info.version}`);
+    log.info(`[Updater] DOWNLOADED: ${info.version}`);
+
+    isDownloadingUpdate = false;
+    closeDownloadProgressWindow();
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setTitle("HAB CREATIVE");
@@ -1174,15 +1287,16 @@ function setupFullAutoUpdater() {
       })
       .then((result) => {
         if (result.response === 0) {
-          log.info("[Updater] ⭐ INSTALLING...");
+          log.info("[Updater] INSTALLING...");
           autoUpdater.quitAndInstall(false, true);
         }
       });
   });
 
   autoUpdater.on("error", (err) => {
-    log.error("[Updater] ❌ ERROR:", err.message);
-    console.error("[Updater] ❌ Error:", err.message);
+    log.error("[Updater] ERROR:", err.message);
+    isDownloadingUpdate = false;
+    closeDownloadProgressWindow();
 
     if (err.message && !err.message.includes("404")) {
       dialog.showMessageBox({
@@ -1196,23 +1310,23 @@ function setupFullAutoUpdater() {
   });
 
   setTimeout(() => {
-    log.info("[Updater] ⭐ Auto check after 5s");
+    log.info("[Updater] Auto check after 5s");
     autoUpdater.checkForUpdates().catch((err) => {
-      log.warn("[Updater] ⭐ Check failed:", err.message);
+      log.warn("[Updater] Check failed:", err.message);
     });
   }, 5000);
 
   setInterval(
     () => {
+      if (isDownloadingUpdate) return;
       autoUpdater.checkForUpdates().catch((err) => {
-        log.warn("[Updater] ⭐ Periodic check failed:", err.message);
+        log.warn("[Updater] Periodic check failed:", err.message);
       });
     },
     60 * 60 * 1000,
   );
 
-  log.info("[Updater] ⭐⭐⭐ READY ⭐⭐⭐");
-  console.log("[Updater] ⭐⭐⭐ READY ⭐⭐⭐");
+  log.info("[Updater] READY");
 }
 
 function isNewerVersion(latest, current) {
@@ -1233,27 +1347,6 @@ function isNewerVersion(latest, current) {
   }
   return false;
 }
-
-function isNewerVersion(latest, current) {
-  if (!latest || !current) return false;
-
-  const l = String(latest)
-    .split(".")
-    .map((n) => parseInt(n) || 0);
-  const c = String(current)
-    .split(".")
-    .map((n) => parseInt(n) || 0);
-
-  for (let i = 0; i < Math.max(l.length, c.length); i++) {
-    const lv = l[i] || 0;
-    const cv = c[i] || 0;
-    if (lv > cv) return true;
-    if (lv < cv) return false;
-  }
-  return false;
-}
-
-// ===================== APP LIFECYCLE =====================
 
 app.whenReady().then(() => {
   const faceCount = getFaceCount();
@@ -1268,9 +1361,6 @@ app.whenReady().then(() => {
 
   createMenu();
 
-  // ⭐ KHÔNG DÙNG LOADING NỮA
-  // Nếu có face → mở face unlock
-  // Nếu chưa có face → mở main window luôn (login page)
   if (faceCount > 0) {
     createFaceUnlockWindow();
   } else {

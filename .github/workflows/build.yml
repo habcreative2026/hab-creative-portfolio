@@ -68,6 +68,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
+      - name: List dist files
+        run: ls -la desktop-app/dist/
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
