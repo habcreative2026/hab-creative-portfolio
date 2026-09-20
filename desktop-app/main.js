@@ -1099,15 +1099,52 @@ function manualCheckForUpdates() {
   }
 
   log.info("[Updater] Manual check triggered");
-  autoUpdater.checkForUpdates().catch((err) => {
-    log.error("[Updater] Manual check failed:", err.message);
-    dialog.showMessageBox({
-      type: "error",
-      title: "Lỗi kiểm tra cập nhật",
-      message: err.message || "Không thể kiểm tra bản cập nhật",
-      buttons: ["OK"],
+
+  const getParentWindow = () => {
+    if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+    if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
+      return faceUnlockWindow;
+    return null;
+  };
+
+  autoUpdater
+    .checkForUpdates()
+    .then((result) => {
+      log.info(
+        "[Updater] Manual check result:",
+        JSON.stringify(result?.updateInfo || {}),
+      );
+      // Nếu không có update, hiện thông báo
+      if (
+        !result ||
+        !result.updateInfo ||
+        result.updateInfo.version === app.getVersion()
+      ) {
+        const parentWin = getParentWindow();
+        const options = {
+          type: "info",
+          title: "Đã là bản mới nhất",
+          message: `Bạn đang dùng phiên bản mới nhất (${app.getVersion()}).`,
+          buttons: ["OK"],
+        };
+        parentWin
+          ? dialog.showMessageBox(parentWin, options)
+          : dialog.showMessageBox(options);
+      }
+    })
+    .catch((err) => {
+      log.error("[Updater] Manual check failed:", err.message);
+      const parentWin = getParentWindow();
+      const options = {
+        type: "error",
+        title: "Lỗi kiểm tra cập nhật",
+        message: err.message || "Không thể kiểm tra bản cập nhật",
+        buttons: ["OK"],
+      };
+      parentWin
+        ? dialog.showMessageBox(parentWin, options)
+        : dialog.showMessageBox(options);
     });
-  });
 }
 
 function setupAutoUpdater() {
@@ -1139,6 +1176,18 @@ function setupMacOSUpdater() {
   const RELEASES_URL =
     "https://github.com/habcreative2026/hab-creative-portfolio/releases/latest";
 
+  // ⭐ Helper lấy parent window
+  const getParentWindow = () => {
+    if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+    if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
+      return faceUnlockWindow;
+    if (faceRegisterWindow && !faceRegisterWindow.isDestroyed())
+      return faceRegisterWindow;
+    if (faceManagerWindow && !faceManagerWindow.isDestroyed())
+      return faceManagerWindow;
+    return null;
+  };
+
   const checkVersion = () => {
     const options = {
       hostname: "api.github.com",
@@ -1165,8 +1214,18 @@ function setupMacOSUpdater() {
                 `[Updater] macOS: New version available ${latestVersion}`,
               );
 
-              dialog
-                .showMessageBox({
+              const showMacDialog = (retries = 3) => {
+                const parentWin = getParentWindow();
+
+                if (!parentWin && retries > 0) {
+                  log.info(
+                    `[Updater] macOS: No window yet, retry in 500ms (${retries} left)`,
+                  );
+                  setTimeout(() => showMacDialog(retries - 1), 500);
+                  return;
+                }
+
+                const dialogOptions = {
                   type: "info",
                   title: "Có bản cập nhật mới",
                   message: `Phiên bản ${latestVersion} đã sẵn sàng!`,
@@ -1175,13 +1234,21 @@ function setupMacOSUpdater() {
                   buttons: ["Mở trang tải", "Để sau"],
                   defaultId: 0,
                   cancelId: 1,
-                })
-                .then((result) => {
+                };
+
+                const dialogPromise = parentWin
+                  ? dialog.showMessageBox(parentWin, dialogOptions)
+                  : dialog.showMessageBox(dialogOptions);
+
+                dialogPromise.then((result) => {
                   if (result.response === 0) {
-                    log.info("[Updater] Opening:", RELEASES_URL);
+                    log.info("[Updater] macOS: Opening:", RELEASES_URL);
                     shell.openExternal(RELEASES_URL);
                   }
                 });
+              };
+
+              showMacDialog();
             } else {
               log.info("[Updater] macOS: Already latest version");
             }
@@ -1195,7 +1262,10 @@ function setupMacOSUpdater() {
       });
   };
 
-  setTimeout(checkVersion, 5000);
+  // ⭐ Auto check sau 3s
+  setTimeout(checkVersion, 3000);
+
+  // ⭐ Periodic check mỗi 4 giờ
   setInterval(checkVersion, 4 * 60 * 60 * 1000);
 }
 
@@ -1229,8 +1299,29 @@ function setupFullAutoUpdater() {
       return;
     }
 
-    dialog
-      .showMessageBox({
+    // ⭐ Helper: lấy bất kỳ window nào đang mở làm parent
+    const getParentWindow = () => {
+      if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+      if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
+        return faceUnlockWindow;
+      if (faceRegisterWindow && !faceRegisterWindow.isDestroyed())
+        return faceRegisterWindow;
+      if (faceManagerWindow && !faceManagerWindow.isDestroyed())
+        return faceManagerWindow;
+      return null;
+    };
+
+    // ⭐ Retry nếu chưa có window nào
+    const showUpdateDialog = (retries = 3) => {
+      const parentWin = getParentWindow();
+
+      if (!parentWin && retries > 0) {
+        log.info(`[Updater] No window yet, retry in 500ms (${retries} left)`);
+        setTimeout(() => showUpdateDialog(retries - 1), 500);
+        return;
+      }
+
+      const dialogOptions = {
         type: "info",
         title: "Có bản cập nhật mới",
         message: `Phiên bản ${info.version} đã sẵn sàng!`,
@@ -1238,8 +1329,13 @@ function setupFullAutoUpdater() {
         buttons: ["Cập nhật ngay", "Để sau"],
         defaultId: 0,
         cancelId: 1,
-      })
-      .then((result) => {
+      };
+
+      const dialogPromise = parentWin
+        ? dialog.showMessageBox(parentWin, dialogOptions)
+        : dialog.showMessageBox(dialogOptions);
+
+      dialogPromise.then((result) => {
         log.info(`[Updater] DIALOG RESULT: ${result.response}`);
 
         if (result.response === 0) {
@@ -1260,19 +1356,27 @@ function setupFullAutoUpdater() {
                 isDownloadingUpdate = false;
                 closeDownloadProgressWindow();
 
-                dialog.showMessageBox({
+                const errOptions = {
                   type: "error",
                   title: "Lỗi tải bản cập nhật",
                   message: err.message || "Không thể tải bản cập nhật",
                   detail: err.stack || "",
                   buttons: ["OK"],
-                });
+                };
+
+                const errParent = getParentWindow();
+                errParent
+                  ? dialog.showMessageBox(errParent, errOptions)
+                  : dialog.showMessageBox(errOptions);
               });
           }, 300);
         } else {
           log.info("[Updater] User postponed update");
         }
       });
+    };
+
+    showUpdateDialog();
   });
 
   autoUpdater.on("update-not-available", (info) => {
@@ -1304,22 +1408,34 @@ function setupFullAutoUpdater() {
       mainWindow.setTitle("HAB CREATIVE");
     }
 
-    dialog
-      .showMessageBox({
-        type: "info",
-        title: "Đã tải xong",
-        message: `Phiên bản ${info.version} đã sẵn sàng cài đặt.`,
-        detail: "Ứng dụng sẽ khởi động lại để hoàn tất cập nhật.",
-        buttons: ["Khởi động lại ngay", "Để sau"],
-        defaultId: 0,
-        cancelId: 1,
-      })
-      .then((result) => {
-        if (result.response === 0) {
-          log.info("[Updater] INSTALLING...");
-          autoUpdater.quitAndInstall(false, true);
-        }
-      });
+    const getParentWindow = () => {
+      if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+      if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
+        return faceUnlockWindow;
+      return null;
+    };
+
+    const dialogOptions = {
+      type: "info",
+      title: "Đã tải xong",
+      message: `Phiên bản ${info.version} đã sẵn sàng cài đặt.`,
+      detail: "Ứng dụng sẽ khởi động lại để hoàn tất cập nhật.",
+      buttons: ["Khởi động lại ngay", "Để sau"],
+      defaultId: 0,
+      cancelId: 1,
+    };
+
+    const parentWin = getParentWindow();
+    const dialogPromise = parentWin
+      ? dialog.showMessageBox(parentWin, dialogOptions)
+      : dialog.showMessageBox(dialogOptions);
+
+    dialogPromise.then((result) => {
+      if (result.response === 0) {
+        log.info("[Updater] INSTALLING...");
+        autoUpdater.quitAndInstall(false, true);
+      }
+    });
   });
 
   autoUpdater.on("error", (err) => {
@@ -1330,36 +1446,50 @@ function setupFullAutoUpdater() {
     isDownloadingUpdate = false;
     closeDownloadProgressWindow();
 
-    // Bỏ qua các lỗi không quan trọng
     if (
       msg.includes("404") ||
       msg.includes("No published versions") ||
-      msg.includes("is not defined")
+      msg.includes("is not defined") ||
+      msg.includes("net::ERR")
     ) {
       log.warn("[Updater] Ignored library error:", msg);
       return;
     }
 
-    dialog.showMessageBox({
+    const getParentWindow = () => {
+      if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+      if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
+        return faceUnlockWindow;
+      return null;
+    };
+
+    const errOptions = {
       type: "error",
       title: "Lỗi cập nhật",
       message: "Không thể kiểm tra bản cập nhật",
       detail: msg,
       buttons: ["OK"],
-    });
+    };
+
+    const parentWin = getParentWindow();
+    parentWin
+      ? dialog.showMessageBox(parentWin, errOptions)
+      : dialog.showMessageBox(errOptions);
   });
 
+  // ⭐ Auto check sau 3s khi app mở
   setTimeout(() => {
-    log.info("[Updater] Auto check after 5s");
+    log.info("[Updater] Auto check after 3s");
     try {
       autoUpdater.checkForUpdates().catch((err) => {
-        log.warn("[Updater] Check failed:", err.message);
+        log.warn("[Updater] Auto check failed:", err.message);
       });
     } catch (err) {
-      log.warn("[Updater] Check threw synchronously:", err.message);
+      log.warn("[Updater] Auto check threw synchronously:", err.message);
     }
-  }, 5000);
+  }, 3000);
 
+  // ⭐ Periodic check mỗi 1 giờ
   setInterval(
     () => {
       if (isDownloadingUpdate) return;

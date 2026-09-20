@@ -1,6 +1,6 @@
 {
   "name": "hab-creative-desktop",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "HAB CREATIVE Desktop Application",
   "main": "main.js",
   "author": {
@@ -145,7 +145,7 @@
         "Categories": "Utility;Office;"
       }
     },
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "HAB-Creative-${version}-${os}-${arch}.${ext}",
     "publish": [
       {
         "provider": "github",
