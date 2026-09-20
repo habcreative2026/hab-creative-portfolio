@@ -14,6 +14,43 @@ const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 
+// ⭐ Cấu hình electron-log với auto rotation (giới hạn 5MB)
+try {
+  log.initialize({ preload: true });
+  log.transports.file.level = "info";
+  log.transports.console.level = "info";
+  log.transports.file.maxSize = 5 * 1024 * 1024; // 5 MB
+  log.transports.file.format =
+    "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
+  log.transports.file.resolvePathFn = () =>
+    path.join(app.getPath("userData"), "logs", "main.log");
+
+  log.transports.file.archiveLogFn = (oldLogFile) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const archivePath = `${oldLogFile.path}.${timestamp}.bak`;
+    try {
+      fs.renameSync(oldLogFile.path, archivePath);
+
+      const logsDir = path.dirname(oldLogFile.path);
+      const archives = fs
+        .readdirSync(logsDir)
+        .filter((f) => f.endsWith(".bak"))
+        .sort()
+        .reverse();
+
+      for (let i = 3; i < archives.length; i++) {
+        try {
+          fs.unlinkSync(path.join(logsDir, archives[i]));
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.warn("[Log] Archive failed:", err.message);
+    }
+  };
+} catch (err) {
+  console.error("[Log] Init failed:", err);
+}
+
 const FACE_TEST_MODE = false;
 
 let mainWindow = null;
@@ -29,11 +66,22 @@ let isTransitioningToMain = false;
 let isDownloadingUpdate = false;
 let downloadProgressWindow = null;
 
+// ⭐ Đường dẫn userData
+const USER_DATA_PATH = app.getPath("userData");
+const LOGS_PATH = path.join(USER_DATA_PATH, "logs");
+
+// ⭐ Version face data
+const FACE_DATA_VERSION = "v2";
+
 const FACE_PROFILES_PATH = path.join(
-  app.getPath("userData"),
-  "face-profiles.enc",
+  USER_DATA_PATH,
+  `face-profiles-${FACE_DATA_VERSION}.enc`,
 );
-const FACE_METADATA_PATH = path.join(app.getPath("userData"), "face-meta.json");
+const FACE_METADATA_PATH = path.join(
+  USER_DATA_PATH,
+  `face-meta-${FACE_DATA_VERSION}.json`,
+);
+
 const DASHBOARD_URL = "https://hab-creative.com/admin/dashboard";
 const LOGIN_URL = "https://hab-creative.com/admin/login";
 const MAX_FACES = 3;
@@ -48,6 +96,159 @@ app.commandLine.appendSwitch("ignore-gpu-blacklist");
 app.commandLine.appendSwitch("enable-accelerated-2d-canvas");
 app.commandLine.appendSwitch("use-gl", "angle");
 app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
+
+// ⭐ SINGLE INSTANCE LOCK — Ngăn 2 app chạy cùng lúc
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+  process.exit(0);
+} else {
+  app.on("second-instance", () => {
+    console.log("[App] Second instance detected, focusing existing window");
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    } else if (faceUnlockWindow && !faceUnlockWindow.isDestroyed()) {
+      if (faceUnlockWindow.isMinimized()) faceUnlockWindow.restore();
+      faceUnlockWindow.show();
+      faceUnlockWindow.focus();
+    } else if (faceRegisterWindow && !faceRegisterWindow.isDestroyed()) {
+      if (faceRegisterWindow.isMinimized()) faceRegisterWindow.restore();
+      faceRegisterWindow.show();
+      faceRegisterWindow.focus();
+    } else if (faceManagerWindow && !faceManagerWindow.isDestroyed()) {
+      if (faceManagerWindow.isMinimized()) faceManagerWindow.restore();
+      faceManagerWindow.show();
+      faceManagerWindow.focus();
+    }
+  });
+}
+
+// ===================== CLEANUP HELPERS =====================
+
+function cleanupOldFaceFiles() {
+  try {
+    const currentFaceFile = path.basename(FACE_PROFILES_PATH);
+    const currentMetaFile = path.basename(FACE_METADATA_PATH);
+
+    if (!fs.existsSync(USER_DATA_PATH)) return;
+
+    const files = fs.readdirSync(USER_DATA_PATH);
+    let deletedCount = 0;
+
+    for (const file of files) {
+      // Xóa tất cả file face-* NHƯNG không xóa file hiện tại
+      if (
+        (file.startsWith("face-profiles") || file.startsWith("face-meta")) &&
+        file !== currentFaceFile &&
+        file !== currentMetaFile
+      ) {
+        try {
+          fs.unlinkSync(path.join(USER_DATA_PATH, file));
+          console.log(`[Cleanup] 🗑️  Xóa file cũ: ${file}`);
+          deletedCount++;
+        } catch (err) {
+          console.warn(`[Cleanup] Không xóa được ${file}:`, err.message);
+        }
+      }
+
+      // Xóa file .tmp, .bak, .old
+      if (
+        (file.endsWith(".tmp") ||
+          file.endsWith(".bak") ||
+          file.endsWith(".old")) &&
+        file.startsWith("face-")
+      ) {
+        try {
+          fs.unlinkSync(path.join(USER_DATA_PATH, file));
+          console.log(`[Cleanup] 🗑️  Xóa file tạm: ${file}`);
+          deletedCount++;
+        } catch (_) {}
+      }
+    }
+
+    if (deletedCount > 0) {
+      console.log(`[Cleanup] ✅ Đã xóa ${deletedCount} file face cũ`);
+    }
+  } catch (err) {
+    console.warn("[Cleanup] Lỗi cleanup face:", err.message);
+  }
+}
+
+function cleanupOldLogs() {
+  try {
+    if (!fs.existsSync(LOGS_PATH)) return;
+
+    const files = fs.readdirSync(LOGS_PATH);
+
+    for (const file of files) {
+      if (!file.endsWith(".log")) continue;
+
+      const filePath = path.join(LOGS_PATH, file);
+      const stats = fs.statSync(filePath);
+      const sizeMB = stats.size / 1024 / 1024;
+
+      if (sizeMB > 5) {
+        try {
+          fs.unlinkSync(filePath);
+          console.log(
+            `[Cleanup] 🗑️  Xóa log cũ (${sizeMB.toFixed(2)} MB): ${file}`,
+          );
+        } catch (_) {}
+      }
+    }
+  } catch (err) {
+    console.warn("[Cleanup] Lỗi cleanup log:", err.message);
+  }
+}
+
+function cleanupOldUpdateCache() {
+  try {
+    const cachePaths = [
+      path.join(app.getPath("appData"), "hab-creative-desktop-updater"),
+      path.join(USER_DATA_PATH, "..", "hab-creative-desktop-updater"),
+    ];
+
+    for (const cachePath of cachePaths) {
+      if (!fs.existsSync(cachePath)) continue;
+
+      const files = fs.readdirSync(cachePath);
+
+      for (const file of files) {
+        if (
+          file.endsWith(".exe") ||
+          file.endsWith(".dmg") ||
+          file.endsWith(".AppImage") ||
+          file.endsWith(".zip")
+        ) {
+          const filePath = path.join(cachePath, file);
+          const stats = fs.statSync(filePath);
+          const ageHours = (Date.now() - stats.mtimeMs) / 1000 / 60 / 60;
+
+          if (ageHours > 24 * 7) {
+            try {
+              fs.unlinkSync(filePath);
+              console.log(`[Cleanup] 🗑️  Xóa cache cũ: ${file}`);
+            } catch (_) {}
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[Cleanup] Lỗi cleanup cache:", err.message);
+  }
+}
+
+function runStartupCleanup() {
+  console.log("[Cleanup] 🚀 Bắt đầu cleanup khi khởi động...");
+  cleanupOldFaceFiles();
+  cleanupOldLogs();
+  cleanupOldUpdateCache();
+  console.log("[Cleanup] ✅ Cleanup hoàn tất");
+}
 
 // ===================== FACE HELPERS =====================
 
@@ -65,6 +266,15 @@ function loadAllFaces() {
     if (!fs.existsSync(FACE_PROFILES_PATH)) return [];
 
     const raw = fs.readFileSync(FACE_PROFILES_PATH);
+
+    if (!raw || raw.length < 10) {
+      console.warn("[Face] File rỗng, xóa và trả về []");
+      try {
+        fs.unlinkSync(FACE_PROFILES_PATH);
+      } catch (_) {}
+      return [];
+    }
+
     let parsed;
 
     if (isSafeStorageAvailable()) {
@@ -76,7 +286,10 @@ function loadAllFaces() {
         try {
           parsed = JSON.parse(raw.toString("utf-8"));
         } catch (_) {
-          console.error("[Face] Cannot parse face file");
+          console.error("[Face] Cannot parse face file → xóa file hỏng");
+          try {
+            fs.unlinkSync(FACE_PROFILES_PATH);
+          } catch (_) {}
           return [];
         }
       }
@@ -87,7 +300,10 @@ function loadAllFaces() {
       try {
         parsed = JSON.parse(raw.toString("utf-8"));
       } catch (err) {
-        console.error("[Face] Cannot parse plain JSON:", err);
+        console.error("[Face] Cannot parse plain JSON → xóa file hỏng");
+        try {
+          fs.unlinkSync(FACE_PROFILES_PATH);
+        } catch (_) {}
         return [];
       }
     }
@@ -108,12 +324,27 @@ function loadAllFaces() {
     });
 
     if (validFaces.length !== faces.length) {
-      saveAllFaces(validFaces);
+      console.warn(
+        `[Face] ${faces.length - validFaces.length} face không hợp lệ, đã lọc`,
+      );
+
+      if (validFaces.length === 0) {
+        console.warn("[Face] Không còn face hợp lệ → xóa file");
+        deleteAllFaces();
+        return [];
+      } else {
+        saveAllFaces(validFaces);
+      }
     }
 
     return validFaces;
   } catch (err) {
     console.error("[Face] Load error:", err);
+    try {
+      if (fs.existsSync(FACE_PROFILES_PATH)) {
+        fs.unlinkSync(FACE_PROFILES_PATH);
+      }
+    } catch (_) {}
     return [];
   }
 }
@@ -1083,7 +1314,7 @@ function updateDownloadProgress(percent, transferred, total) {
 function closeDownloadProgressWindow() {
   if (downloadProgressWindow && !downloadProgressWindow.isDestroyed()) {
     try {
-      downloadProgressWindow.destroy(); // ⭐ Dùng destroy() thay vì close()
+      downloadProgressWindow.destroy();
     } catch (err) {
       log.warn("[Updater] Failed to destroy progress window:", err.message);
     }
@@ -1118,7 +1349,6 @@ function manualCheckForUpdates() {
         "[Updater] Manual check result:",
         JSON.stringify(result?.updateInfo || {}),
       );
-      // Nếu không có update, hiện thông báo
       if (
         !result ||
         !result.updateInfo ||
@@ -1180,7 +1410,6 @@ function setupMacOSUpdater() {
   const RELEASES_URL =
     "https://github.com/habcreative2026/hab-creative-portfolio/releases/latest";
 
-  // ⭐ Helper lấy parent window
   const getParentWindow = () => {
     if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
     if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
@@ -1266,10 +1495,7 @@ function setupMacOSUpdater() {
       });
   };
 
-  // ⭐ Auto check sau 3s
   setTimeout(checkVersion, 3000);
-
-  // ⭐ Periodic check mỗi 4 giờ
   setInterval(checkVersion, 4 * 60 * 60 * 1000);
 }
 
@@ -1303,7 +1529,6 @@ function setupFullAutoUpdater() {
       return;
     }
 
-    // ⭐ Helper: lấy bất kỳ window nào đang mở làm parent
     const getParentWindow = () => {
       if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
       if (faceUnlockWindow && !faceUnlockWindow.isDestroyed())
@@ -1315,7 +1540,6 @@ function setupFullAutoUpdater() {
       return null;
     };
 
-    // ⭐ Retry nếu chưa có window nào
     const showUpdateDialog = (retries = 3) => {
       const parentWin = getParentWindow();
 
@@ -1407,7 +1631,6 @@ function setupFullAutoUpdater() {
 
     isDownloadingUpdate = false;
 
-    // ⭐ ĐÓNG PROGRESS WINDOW NGAY LẬP TỨC (trước khi hiện dialog)
     closeDownloadProgressWindow();
 
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -1421,7 +1644,6 @@ function setupFullAutoUpdater() {
       return null;
     };
 
-    // ⭐ Đợi 300ms cho progress window đóng hẳn trước khi hiện dialog
     setTimeout(() => {
       const dialogOptions = {
         type: "info",
@@ -1443,7 +1665,6 @@ function setupFullAutoUpdater() {
           log.info("[Updater] INSTALLING...");
           autoUpdater.quitAndInstall(true, true);
         } else {
-          // ⭐ Nếu user chọn "Để sau", vẫn đảm bảo progress window đã đóng
           closeDownloadProgressWindow();
           log.info("[Updater] User postponed install, will install on quit");
         }
@@ -1490,7 +1711,6 @@ function setupFullAutoUpdater() {
       : dialog.showMessageBox(errOptions);
   });
 
-  // ⭐ Auto check sau 3s khi app mở
   setTimeout(() => {
     log.info("[Updater] Auto check after 3s");
     try {
@@ -1502,7 +1722,6 @@ function setupFullAutoUpdater() {
     }
   }, 3000);
 
-  // ⭐ Periodic check mỗi 1 giờ
   setInterval(
     () => {
       if (isDownloadingUpdate) return;
@@ -1538,6 +1757,8 @@ function isNewerVersion(latest, current) {
 // ===================== APP LIFECYCLE =====================
 
 app.whenReady().then(() => {
+  runStartupCleanup();
+
   const faceCount = getFaceCount();
 
   setupAutoUpdater();
