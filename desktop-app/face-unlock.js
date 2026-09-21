@@ -1,3 +1,8 @@
+/* ============================================================
+   FACE UNLOCK — SCRIPT
+   Quét 3 lần không thành → THOÁT APP (không chuyển Google)
+   ============================================================ */
+
 const video = document.getElementById("camera");
 const canvas = document.getElementById("overlay");
 const statusEl = document.getElementById("status");
@@ -6,8 +11,13 @@ const successOverlay = document.getElementById("successOverlay");
 const attemptsIndicator = document.getElementById("attemptsIndicator");
 const brightnessWarning = document.getElementById("brightnessWarning");
 const scanLine = document.getElementById("scanLine");
-const googleBtn = document.getElementById("googleBtn");
 const quitBtn = document.getElementById("quitBtn");
+
+// ⭐ Ẩn nút Google nếu có (không dùng nữa)
+const googleBtn = document.getElementById("googleBtn");
+if (googleBtn) {
+  googleBtn.style.display = "none";
+}
 
 let storedFaces = [];
 let isUnlocking = false;
@@ -72,6 +82,60 @@ function showSuccess() {
   }, 400);
 }
 
+/**
+ * ⭐ Đóng app khi quét 3 lần không thành
+ */
+function closeAppAfterFailure() {
+  isUnlocking = true;
+
+  // Đổi UI
+  cameraContainer.classList.remove("scanning", "success");
+  cameraContainer.classList.add("warning");
+  scanLine.classList.remove("on");
+
+  // Đổi nút
+  quitBtn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M18 6L6 18M6 6l12 12"/>
+    </svg>
+    Thoát
+  `;
+  quitBtn.style.background = "linear-gradient(135deg, #ff453a, #cc2a20)";
+  quitBtn.style.color = "#fff";
+  quitBtn.style.fontWeight = "700";
+  quitBtn.style.boxShadow = "0 4px 20px rgba(255, 69, 58, 0.4)";
+
+  if (detectionTimeout) clearTimeout(detectionTimeout);
+  const stream = video.srcObject;
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+
+  // Đếm ngược 3-2-1 rồi thoát
+  let countdown = 3;
+  setFaceStatus(
+    statusEl,
+    `Quá nhiều lần thất bại. Thoát sau ${countdown}s...`,
+    "error",
+  );
+
+  const interval = setInterval(() => {
+    countdown--;
+    if (countdown > 0) {
+      setFaceStatus(
+        statusEl,
+        `Quá nhiều lần thất bại. Thoát sau ${countdown}s...`,
+        "error",
+      );
+    } else {
+      clearInterval(interval);
+      console.log("[Unlock] Đóng app do quét 3 lần thất bại");
+      window.electronAPI.quitApp();
+    }
+  }, 1000);
+}
+
+/**
+ * Ghi nhận 1 lần thất bại
+ */
 function registerFailAttempt() {
   currentAttempts++;
   updateAttemptDots(currentAttempts);
@@ -82,20 +146,9 @@ function registerFailAttempt() {
   cameraContainer.classList.remove("scanning");
   cameraContainer.classList.add("error");
 
+  // ⭐ Nếu đã 3 lần → THOÁT APP
   if (currentAttempts >= MAX_ATTEMPTS) {
-    setFaceStatus(
-      statusEl,
-      "Đã thử quá nhiều lần. Chuyển sang đăng nhập Google...",
-      "error",
-    );
-
-    if (detectionTimeout) clearTimeout(detectionTimeout);
-    const stream = video.srcObject;
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-
-    setTimeout(() => {
-      window.electronAPI.faceAuth.fallbackToLogin();
-    }, 1500);
+    closeAppAfterFailure();
     return;
   }
 
@@ -130,25 +183,18 @@ async function init() {
       window.electronAPI.faceAuth.loadAll(),
     ]);
 
+    // ⭐ Nếu không có face nào → thoát app luôn
     if (!facesResult || !facesResult.success || !facesResult.faces) {
-      setFaceStatus(
-        statusEl,
-        "Chưa có Face ID. Chuyển sang đăng nhập...",
-        "error",
-      );
-      setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
+      setFaceStatus(statusEl, "Chưa có Face ID. Thoát ứng dụng...", "error");
+      setTimeout(() => window.electronAPI.quitApp(), 1500);
       return;
     }
 
     storedFaces = facesResult.faces;
 
     if (storedFaces.length === 0) {
-      setFaceStatus(
-        statusEl,
-        "Không có face nào. Chuyển sang đăng nhập...",
-        "error",
-      );
-      setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
+      setFaceStatus(statusEl, "Không có face nào. Thoát ứng dụng...", "error");
+      setTimeout(() => window.electronAPI.quitApp(), 1500);
       return;
     }
 
@@ -164,7 +210,7 @@ async function init() {
     startUnlockLoop();
   } catch (err) {
     setFaceStatus(statusEl, "Lỗi: " + err.message, "error");
-    setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
+    setTimeout(() => window.electronAPI.quitApp(), 1500);
   }
 }
 
@@ -336,14 +382,10 @@ function startUnlockLoop() {
 
   loop();
 }
-googleBtn.addEventListener("click", () => {
-  console.log("[Unlock] Google fallback clicked");
-  if (detectionTimeout) clearTimeout(detectionTimeout);
-  const stream = video.srcObject;
-  if (stream) stream.getTracks().forEach((t) => t.stop());
-  window.electronAPI.faceAuth.fallbackToLogin();
-});
 
+/**
+ * ⭐ Nút Thoát → đóng app luôn
+ */
 quitBtn.addEventListener("click", () => {
   console.log("[Unlock] Quit clicked");
   if (detectionTimeout) clearTimeout(detectionTimeout);
@@ -358,21 +400,18 @@ window.addEventListener("beforeunload", () => {
   if (stream) stream.getTracks().forEach((t) => t.stop());
 });
 
+// ⭐ Timeout 60s → thoát app (không chuyển Google)
 setTimeout(() => {
   if (!isUnlocking && currentAttempts < MAX_ATTEMPTS) {
-    setFaceStatus(
-      statusEl,
-      "Hết thời gian. Chuyển sang đăng nhập Google...",
-      "warning",
-    );
+    setFaceStatus(statusEl, "Hết thời gian. Thoát ứng dụng...", "warning");
     if (detectionTimeout) clearTimeout(detectionTimeout);
     const stream = video.srcObject;
     if (stream) stream.getTracks().forEach((t) => t.stop());
-    setTimeout(() => window.electronAPI.faceAuth.fallbackToLogin(), 1500);
+    setTimeout(() => window.electronAPI.quitApp(), 1500);
   }
 }, 60000);
 
-// ⭐ Tự động gọi init() — không dùng DOMContentLoaded
+// ⭐ Auto init
 if (document.readyState === "loading") {
   window.addEventListener("DOMContentLoaded", init);
 } else {

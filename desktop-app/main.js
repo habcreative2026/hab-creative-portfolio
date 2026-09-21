@@ -1508,18 +1508,6 @@ ipcMain.on("face:unlock-success-ack", () => {
   createMainWindow({ fromUnlock: true });
 });
 
-ipcMain.on("face:fallback-login", () => {
-  isUnlockingInProgress = true;
-  isTransitioningToMain = true;
-
-  if (faceUnlockWindow && !faceUnlockWindow.isDestroyed()) {
-    faceUnlockWindow.close();
-    faceUnlockWindow = null;
-  }
-
-  createMainWindow({ fromUnlock: false });
-});
-
 ipcMain.on("face:close-window", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) win.close();

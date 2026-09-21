@@ -23,6 +23,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
     deleteOne: (index) => ipcRenderer.invoke("face:delete-one", index),
     closeFaceWindow: () => ipcRenderer.send("face:close-window"),
     unlockSuccess: () => ipcRenderer.send("face:unlock-success-ack"),
-    fallbackToLogin: () => ipcRenderer.send("face:fallback-login"),
   },
 });
